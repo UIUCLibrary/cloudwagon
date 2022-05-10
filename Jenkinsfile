@@ -6,7 +6,7 @@ pipeline {
         dockerfile {
             filename 'Dockerfile'
             label 'linux && docker'
-            additionalBuildArgs "--secret id=netrc,src=${credentials('private_pypi')}"
+            additionalBuildArgs "--secret id=netrc,src=${credentials\('private_pypi'\)}"
 //            additionalBuildArgs "--secret id=netrc,src={$NETRC}"
         }
     }
