@@ -5,13 +5,13 @@ pipeline {
     agent any
     stages {
         stage('Checks'){
-        agent {
-            dockerfile {
-                filename 'Dockerfile'
-                label 'linux'
-                additionalBuildArgs "--secret id=netrc,src=${credentials('netrc')}"
+            agent {
+                dockerfile {
+                    filename 'Dockerfile'
+                    label 'linux'
+                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
+                }
             }
-        }
             steps{
                 echo "here"
             }
