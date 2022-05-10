@@ -1,5 +1,9 @@
 pipeline {
     agent none
+    parameters {
+        string defaultValue: 'cloudwagon', name: 'DOCKER_IMAGE_NAME'
+    }
+
     stages {
         stage('Checks'){
             matrix {
@@ -25,7 +29,7 @@ pipeline {
                                         }
                                         def dockerbuild
                                         withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                                            dockerbuild = docker.build('cloudwagon', "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
+                                            dockerbuild = docker.build(params.DOCKER_IMAGE_NAME, "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
                                         }
                                         try{
                                             dockerbuild.inside{
