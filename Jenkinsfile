@@ -21,26 +21,22 @@ pipeline {
                                 configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                     props = readProperties(file: PYPI_PROPS)
                                 }
-//                                 def dockerbuild
-//                                 withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-//                                     dockerbuild = docker.build('cloudwagon', "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
-//                                 }
+                                def dockerbuild
+                                withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+                                    dockerbuild = docker.build('cloudwagon', "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
+                                }
                                 try{
-//                                     dockerbuild.inside{
-//                                         sh 'pip list'
-// //                                         def CONFIG = readJSON(file: CONFIG_FILE)['deploy']
-// //                                         def build_args = CONFIG['docker']['build']['buildArgs'].collect{"--build-arg=${it}"}.join(" ")
-//
-//                                     }
+                                    dockerbuild.inside{
+                                        sh 'pip list'
+
+                                    }
                                     def docker_props
                                     configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                         docker_props = readProperties(file: CONFIG_FILE)
                                     }
-//                                     docker.withServer(docker_props['docker_url'], "DOCKER_TYKO"){
-                                        echo "here withServer"
-                                        docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
-                                            echo "here"
-                                        }
+                                    docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+                                        dockerbuild.push()
+                                    }
 
 //                                     }
 
