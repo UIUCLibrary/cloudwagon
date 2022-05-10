@@ -17,7 +17,7 @@ pipeline {
                         steps{
                             script{
                                 def f
-                                withCredentials([usernameColonPassword(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+                                withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                     f = docker.build('dummy', '-f Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL=https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_internal/simple .')
                                 }
                                 f.inside{
