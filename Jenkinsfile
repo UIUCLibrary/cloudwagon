@@ -43,7 +43,7 @@ pipeline {
                                 }
                                 post{
                                     cleanup{
-                                        sh "docker image rm ${env.DOCKER_IMAGE_TEMP_NAME}"
+                                        sh(returnStatus: true, script:"docker image rm ${env.DOCKER_IMAGE_TEMP_NAME} --no-prune")
                                     }
                                 }
                             }
