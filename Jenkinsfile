@@ -16,7 +16,7 @@ pipeline {
                     }
                 }
                 stages{
-                    stage('Build for architecture'){
+                    stage('Build for Architecture'){
                         agent {
                             label "linux && docker && ${ARCH}"
                         }
