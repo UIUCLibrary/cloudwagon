@@ -22,7 +22,7 @@ pipeline {
                                 }
                                 def dockerbuild
                                 withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                                    dockerbuild = docker.build('dummy', "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
+                                    dockerbuild = docker.build('cloudwagon', "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} .")
                                 }
                                 try{
                                     dockerbuild.inside{
