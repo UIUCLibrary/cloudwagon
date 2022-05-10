@@ -15,7 +15,7 @@ pipeline {
         stage('Checks'){
             steps{
                 script{
-                    def f = docker.build('dummy', '-f Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL=https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_internal .')
+                    def f = docker.build('dummy', '-f Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL=https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_internal/simple .')
 //                    def f = docker.build('dummy', "-f Dockerfile --secret id=netrc,src=$private_pypi")
                 }
                 echo 'here'
