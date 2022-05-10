@@ -40,6 +40,9 @@ pipeline {
                                 }
                             }
                             stage('Publish Docker Image'){
+                                input {
+                                    message 'Push to docker index?'
+                                }
                                 steps{
                                     script{
                                         configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
