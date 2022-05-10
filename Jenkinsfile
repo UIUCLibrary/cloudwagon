@@ -10,7 +10,7 @@ pipeline {
 //                    filename 'Dockerfile'
                     label 'linux && docker'
 //                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
-                }
+//                }
             }
             steps{
                 echo "here"
