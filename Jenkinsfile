@@ -42,6 +42,11 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        post{
+                                            cleanup{
+                                                sh "docker image rm ${env.DOCKER_IMAGE_TEMP_NAME}"
+                                            }
+                                        }
                                     }
                                     stage('Publish Docker Image'){
                                         when{
