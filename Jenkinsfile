@@ -6,7 +6,7 @@ pipeline {
         dockerfile {
             filename 'Dockerfile'
             label 'linux'
-            additionalBuildArgs '--secret id=netrc,src=$NETRC'
+            additionalBuildArgs "--secret id=netrc,src=${credentials('netrc')}"
         }
     }
     stages {
