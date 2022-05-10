@@ -45,7 +45,8 @@ pipeline {
                                     }
 
                                 } finally {
-                                    sh "docker image rm ${dockerbuild.id}"
+                                    echo 'Done'
+//                                     sh "docker image rm ${dockerbuild.id}"
                                 }
                             }
                         }
