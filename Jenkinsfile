@@ -23,7 +23,8 @@ pipeline {
                                 dockerbuild.inside{
                                     sh 'pip list'
                                 }
-                                echo "dockerbuild.id = ${dockerbuild.id}"
+//                                 echo "dockerbuild.id = ${dockerbuild.id}"
+                                sh "docker rm ${dockerbuild.id}"
                             }
                         }
                     }
