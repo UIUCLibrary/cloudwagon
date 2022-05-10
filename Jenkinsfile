@@ -37,11 +37,11 @@ pipeline {
                                     }
                                     echo "docker_props = ${docker_props['registry']}"
                                     docker.withServer(docker_props['docker_url'], "DOCKER_SERVER"){
+                                        docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+                                            echo "here"
+                                        }
 
                                     }
-//                                     docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
-//                                         echo "here"
-//                                     }
 
                                 } finally {
                                     sh "docker image rm ${dockerbuild.id}"
