@@ -14,6 +14,9 @@ pipeline {
     stages {
         stage('Checks'){
             steps{
+                script{
+                    def f = docker.build('dummy', "-f Dockerfile --secret id=netrc,src=$private_pypi")
+                }
                 echo 'here'
             }
         }
