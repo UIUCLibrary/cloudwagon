@@ -24,7 +24,7 @@ pipeline {
                                     sh 'pip list'
                                 }
 //                                 echo "dockerbuild.id = ${dockerbuild.id}"
-                                sh "docker rm ${dockerbuild.id}"
+                                sh "docker image rm ${dockerbuild.id}"
                             }
                         }
                     }
