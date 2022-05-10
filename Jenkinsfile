@@ -1,15 +1,15 @@
 pipeline {
-    environment {
-        NETRC  = credentials('netrc')
-    }
+//    environment {
+//        NETRC  = credentials('netrc')
+//    }
     agent any
     stages {
         stage('Checks'){
             agent {
-                dockerfile {
-                    filename 'Dockerfile'
-                    label 'linux'
-                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
+//                dockerfile {
+//                    filename 'Dockerfile'
+                    label 'linux && docker'
+//                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
                 }
             }
             steps{
