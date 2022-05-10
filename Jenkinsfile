@@ -44,7 +44,7 @@ pipeline {
                                             }
 
                                         } finally {
-                                            sh "docker image rm ${dockerbuild.id}"
+                                            sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                                         }
                                     }
                                 }
