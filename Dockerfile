@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-FROM python:3.9
+FROM python:3.10
 COPY requirements.txt requirements.txt
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
