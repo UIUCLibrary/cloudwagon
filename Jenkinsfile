@@ -34,6 +34,15 @@ pipeline {
                                         dockerbuild.inside{
                                             sh 'pip list'
                                         }
+
+
+                                    }
+                                }
+                            }
+                            stage('Publish Docker Image'){
+                                steps{
+                                    script{
+                                        def dockerbuild = docker.Image(params.DOCKER_IMAGE_NAME)
                                         def docker_props
                                         configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                             docker_props = readProperties(file: CONFIG_FILE)
@@ -41,7 +50,6 @@ pipeline {
                                         docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
                                             dockerbuild.push()
                                         }
-
                                     }
                                 }
                             }
