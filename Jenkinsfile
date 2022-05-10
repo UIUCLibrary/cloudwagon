@@ -2,6 +2,7 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'cloudwagon', name: 'DOCKER_IMAGE_NAME'
+        booleanParam  defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
 
     stages {
@@ -34,12 +35,14 @@ pipeline {
                                         dockerbuild.inside{
                                             sh 'pip list'
                                         }
-
-
                                     }
                                 }
                             }
                             stage('Publish Docker Image'){
+                                when{
+                                    equals expected: true, actual: params.PUBLISH_DOCKER
+                                    beforeInput true
+                                }
                                 input {
                                     message 'Push to docker index?'
                                 }
