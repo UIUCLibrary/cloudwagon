@@ -3,7 +3,7 @@ pipeline {
         NETRC  = credentials('private_pypi')
     }
     agent {
-        label 'linux && docker'
+        label 'linux && docker && x86'
 //        dockerfile {
 //            filename 'Dockerfile'
 //            label 'linux && docker'
