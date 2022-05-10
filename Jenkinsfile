@@ -13,7 +13,10 @@ pipeline {
 //                }
             }
             steps{
-                echo "here"
+                script{
+                   def f = docker.build("dummy", "-f Dockerfile")
+                    echo "here"
+                }
             }
         }
     }
