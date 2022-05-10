@@ -28,6 +28,7 @@ pipeline {
                                     dockerbuild.inside{
                                         sh 'pip list'
                                         configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                                            sh "ls -la ${CONFIG_FILE}"
 //                                         def CONFIG = readJSON(file: CONFIG_FILE)['deploy']
 //                                         def build_args = CONFIG['docker']['build']['buildArgs'].collect{"--build-arg=${it}"}.join(" ")
 
