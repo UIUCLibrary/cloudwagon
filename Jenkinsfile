@@ -27,11 +27,11 @@ pipeline {
                                 }
                             }
                             stage('Building Docker Container'){
-//                                 options {
-//                                   lock(label: "${ARCH}")
-//                                 }
                                 stages{
                                     stage('Building Docker Container'){
+                                        options {
+                                          lock(label: "${ARCH}")
+                                        }
                                         steps{
                                             withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                                 configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
