@@ -15,9 +15,10 @@ pipeline {
             steps{
                 script{
                     withCredentials([file(credentialsId: 'netrc', variable: 'NETRC')]) {
-                       def f = docker.build("dummy", "-f Dockerfile", '--secret id=netrc,src=$NETRC', ".")
+                        def f = docker.build("dummy", "-f Dockerfile", '--secret id=netrc,src=$NETRC', ".")
                         echo "here"
                     }
+                }
             }
         }
     }
