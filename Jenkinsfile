@@ -38,11 +38,8 @@ pipeline {
                                         dockerbuild.push()
                                     }
 
-//                                     }
-
                                 } finally {
-                                    echo 'Done'
-//                                     sh "docker image rm ${dockerbuild.id}"
+                                    sh "docker image rm ${dockerbuild.id}"
                                 }
                             }
                         }
