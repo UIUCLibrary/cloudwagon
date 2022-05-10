@@ -20,6 +20,9 @@ pipeline {
                         agent {
                             label "linux && docker && ${ARCH}"
                         }
+                        options {
+                          lock(label: NODE_NAME)
+                        }
                         stages{
                             stage('Build'){
                                 steps{
