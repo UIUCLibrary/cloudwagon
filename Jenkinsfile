@@ -27,6 +27,13 @@ pipeline {
                                 try{
                                     dockerbuild.inside{
                                         sh 'pip list'
+                                        configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+//                                         def CONFIG = readJSON(file: CONFIG_FILE)['deploy']
+//                                         def build_args = CONFIG['docker']['build']['buildArgs'].collect{"--build-arg=${it}"}.join(" ")
+
+                                    }
+//                                     docker.withRegistry(CONFIG['docker']['server']['registry'], 'jenkins-nexus'){
+
                                     }
                                 } finally {
                                     sh "docker image rm ${dockerbuild.id}"
