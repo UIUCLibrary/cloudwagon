@@ -26,10 +26,9 @@ pipeline {
                                     withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                         configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                             script{
-                                                def props = readProperties(file: PYPI_PROPS)
                                                 docker.build(
                                                     params.DOCKER_IMAGE_NAME,
-                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${props['PYPI_URL']} ."
+                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
                                                     ).inside{
                                                         sh 'pip list'
                                                     }
