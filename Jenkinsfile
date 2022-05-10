@@ -33,7 +33,7 @@ pipeline {
                                                 configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                                     script{
                                                         docker.build(
-                                                            params.DOCKER_IMAGE_NAME,
+                                                            env.DOCKER_IMAGE_TEMP_NAME,
                                                             "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
                                                             ).inside{
                                                                 sh 'pip list'
