@@ -21,6 +21,11 @@ pipeline {
                             label "linux && docker && ${ARCH}"
                         }
                         stages{
+                            stage('dummy'){
+                                steps{
+                                    echo "ARCH = ${ARCH}"
+                                }
+                            }
                             stage('Building Docker Container'){
                                 options {
                                   lock(label: "${ARCH}")
