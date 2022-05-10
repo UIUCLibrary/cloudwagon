@@ -1,23 +1,23 @@
 pipeline {
-//    environment {
-//        NETRC  = credentials('netrc')
-//    }
+    environment {
+        NETRC  = credentials('private_pypi')
+    }
     agent any
     stages {
         stage('Checks'){
             agent {
-//                dockerfile {
-//                    filename 'Dockerfile'
+                dockerfile {
+                    filename 'Dockerfile'
                     label 'linux && docker'
-//                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
+                    additionalBuildArgs '--secret id=netrc,src=$NETRC'
 //                }
             }
             steps{
                 script{
-                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                        sh 'ls -la $NETRC'
+//                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+//                        sh 'ls -la $NETRC'
 //                        def f = docker.build("dummy", "-f Dockerfile", '--secret id=netrc,src=$NETRC', ".")
-//                        echo "here ${NETRC}"
+                        echo 'here'
                     }
                 }
             }
