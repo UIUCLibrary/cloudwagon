@@ -16,53 +16,56 @@ pipeline {
                     }
                 }
                 stages{
-                    stage('Building Docker Container'){
+                    stage('Build for architecture'){
                         agent {
                             label "linux && docker && ${ARCH}"
                         }
-                        options {
-                          lock(label: env.NODE_NAME)
-                        }
                         stages{
-                            stage('Build'){
-                                steps{
-                                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                                        configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
-                                            script{
-                                                docker.build(
-                                                    params.DOCKER_IMAGE_NAME,
-                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
-                                                    ).inside{
-                                                        sh 'pip list'
+                            stage('Building Docker Container'){
+                                options {
+                                  lock(label: env.NODE_NAME)
+                                }
+                                stages{
+                                    stage('Build'){
+                                        steps{
+                                            withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+                                                configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
+                                                    script{
+                                                        docker.build(
+                                                            params.DOCKER_IMAGE_NAME,
+                                                            "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+                                                            ).inside{
+                                                                sh 'pip list'
+                                                            }
                                                     }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    stage('Publish Docker Image'){
+                                        when{
+                                            equals expected: true, actual: params.PUBLISH_DOCKER
+                                            beforeInput true
+                                        }
+                                        input {
+                                            message 'Push to docker registry?'
+                                        }
+                                        steps{
+                                            configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                                                script{
+                                                    docker.withRegistry(readProperties(file: CONFIG_FILE)['registry'], 'jenkins-nexus'){
+                                                        docker.image(params.DOCKER_IMAGE_NAME).push()
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            stage('Publish Docker Image'){
-                                when{
-                                    equals expected: true, actual: params.PUBLISH_DOCKER
-                                    beforeInput true
-                                }
-                                input {
-                                    message 'Push to docker registry?'
-                                }
-                                steps{
-                                    configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                                        script{
-//                                             def docker_props = readProperties(file: CONFIG_FILE)
-                                            docker.withRegistry(readProperties(file: CONFIG_FILE)['registry'], 'jenkins-nexus'){
-                                                docker.image(params.DOCKER_IMAGE_NAME).push()
-                                            }
-                                        }
+                                post{
+                                    cleanup{
+                                        sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                                     }
                                 }
-                            }
-                        }
-                        post{
-                            cleanup{
-                                sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                             }
                         }
                     }
