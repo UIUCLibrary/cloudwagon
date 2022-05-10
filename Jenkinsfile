@@ -1,7 +1,7 @@
 pipeline {
-    environment {
-        NETRC  = credentials('netrc')
-    }
+//    environment {
+//        NETRC  = credentials('netrc')
+//    }
     agent {
         dockerfile {
             filename 'Dockerfile'
