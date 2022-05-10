@@ -44,10 +44,16 @@ pipeline {
                                             }
 
                                         } finally {
-                                            sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
+                                            echo "Done"
+//                                             sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                                         }
                                     }
                                 }
+                            }
+                        }
+                        post{
+                            cleanup{
+                                sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                             }
                         }
                     }
