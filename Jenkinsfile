@@ -42,7 +42,7 @@ pipeline {
                             stage('Publish Docker Image'){
                                 steps{
                                     script{
-                                        def dockerbuild = docker.Image(params.DOCKER_IMAGE_NAME)
+                                        def dockerbuild = docker.Image("${params.DOCKER_IMAGE_NAME}")
                                         def docker_props
                                         configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                             docker_props = readProperties(file: CONFIG_FILE)
