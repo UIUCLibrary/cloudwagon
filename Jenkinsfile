@@ -11,8 +11,8 @@ pipeline {
                 axes {
                     axis {
                         name 'ARCH'
-                        values 'x86'
-//                         values 'arm','x86'
+//                         values 'x86'
+                        values 'arm','x86'
                     }
                 }
                 stages{
