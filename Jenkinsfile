@@ -11,9 +11,6 @@ pipeline {
                 }
                 stages{
                     stage('build'){
-//                         environment {
-//                             NETRC  = credentials('private_pypi')
-//                         }
                         agent {
                             label "linux && docker && ${ARCH}"
                         }
