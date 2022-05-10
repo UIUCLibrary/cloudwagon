@@ -36,10 +36,9 @@ pipeline {
                                         docker_props = readProperties(file: CONFIG_FILE)
                                     }
                                     echo "docker_props = ${docker_props['registry']}"
-                                    docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
-                                        echo "here"
-
-                                    }
+//                                     docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+//                                         echo "here"
+//                                     }
 
                                 } finally {
                                     sh "docker image rm ${dockerbuild.id}"
