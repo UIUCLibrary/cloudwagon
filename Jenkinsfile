@@ -6,7 +6,7 @@ pipeline {
                 NETRC  = credentials('private_pypi')
             }
             agent {
-                label 'linux && docker && x86'
+                label 'linux && docker && arm
             }
             steps{
                 script{
