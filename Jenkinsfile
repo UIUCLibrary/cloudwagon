@@ -28,7 +28,7 @@ pipeline {
                             }
                             stage('Building Docker Container'){
                                 options {
-                                  lock(label: env.NODE_NAME)
+                                  lock(label: "${env.NODE_NAME}")
                                 }
                                 stages{
                                     stage('Build'){
