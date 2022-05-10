@@ -2,6 +2,7 @@ pipeline {
     environment {
         NETRC  = credentials('netrc')
     }
+    agent none
     stages {
         stage('Checks'){
             agent {
