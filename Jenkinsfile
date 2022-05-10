@@ -2,9 +2,7 @@ pipeline {
     environment {
         NETRC  = credentials('private_pypi')
     }
-    agent any
-    stages {
-        stage('Checks'){
+//    agent any
             agent {
                 dockerfile {
                     filename 'Dockerfile'
@@ -12,6 +10,8 @@ pipeline {
                     additionalBuildArgs '--secret id=netrc,src=$NETRC'
 //                }
             }
+    stages {
+        stage('Checks'){
             steps{
                 script{
 //                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
