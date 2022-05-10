@@ -16,7 +16,7 @@ pipeline {
                         }
                         steps{
                             script{
-                                def props = readProperties("config.properties")
+                                def props = readProperties(file: "config.properties")
                                 echo "props = ${props}"
                                 def dockerbuild
                                 withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
