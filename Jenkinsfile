@@ -14,7 +14,7 @@ pipeline {
             }
             steps{
                 script{
-                   def f = docker.build("dummy", "-f Dockerfile")
+                   def f = docker.build("dummy")
                     echo "here"
                 }
             }
