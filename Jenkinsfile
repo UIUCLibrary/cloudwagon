@@ -17,8 +17,6 @@ pipeline {
                         steps{
                             script{
                                 def dockerbuild
-                                sh 'ls -la'
-                                sh 'ls -la Speedwagon/'
                                 withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                     dockerbuild = docker.build('dummy', '-f Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL=https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_internal/simple .')
                                 }
