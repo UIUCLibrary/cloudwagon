@@ -18,7 +18,6 @@ pipeline {
                             script{
                                 def props
                                 configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
-                                    echo "I got ${PYPI_PROPS}"
                                     props = readProperties(file: PYPI_PROPS)
                                 }
                                 def dockerbuild
