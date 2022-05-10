@@ -21,16 +21,11 @@ pipeline {
                             label "linux && docker && ${ARCH}"
                         }
                         stages{
-                            stage('dummy'){
-                                steps{
-                                    echo "ARCH = ${ARCH}"
-                                }
-                            }
                             stage('Building Docker Container'){
                                 stages{
                                     stage('Building Docker Container'){
-                                        options {
-                                          lock(label: "${ARCH}")
+                                        environment {
+                                            DOCKER_IMAGE_TEMP_NAME = UUID.randomUUID().toString()
                                         }
                                         steps{
                                             withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
