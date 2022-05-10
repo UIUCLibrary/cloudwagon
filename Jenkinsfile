@@ -23,6 +23,7 @@ pipeline {
                                 try{
                                     dockerbuild.inside{
                                         sh 'pip list'
+                                        sh 'ls -la'
                                     }
                                 } finally {
                                     sh "docker image rm ${dockerbuild.id}"
