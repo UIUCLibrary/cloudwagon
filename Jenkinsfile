@@ -27,17 +27,20 @@ pipeline {
                                 try{
                                     dockerbuild.inside{
                                         sh 'pip list'
-                                        def docker_props
-                                        configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                                            docker_props = readProperties(file: CONFIG_FILE)
-                                            echo "docker_props = ${docker_props}"
 //                                         def CONFIG = readJSON(file: CONFIG_FILE)['deploy']
 //                                         def build_args = CONFIG['docker']['build']['buildArgs'].collect{"--build-arg=${it}"}.join(" ")
 
                                     }
-//                                     docker.withRegistry(CONFIG['docker']['server']['registry'], 'jenkins-nexus'){
+                                    def docker_props
+                                    configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                                        docker_props = readProperties(file: CONFIG_FILE)
+                                    }
+                                    echo "docker_props = ${docker_props}"
+                                    docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+                                        echo "here"
 
                                     }
+
                                 } finally {
                                     sh "docker image rm ${dockerbuild.id}"
                                 }
