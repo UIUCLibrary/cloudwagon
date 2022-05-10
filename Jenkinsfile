@@ -42,13 +42,11 @@ pipeline {
                             stage('Publish Docker Image'){
                                 steps{
                                     script{
-                                        def dockerbuild = docker.image(params.DOCKER_IMAGE_NAME)
-                                        def docker_props
                                         configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                                            docker_props = readProperties(file: CONFIG_FILE)
-                                        }
-                                        docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
-                                            dockerbuild.push()
+                                            def docker_props = readProperties(file: CONFIG_FILE)
+                                            docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+                                                docker.image(params.DOCKER_IMAGE_NAME).push()
+                                            }
                                         }
                                     }
                                 }
