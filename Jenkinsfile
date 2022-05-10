@@ -57,6 +57,18 @@ pipeline {
                                             message 'Push to docker registry?'
                                         }
                                         steps{
+                                            withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+                                                configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
+                                                    script{
+                                                        docker.build(
+                                                            params.DOCKER_IMAGE_NAME,
+                                                            "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+                                                            ).inside{
+                                                                sh 'pip list'
+                                                            }
+                                                    }
+                                                }
+                                            }
                                             configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                                 script{
                                                     docker.withRegistry(readProperties(file: CONFIG_FILE)['registry'], 'jenkins-nexus'){
@@ -65,11 +77,11 @@ pipeline {
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                                post{
-                                    cleanup{
-                                        sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
+                                        post{
+                                            cleanup{
+                                                sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
+                                            }
+                                        }
                                     }
                                 }
                             }
