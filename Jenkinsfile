@@ -16,7 +16,7 @@ pipeline {
                     }
                 }
                 stages{
-                    stage('Building Docker Dontainer'){
+                    stage('Building Docker Container'){
                         agent {
                             label "linux && docker && ${ARCH}"
                         }
