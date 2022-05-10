@@ -21,7 +21,7 @@ pipeline {
                             label "linux && docker && ${ARCH}"
                         }
                         options {
-                          lock(label: NODE_NAME)
+                          lock(label: env.NODE_NAME)
                         }
                         stages{
                             stage('Build'){
