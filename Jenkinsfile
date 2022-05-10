@@ -46,10 +46,10 @@ pipeline {
                                     message 'Push to docker registry?'
                                 }
                                 steps{
-                                    script{
-                                        configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                                            def docker_props = readProperties(file: CONFIG_FILE)
-                                            docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
+                                    configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                                        script{
+//                                             def docker_props = readProperties(file: CONFIG_FILE)
+                                            docker.withRegistry(readProperties(file: CONFIG_FILE)['registry'], 'jenkins-nexus'){
                                                 docker.image(params.DOCKER_IMAGE_NAME).push()
                                             }
                                         }
