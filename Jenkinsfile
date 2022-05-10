@@ -27,9 +27,9 @@ pipeline {
                                 }
                             }
                             stage('Building Docker Container'){
-                                options {
-                                  lock(label: "${ARCH}")
-                                }
+//                                 options {
+//                                   lock(label: "${ARCH}")
+//                                 }
                                 stages{
                                     stage('Building Docker Container'){
                                         steps{
