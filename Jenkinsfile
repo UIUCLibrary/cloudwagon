@@ -28,6 +28,7 @@ pipeline {
                                             DOCKER_IMAGE_TEMP_NAME = UUID.randomUUID().toString()
                                         }
                                         steps{
+                                            echo "DOCKER_IMAGE_TEMP_NAME = ${env.DOCKER_IMAGE_TEMP_NAME}"
                                             withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                                 configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                                     script{
