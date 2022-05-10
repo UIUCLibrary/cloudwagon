@@ -28,8 +28,7 @@ pipeline {
                             }
                             stage('Building Docker Container'){
                                 options {
-                                  lock("${currentBuild.getRawBuild().getExecutor().getOwner().getDisplayName()}")
-//                                   lock(label: "${env.NODE_NAME}")
+                                  lock(label: ARCH)
                                 }
                                 stages{
                                     stage('Build'){
