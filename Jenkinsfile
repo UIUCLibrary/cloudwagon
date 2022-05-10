@@ -21,6 +21,11 @@ pipeline {
                             label "linux && docker && ${ARCH}"
                         }
                         stages{
+                            stage('dummy'){
+                                steps{
+                                    sh 'echo "here"'
+                                }
+                            }
                             stage('Building Docker Container'){
                                 options {
                                   lock(label: env.NODE_NAME)
