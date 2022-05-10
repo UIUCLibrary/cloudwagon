@@ -2,11 +2,19 @@ pipeline {
     agent none
     stages {
         stage('Checks'){
+        matrix {
+              axes {
+                axis {
+                  name 'ARCH'
+                  values 'arm','x86'
+                }
+              }
+            }
             environment {
                 NETRC  = credentials('private_pypi')
             }
             agent {
-                label 'linux && docker && arm'
+                label "linux && docker && ${ARCH}"
             }
             steps{
                 script{
