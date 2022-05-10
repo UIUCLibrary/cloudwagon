@@ -44,7 +44,7 @@ pipeline {
                                     beforeInput true
                                 }
                                 input {
-                                    message 'Push to docker index?'
+                                    message 'Push to docker registry?'
                                 }
                                 steps{
                                     script{
