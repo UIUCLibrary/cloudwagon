@@ -36,7 +36,8 @@ pipeline {
                                     configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                         docker_props = readProperties(file: CONFIG_FILE)
                                     }
-                                    docker.withServer(docker_props['docker_url'], "jenkins-nexus"){
+                                    docker.withServer(docker_props['docker_url'], "DOCKER_TYKO"){
+                                        echo "here withServer"
                                         docker.withRegistry(docker_props['registry'], 'jenkins-nexus'){
                                             echo "here"
                                         }
