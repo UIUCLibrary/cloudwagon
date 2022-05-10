@@ -20,6 +20,9 @@ pipeline {
                         steps{
                             script{
                                 def f = docker.build('dummy', '-f Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL=https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_internal/simple .')
+                                f.inside{
+                                    sh 'pip list'
+                                }
                             }
                         }
                     }
