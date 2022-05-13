@@ -142,6 +142,8 @@ pipeline {
                                 def deploySettings = readProperties(file: CONFIG_FILE)
                                 docker.withRegistry("https://${deploySettings['registry']}", deploySettings['credentialsId']){
                                     sh "docker manifest create ${deploySettings['registry']}/speedcloud ${deploySettings['registry']}/speedcloud:linux-amd64 ${deploySettings['registry']}/speedcloud:linux-arm64"
+                                    sh 'docker manifest inspect ${deploySettings['registry']}/speedcloud'
+                                    sh 'docker manifest push ${deploySettings['registry']}/speedcloud'
                                 }
                             }
                         }
