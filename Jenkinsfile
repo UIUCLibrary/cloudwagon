@@ -27,7 +27,18 @@ pipeline {
                                     DOCKER_IMAGE_TEMP_NAME = UUID.randomUUID().toString()
                                 }
                                 steps{
+                                    script{
+                                        docker.image('python').inside{
+                                            sh '''python -m venv venv
+                                                  venv/bin/python -m pip install pip --upgrade
+                                                  venv/bin/pip install wheel
+                                                  venv/bin/pip install build
+                                                  venv/bin/python -m build Speedwagon --outdir dist
+                                                '''
+                                        }
+                                    }
                                     echo "DOCKER_IMAGE_TEMP_NAME = ${env.DOCKER_IMAGE_TEMP_NAME}"
+
                                     withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                         configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                             script{
@@ -35,7 +46,7 @@ pipeline {
                                                     env.DOCKER_IMAGE_TEMP_NAME,
                                                     "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
                                                     ).inside{
-                                                        sh 'pip list'
+                                                        sh 'cd Speedwagon && pytest'
                                                     }
                                             }
                                         }
