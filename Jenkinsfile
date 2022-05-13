@@ -92,7 +92,7 @@ pipeline {
                         axes {
                             axis {
                                 name 'ARCH'
-                                values 'arm', 'x86'
+                                values 'linux-arm64', 'linux-amd64'
                             }
                         }
                         stages{
@@ -118,7 +118,7 @@ pipeline {
                                         script{
                                             def deploySettings = readProperties(file: CONFIG_FILE)
                                             docker.withRegistry("https://${deploySettings['registry']}", deploySettings['credentialsId']){
-                                                docker.image(params.DOCKER_IMAGE_NAME).push(DOCKER_TAG)
+                                                docker.image(params.DOCKER_IMAGE_NAME).push(ARCH)
                                             }
                                         }
                                     }
