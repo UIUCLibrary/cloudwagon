@@ -1,4 +1,3 @@
 [submodule "Speedwagon"]
 	path = Speedwagon
 	url = https://github.com/UIUCLibrary/Speedwagon.git
-	branch = pyside_optional
