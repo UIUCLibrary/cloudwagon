@@ -117,7 +117,7 @@ pipeline {
                                     configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                         script{
                                             def deploySettings = readProperties(file: CONFIG_FILE)
-                                            docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
+                                            docker.withRegistry("https://${deploySettings['registry']}", deploySettings['credentialsId']){
                                                 docker.image(params.DOCKER_IMAGE_NAME).push(DOCKER_TAG)
                                             }
                                         }
