@@ -28,53 +28,53 @@ pipeline {
                 }
             }
         }
-        stage('Build'){
-            matrix {
-                axes {
-                    axis {
-                        name 'ARCH'
-                        values 'arm', 'x86'
-                    }
-                }
-                stages{
-                    stage('Build for Architecture'){
-                        agent {
-                            label "linux && docker && ${ARCH}"
-                        }
-                        environment {
-                            DOCKER_IMAGE_TEMP_NAME = UUID.randomUUID().toString()
-                        }
-                        stages{
-                            stage('Building Docker Container'){
-
-                                steps{
-                                    unstash 'wheel'
-                                    echo "DOCKER_IMAGE_TEMP_NAME = ${env.DOCKER_IMAGE_TEMP_NAME}"
-
-                                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                                        configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
-                                            script{
-                                                docker.build(
-                                                    env.DOCKER_IMAGE_TEMP_NAME,
-                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
-                                                    ).inside('-v pipcache_speedwagon:/.cache/pip'){
-                                                        sh 'cd Speedwagon && pytest'
-                                                    }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        post{
-                            cleanup{
-                                sh(returnStatus: true, script:"docker image rm ${env.DOCKER_IMAGE_TEMP_NAME}")
-                            }
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Build'){
+//             matrix {
+//                 axes {
+//                     axis {
+//                         name 'ARCH'
+//                         values 'arm', 'x86'
+//                     }
+//                 }
+//                 stages{
+//                     stage('Build for Architecture'){
+//                         agent {
+//                             label "linux && docker && ${ARCH}"
+//                         }
+//                         environment {
+//                             DOCKER_IMAGE_TEMP_NAME = UUID.randomUUID().toString()
+//                         }
+//                         stages{
+//                             stage('Building Docker Container'){
+//
+//                                 steps{
+//                                     unstash 'wheel'
+//                                     echo "DOCKER_IMAGE_TEMP_NAME = ${env.DOCKER_IMAGE_TEMP_NAME}"
+//
+//                                     withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+//                                         configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
+//                                             script{
+//                                                 docker.build(
+//                                                     env.DOCKER_IMAGE_TEMP_NAME,
+//                                                     "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+//                                                     ).inside('-v pipcache_speedwagon:/.cache/pip'){
+//                                                         sh 'cd Speedwagon && pytest'
+//                                                     }
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                         post{
+//                             cleanup{
+//                                 sh(returnStatus: true, script:"docker image rm ${env.DOCKER_IMAGE_TEMP_NAME}")
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
         stage('Publish'){
             when{
                 equals expected: true, actual: params.PUBLISH_DOCKER
