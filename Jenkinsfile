@@ -130,5 +130,20 @@ pipeline {
                 }
             }
         }
+        stage('Create Manifest'){
+            agent {
+                label 'linux && docker'
+            }
+            steps{
+                configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                    script{
+                        def deploySettings = readProperties(file: CONFIG_FILE)
+                        docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
+                            sh 'docker manifest create speedcloud speedcloud:linux-amd64 speedcloud:linux-arm64'
+                        }
+                    }
+                }
+            }
+        }
     }
 }
