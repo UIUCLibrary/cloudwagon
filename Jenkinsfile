@@ -86,60 +86,64 @@ pipeline {
                     string defaultValue: 'latest', name: 'DOCKER_TAG', trim: true
                 }
             }
-             matrix {
-                axes {
-                    axis {
-                        name 'ARCH'
-                        values 'arm', 'x86'
-                    }
-                }
-                stages{
-                    stage('Publish docker Image'){
-                        agent {
-                            label "linux && docker && ${ARCH}"
+            stages{
+                stage('Create containres'){
+                     matrix {
+                        axes {
+                            axis {
+                                name 'ARCH'
+                                values 'arm', 'x86'
+                            }
                         }
-                        steps{
-                            unstash 'wheel'
-                            withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
-                                configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
-                                    script{
-                                        docker.build(
-                                            params.DOCKER_IMAGE_NAME,
-                                            "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
-                                            ).inside{
-                                                sh 'pip list'
+                        stages{
+                            stage('Publish docker Image'){
+                                agent {
+                                    label "linux && docker && ${ARCH}"
+                                }
+                                steps{
+                                    unstash 'wheel'
+                                    withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
+                                        configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
+                                            script{
+                                                docker.build(
+                                                    params.DOCKER_IMAGE_NAME,
+                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+                                                    ).inside{
+                                                        sh 'pip list'
+                                                    }
                                             }
+                                        }
+                                    }
+                                    configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                                        script{
+                                            def deploySettings = readProperties(file: CONFIG_FILE)
+                                            docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
+                                                docker.image(params.DOCKER_IMAGE_NAME).push(DOCKER_TAG)
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                            configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                                script{
-                                    def deploySettings = readProperties(file: CONFIG_FILE)
-                                    docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
-                                        docker.image(params.DOCKER_IMAGE_NAME).push(DOCKER_TAG)
+                                post{
+                                    cleanup{
+                                        sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                                     }
                                 }
-                            }
-                        }
-                        post{
-                            cleanup{
-                                sh "docker image rm ${params.DOCKER_IMAGE_NAME}"
                             }
                         }
                     }
                 }
-            }
-        }
-        stage('Create Manifest'){
-            agent {
-                label 'linux && docker'
-            }
-            steps{
-                configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
-                    script{
-                        def deploySettings = readProperties(file: CONFIG_FILE)
-                        docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
-                            sh 'docker manifest create speedcloud speedcloud:linux-amd64 speedcloud:linux-arm64'
+                stage('Create Manifest'){
+                    agent {
+                        label 'linux && docker'
+                    }
+                    steps{
+                        configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
+                            script{
+                                def deploySettings = readProperties(file: CONFIG_FILE)
+                                docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
+                                    sh 'docker manifest create speedcloud speedcloud:linux-amd64 speedcloud:linux-arm64'
+                                }
+                            }
                         }
                     }
                 }
