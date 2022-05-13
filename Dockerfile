@@ -3,6 +3,7 @@
 FROM python:3.10
 COPY Speedwagon ./Speedwagon/
 COPY requirements.txt requirements.txt
+RUN mkdir -p /.cache/pip && chmod 777 /.cache/pip
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ARG CONAN_USER_HOME=/conan
