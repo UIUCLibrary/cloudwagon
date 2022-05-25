@@ -29,7 +29,8 @@ ARG PIP_INDEX_URL
 
 COPY --from=builder /wheels/*.whl /wheels/
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install -r requirements.txt -v --find-links=/wheels
+    pip install -r requirements.txt -v --find-links=/wheels && \
+    pip install pytest
 
 COPY --from=builder /dist/*.whl dist/
 RUN pip install dist/speedwagon-*.whl
