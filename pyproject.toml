@@ -1,0 +1,18 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "speedcloud"
+authors = [{name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"}]
+dynamic = ["version", "description"]
+dependencies =[
+    "aiofiles",
+    "fastapi",
+    "flask",
+    "pydantic",
+    "python-multipart",
+    "tomlkit",
+    "speedwagon"
+]
+description-file="README.rst"
