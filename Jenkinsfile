@@ -18,6 +18,7 @@ pipeline {
                               venv/bin/pip install wheel
                               venv/bin/pip install build
                               venv/bin/python -m build Speedwagon --outdir dist
+                              venv/bin/python -m build --outdir dist
                             '''
                     }
                 }
