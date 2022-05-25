@@ -12,7 +12,7 @@ pipeline {
             }
             steps{
                 script{
-                    docker.image('python').inside('-v pipcache_speedwagon:/.cache/pip'){
+                    docker.image('python').inside('-e PIP_CACHE_DIR=/tmp/pipcache -v pipcache_speedwagon:/tmp/pipcache'){
                         sh '''python -m venv venv
                               venv/bin/python -m pip install pip --upgrade
                               venv/bin/pip install wheel
