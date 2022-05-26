@@ -15,4 +15,3 @@ dependencies =[
     "tomlkit",
     "speedwagon"
 ]
-description-file="README.rst"

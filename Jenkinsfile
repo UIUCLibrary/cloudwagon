@@ -18,7 +18,7 @@ pipeline {
                               venv/bin/pip install wheel
                               venv/bin/pip install build
                               venv/bin/python -m build Speedwagon --outdir dist
-                              venv/bin/python -m build --outdir dist
+                              venv/bin/python -m build backend --outdir dist
                             '''
                     }
                 }
@@ -57,7 +57,7 @@ pipeline {
                                             script{
                                                 docker.build(
                                                     env.DOCKER_IMAGE_TEMP_NAME,
-                                                    "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+                                                    "-f backend/Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
                                                     ).inside('-v pipcache_speedwagon:/.cache/pip'){
                                                         sh 'cd Speedwagon && pytest'
                                                     }
@@ -106,7 +106,7 @@ pipeline {
                                     script{
                                         docker.build(
                                             params.DOCKER_IMAGE_NAME,
-                                            "-f Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
+                                            "-f backend/Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
                                             ).inside{
                                                 sh 'pip list'
                                             }

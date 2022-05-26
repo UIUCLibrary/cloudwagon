@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, UploadFile,Depends
 import os
@@ -41,7 +41,7 @@ async def upload_file(files: List[UploadFile], settings: Settings = Depends(get_
 
 
 @api.delete("/files")
-def clear_files(settings: Settings = Depends(get_settings)):
+async def clear_files(settings: Settings = Depends(get_settings)):
     files_removed = storage.clear_files(settings.storage)
     return {
         "files_removed": files_removed,
@@ -50,7 +50,17 @@ def clear_files(settings: Settings = Depends(get_settings)):
 
 
 @api.get("/list_workflows")
-def speedwagon_workflows():
+async def speedwagon_workflows():
     return {
         "workflows": actions.get_workflows()
     }
+
+
+@api.get("/workflow")
+async def get_workflow(name: Optional[str] =None):
+    print(name)
+    if name:
+        return {
+            "workflow": actions.get_workflow_by_name(name)
+        }
+    return {}
