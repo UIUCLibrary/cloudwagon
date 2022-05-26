@@ -1,2 +1,8 @@
 -r Speedwagon/requirements.txt
-flask
+aiofiles
+fastapi
+Flask
+pydantic
+python-multipart
+tomlkit
+uvicorn
