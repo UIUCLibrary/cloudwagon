@@ -6,8 +6,8 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from backend.speedcloud.site import site
-from backend.speedcloud.api import api
+from speedcloud.site import site
+from speedcloud.api import api
 
 origins = [
     "http://localhost:3000",
