@@ -10,8 +10,8 @@ pipeline {
             parallel{
                 stage('Jest'){
                     agent{
-                        docker{
-                            image 'node'
+                        dockerfile{
+                            filename 'ci/docker/jenkins/Dockerfile'
                             label 'docker && linux'
                         }
                     }
