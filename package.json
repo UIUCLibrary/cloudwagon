@@ -45,6 +45,11 @@
       "last 1 safari version"
     ]
   },
+  "jest": {
+    "testMatch": [
+      "**/tests/*.test.{ts,tsx,js}"
+    ]
+  },
   "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
     "react-app-rewired": "^2.2.1"
