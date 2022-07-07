@@ -30,6 +30,12 @@ pipeline {
                     post{
                         always{
                             junit "reports/*.xml"
+                            publishCoverage(
+                                adapters: [
+                                    coberturaAdapter('coverage/*.xml'),
+                                ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                            )
                         }
                         cleanup{
                             cleanWs(
