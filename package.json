@@ -8,7 +8,6 @@
     "@mui/icons-material": "^5.8.3",
     "@mui/material": "^5.8.1",
     "@mui/x-data-grid": "^5.13.0",
-    "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.2.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.1",
@@ -51,15 +50,15 @@
     "addFileAttribute": "true",
     "includeConsoleOutput": true
   },
-  "jest": {
-    "testMatch": [
-      "**/tests/*.test.{ts,tsx,js}"
-    ]
-  },
   "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@types/react-test-renderer": "^18.0.0",
+    "babel-jest": "^28.1.2",
+    "jest-environment-jsdom": "^28.1.2",
     "jest-junit": "^14.0.0",
     "react-app-rewired": "^2.2.1",
-    "react-test-renderer": "^18.2.0"
+    "react-test-renderer": "^18.2.0",
+    "ts-jest": "^28.0.5"
   }
 }

@@ -14,6 +14,12 @@ module.exports = {
     config.roots = [
         "tests"
     ]
+    config.testMatch = [
+           "**/tests/*.test.{ts,tsx,js}"
+    ]
+    config.setupFilesAfterEnv= [
+        '<rootDir>/tests/setupTests.ts'
+    ]
     config.collectCoverageFrom= ["frontend/src/**/*.{ts,tsx}"]
     return config
   }
