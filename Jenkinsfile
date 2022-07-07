@@ -16,7 +16,7 @@ pipeline {
                         }
                     }
                     steps{
-                        echo 'here'
+                        sh 'npm install --verbose'
                     }
                 }
             }
