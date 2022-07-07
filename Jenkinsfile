@@ -13,15 +13,15 @@ pipeline {
                         docker{
                             image 'node'
                             label 'docker && linux'
-                            args 'npmcache:./.npm'
+//                             args 'npmcache:./.npm'
                         }
                     }
                     environment {
                         HOME = '.'
                     }
                     steps{
-                        sh 'ls -la'
                         sh 'npm --version'
+                        sh 'npm cache verify'
                         sh 'npm install --verbose'
                     }
                     post{
