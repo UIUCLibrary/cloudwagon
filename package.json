@@ -52,6 +52,7 @@
   },
   "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
+    "jest-junit": "^14.0.0",
     "react-app-rewired": "^2.2.1"
   }
 }
