@@ -30,6 +30,7 @@ pipeline {
                     post{
                         always{
                             sh 'ls -la'
+                            junit "reports/*.xml"
                         }
                         failure {
                             echo "Failed on ${env.NODE_NAME}"
