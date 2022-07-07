@@ -13,7 +13,7 @@ pipeline {
                         docker{
                             image 'node'
                             label 'docker && linux'
-                            args 'npmcache:/tmp/.npm'
+                            args '-v npmcache:/tmp/.npm'
                         }
                     }
                     environment {
