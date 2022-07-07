@@ -8,6 +8,12 @@ module.exports = {
     paths.appPublic = path.resolve(__dirname, 'frontend/public')
     paths.appHtml = path.resolve(__dirname, 'frontend/public/index.html')
     return paths;
-
+  },
+  jest: function(config) {
+    config.rootDir = "."
+    config.roots = [
+        "tests"
+    ]
+    return config
   }
 }
