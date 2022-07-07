@@ -14,6 +14,7 @@ module.exports = {
     config.roots = [
         "tests"
     ]
+    config.collectCoverageFrom= ["frontend/src/**/*.{ts,tsx}"]
     return config
   }
 }
