@@ -6,6 +6,51 @@ pipeline {
     }
 
     stages {
+        stage('Test'){
+            parallel{
+                stage('Jest'){
+                    agent{
+                        docker{
+                            image 'node'
+                            label 'docker && linux'
+                            args '-v npmcache:/tmp/.npm'
+                        }
+                    }
+                    environment {
+                        HOME = '/tmp/'
+                        JEST_JUNIT_OUTPUT_NAME="js-junit.xml"
+                        JEST_JUNIT_ADD_FILE_ATTRIBUTE="true"
+                        JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
+                        npm_config_cache = '/tmp/npm-cache'
+                    }
+                    steps{
+                        sh 'npm install --prefer-offline --no-audit'
+                        sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --coverageReporters=lcov --collectCoverage'
+                    }
+                    post{
+                        always{
+                            junit "reports/*.xml"
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "coverage/*.xml"
+                            publishCoverage(
+                                adapters: [
+                                    coberturaAdapter('coverage/cobertura-coverage.xml'),
+                                ],
+                            )
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'coverage/', type: 'INCLUDE'],
+                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
+                    }
+                }
+            }
+        }
         stage('Build wheel'){
             agent {
                 label 'linux && docker'
