@@ -14,9 +14,9 @@ pipeline {
                             image 'node'
                             label 'docker && linux'
                         }
-                        environment {
-                            HOME = '.'
-                        }
+                    }
+                    environment {
+                        HOME = '.'
                     }
                     steps{
                         sh 'ls -la'
