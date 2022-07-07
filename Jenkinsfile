@@ -23,7 +23,7 @@ pipeline {
                     steps{
                         sh 'npm --version'
                         sh 'npm cache verify'
-                        sh 'npm install --verbose'
+                        sh 'npm install'
                     }
                     post{
                         failure {
