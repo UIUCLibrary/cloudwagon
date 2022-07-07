@@ -21,9 +21,8 @@ pipeline {
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
-                        sh 'npm --version'
-                        sh 'npm cache verify'
                         sh 'npm install'
+                        sh 'npm run test'
                     }
                     post{
                         failure {
