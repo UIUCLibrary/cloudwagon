@@ -46,7 +46,6 @@ pipeline {
                                     [pattern: 'node_modules/', type: 'INCLUDE'],
                                 ]
                             )
-                            sh 'ls -la'
                         }
                     }
                 }
