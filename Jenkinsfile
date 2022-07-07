@@ -19,6 +19,11 @@ pipeline {
                         sh 'la -la'
                         sh 'npm install --verbose'
                     }
+                    post{
+                        failure {
+                            echo "Failed on ${env.NODE_NAME}"
+                        }
+                    }
                 }
             }
         }
