@@ -18,6 +18,7 @@ pipeline {
                     }
                     environment {
                         HOME = '/tmp/'
+                        npm_config_cache = 'npm-cache'
                     }
                     steps{
                         sh 'npm --version'
