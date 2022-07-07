@@ -26,11 +26,11 @@ pipeline {
                     steps{
                         sh 'npm install --prefer-offline --no-audit'
                         sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --coverageReporters=lcov --collectCoverage'
-                        sh 'ls coverage/'
                     }
                     post{
                         always{
                             junit "reports/*.xml"
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
                             publishCoverage(
                                 adapters: [
                                     coberturaAdapter('coverage/cobertura-coverage.xml'),
