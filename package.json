@@ -45,6 +45,10 @@
       "last 1 safari version"
     ]
   },
+  "jest-junit": {
+    "addFileAttribute": "true",
+    "includeConsoleOutput": true
+  },
   "jest": {
     "testMatch": [
       "**/tests/*.test.{ts,tsx,js}"
