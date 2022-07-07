@@ -20,6 +20,7 @@ pipeline {
                         HOME = '/tmp/'
                         JEST_JUNIT_OUTPUT_NAME="js-junit.xml"
                         JEST_JUNIT_ADD_FILE_ATTRIBUTE="true"
+                        JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
