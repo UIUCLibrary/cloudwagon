@@ -32,6 +32,14 @@ pipeline {
                             junit "reports/*.xml"
                         }
                         cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'coverage/', type: 'INCLUDE'],
+                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                ]
+                            )
                             sh 'ls -la'
                         }
                     }
