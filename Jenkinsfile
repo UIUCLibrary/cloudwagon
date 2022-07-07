@@ -30,12 +30,11 @@ pipeline {
                     post{
                         always{
                             junit "reports/*.xml"
-                            archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "coverage/*.xml"
                             publishCoverage(
                                 adapters: [
                                     coberturaAdapter('coverage/cobertura-coverage.xml'),
                                 ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                             )
                         }
                         cleanup{
