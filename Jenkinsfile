@@ -24,7 +24,7 @@ pipeline {
                     }
                     steps{
                         sh 'npm install'
-                        sh 'npm run test'
+                        sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --coverageReporters=lcov --collectCoverage'
                     }
                     post{
                         always{
