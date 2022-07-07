@@ -6,6 +6,21 @@ pipeline {
     }
 
     stages {
+        stage('Test'){
+            parallel{
+                stage('Jest'){
+                    agent{
+                        docker{
+                            image 'node'
+                            label 'docker && linux'
+                        }
+                    }
+                    steps{
+                        echo 'here'
+                    }
+                }
+            }
+        }
         stage('Build wheel'){
             agent {
                 label 'linux && docker'
