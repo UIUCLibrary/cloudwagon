@@ -24,7 +24,7 @@ pipeline {
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
-                        sh 'npm install yarn && yarn install'
+                        sh 'npm install'
                         sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --coverageReporters=lcov --collectCoverage'
                         sh 'ls coverage/'
                     }
