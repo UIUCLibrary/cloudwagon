@@ -71,13 +71,18 @@ export const CheckBoxOption: FC<APIWidgetData> = ({label}) => {
       </FormControl>
   )
 }
-
+interface IFile {
+  id: number
+  size: number
+  name: string
+  type: string
+}
 export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
   const [openDialogBox, setOpenDialogBox] = useState(false)
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<IFile[]>([]);
   useEffect(() => {
     const fetchData = async () =>{
-      const newFiles = []
+      const newFiles: IFile[] = []
       for (const x of (await axios.get('/api/files')).data['files']){
         newFiles.push(
             {
