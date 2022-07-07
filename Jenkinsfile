@@ -18,6 +18,8 @@ pipeline {
                     }
                     environment {
                         HOME = '/tmp/'
+                        JEST_JUNIT_OUTPUT_NAME="js-junit.xml"
+                        JEST_JUNIT_ADD_FILE_ATTRIBUTE="true"
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
@@ -25,6 +27,9 @@ pipeline {
                         sh 'npm run test'
                     }
                     post{
+                        always{
+                            sh 'ls -la'
+                        }
                         failure {
                             echo "Failed on ${env.NODE_NAME}"
                         }
