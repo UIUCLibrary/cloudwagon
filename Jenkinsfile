@@ -33,7 +33,7 @@ pipeline {
                             junit "reports/*.xml"
                             publishCoverage(
                                 adapters: [
-                                    coberturaAdapter('coverage/*.xml'),
+                                    coberturaAdapter('coverage/cobertura-coverage.xml'),
                                 ],
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                             )
