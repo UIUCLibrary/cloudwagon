@@ -16,6 +16,7 @@ pipeline {
                         }
                     }
                     steps{
+                        sh 'la -la'
                         sh 'npm install --verbose'
                     }
                 }
