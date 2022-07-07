@@ -17,7 +17,7 @@ pipeline {
                     }
                     steps{
                         sh 'ls -la'
-                        sh 'npm cache verify'
+                        sh 'npm --version'
                         sh 'npm install --verbose'
                     }
                     post{
