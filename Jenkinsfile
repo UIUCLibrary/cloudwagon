@@ -10,9 +10,10 @@ pipeline {
             parallel{
                 stage('Jest'){
                     agent{
-                        dockerfile{
-                            filename 'ci/docker/jenkins/Dockerfile'
+                        docker{
+                            image 'node'
                             label 'docker && linux'
+                            args '-v npmcache:/.npm/'
                         }
                     }
                     steps{
