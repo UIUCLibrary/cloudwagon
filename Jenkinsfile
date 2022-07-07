@@ -13,11 +13,11 @@ pipeline {
                         docker{
                             image 'node'
                             label 'docker && linux'
-                            args 'npmcache:$PWD/.npm'
+//                             args 'npmcache:$PWD/.npm'
                         }
                     }
                     environment {
-                        HOME = '.'
+                        HOME = '/tmp/'
                     }
                     steps{
                         sh 'npm --version'
