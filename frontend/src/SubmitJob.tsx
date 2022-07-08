@@ -12,7 +12,7 @@ import React, {
 import axios from 'axios';
 import JobProgressDialog from './JobProgressDialog';
 import {CheckBoxOption, DirectorySelect, FileSelect, SelectOption} from "./Widgets";
-
+import InputLabel from '@mui/material/InputLabel';
 interface WidgetApi{
     widget_type: string
     label: string
