@@ -5,7 +5,7 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import SubmitJob from '../frontend/src/SubmitJob';
+import SubmitJob, {WorkflowParams, WidgetApi} from '../frontend/src/SubmitJob';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -30,27 +30,27 @@ describe('SubmitJob', () => {
             {
               data: {
                 workflow: {
-                    name: "Dummy Workflow",
-                    description: "something goes here",
-                    parameters: [
-                      {
-                        widget_type: "DirectorySelect",
-                        label: "input"
-                      },
-                      {
-                        widget_type: "ChoiceSelection",
-                        label: "Image File Type",
-                        placeholder_text: "Select an Image Format",
-                        selections: [
-                          "JPEG 2000",
-                          "TIFF"
-                        ]
-                      }
-                    ]
-                  }
+                  name: "Dummy Workflow",
+                  description: "something goes here",
+                  parameters: [
+                    {
+                      widget_type: "DirectorySelect",
+                      label: "input"
+                    },
+                    {
+                      widget_type: "ChoiceSelection",
+                      label: "Image File Type",
+                      placeholder_text: "Select an Image Format",
+                      selections: [
+                        "JPEG 2000",
+                        "TIFF"
+                      ]
+                    }
+                  ]
                 }
+              }
             }
-          );
+        );
       }
       return Promise.resolve();
     });
@@ -76,4 +76,42 @@ describe('SubmitJob', () => {
     });
     expect(screen.getByText('Dummy Workflow')).toBeInTheDocument()
   })
+})
+
+describe('WorkflowParams', () => {
+  it.each([
+    [
+      'Choice selection',
+      {
+        widget_type: 'ChoiceSelection',
+        label: 'Choice selection',
+        selections: ['1', '2']
+      }
+    ],
+    [
+      'Boolean',
+      {
+        widget_type: 'BooleanSelect',
+        label: 'bool selection',
+      }
+    ],
+    // [
+    //   'FileSelect',
+    //   {
+    //     widget_type: 'FileSelect',
+    //     label: 'file selection',
+    //   }
+    // ],
+    // [
+    //   'DirectorySelect',
+    //   {
+    //     widget_type: 'DirectorySelect',
+    //     label: 'directory selection',
+    //   }
+    // ]
+  ])('testing label matches', (name: string, metadata: WidgetApi) => {
+    render(<WorkflowParams parameters={[metadata]}/>)
+    expect(screen.getByLabelText(metadata.label)).toBeInTheDocument()
+  })
+
 })
