@@ -35,6 +35,7 @@ pipeline {
                                 adapters: [
                                     coberturaAdapter('coverage/cobertura-coverage.xml'),
                                 ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                             )
                         }
                         cleanup{
