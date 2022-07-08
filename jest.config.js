@@ -6,6 +6,9 @@ module.exports = {
     setupFilesAfterEnv: [
         '<rootDir>/tests/setupTests.ts'
     ],
+    collectCoverageFrom:[
+        "frontend/src/**/*.{ts,tsx}"
+    ],
     transform: {
     "^.+\\.tsx?$": "ts-jest"
   },
