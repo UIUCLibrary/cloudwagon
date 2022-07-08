@@ -13,7 +13,7 @@ import axios from 'axios';
 import JobProgressDialog from './JobProgressDialog';
 import {CheckBoxOption, DirectorySelect, FileSelect, SelectOption} from "./Widgets";
 import InputLabel from '@mui/material/InputLabel';
-interface WidgetApi{
+export interface WidgetApi{
     widget_type: string
     label: string
     selections?: string[]
@@ -24,11 +24,11 @@ interface WorkflowDetails {
   parameters: WidgetApi[]
 
 }
-function WorkflowParams(props: any){
-    if( props['parameters'] == null){
+export function WorkflowParams({parameters}: {parameters :WidgetApi[] | null}){
+    if( parameters == null){
         return (<div></div>)
     }
-    const s = props.parameters.map(
+    const s = parameters.map(
         (parameter: WidgetApi, index: number)=>{
             if(parameter.widget_type === 'DirectorySelect'){
                 return (
@@ -50,10 +50,6 @@ function WorkflowParams(props: any){
                     <SelectOption key={index} label={parameter.label} parameters={parameter}/>
                 )
             }
-            console.log(parameter)
-            return (
-                <SelectOption key={index} label={parameter.label} parameters={parameter}/>
-            )
         }
     )
     return(
