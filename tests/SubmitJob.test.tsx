@@ -79,6 +79,21 @@ describe('SubmitJob', () => {
 })
 
 describe('WorkflowParams', () => {
+  beforeEach(() => {
+    mockedAxios.get.mockImplementation((url) => {
+      if (url === '/api/files') {
+        return Promise.resolve(
+            {
+              data:
+                  {
+                    files: []
+                  }
+            });
+      }
+      return Promise.resolve();
+    });
+  });
+
   it.each([
     [
       'Choice selection',
@@ -95,23 +110,27 @@ describe('WorkflowParams', () => {
         label: 'bool selection',
       }
     ],
-    // [
-    //   'FileSelect',
-    //   {
-    //     widget_type: 'FileSelect',
-    //     label: 'file selection',
-    //   }
-    // ],
-    // [
-    //   'DirectorySelect',
-    //   {
-    //     widget_type: 'DirectorySelect',
-    //     label: 'directory selection',
-    //   }
-    // ]
-  ])('testing label matches', (name: string, metadata: WidgetApi) => {
+    [
+      'FileSelect',
+      {
+        widget_type: 'FileSelect',
+        label: 'file selection',
+      }
+    ],
+    [
+      'DirectorySelect',
+      {
+        widget_type: 'DirectorySelect',
+        label: 'directory selection',
+      }
+    ]
+  ])('testing label matches', async (name: string, metadata: WidgetApi) => {
     render(<WorkflowParams parameters={[metadata]}/>)
-    expect(screen.getByLabelText(metadata.label)).toBeInTheDocument()
+
+    await waitFor(()=>{
+      expect(screen.getByLabelText(metadata.label)).toBeInTheDocument()
+    })
+
   })
 
 })
