@@ -8,20 +8,16 @@ import Toolbar from '@mui/material/Toolbar';
 import MenuItem from '@mui/material/MenuItem';
 import AppBar from '@mui/material/AppBar';
 import {AddFilesDialog, ConfirmRemovalFiles} from './FilesDialog'
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
 import axios from "axios";
-import Button from "@mui/material/Button";
-
+interface IFile{
+    name: string
+}
 
 interface IAPIRequest{
-    files: string[]
+    files: IFile[]
 }
 export default function FileManagement(){
-    const [files, setFiles] = useState<string[]|null>(null);
+    const [files, setFiles] = useState<IFile[]|null>(null);
     const [data, setData] = useState<IAPIRequest|null>(null);
     const [dataIsValid, setDataIsValid] = useState<boolean>(false)
     const [addFilesDialogOpen, setAddFilesDialogOpen] = useState<boolean>(false);
@@ -67,13 +63,13 @@ export default function FileManagement(){
             setFiles(data.files)
         }
     },[data])
-    const listOfFiles = files? files.map((fileName, index) =>{
+    const listOfFiles = files? files.map((file, index) =>{
         return <ListItem key={index}>
             <ListItemIcon>
                 <InsertDriveFileIcon/>
             </ListItemIcon>
             <ListItemText>
-                {fileName}
+                {file.name}
             </ListItemText>
         </ListItem>
     }): "Loading"

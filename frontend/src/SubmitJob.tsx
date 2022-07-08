@@ -16,8 +16,14 @@ import InputLabel from '@mui/material/InputLabel';
 interface WidgetApi{
     widget_type: string
     label: string
+    selections?: string[]
 }
+interface WorkflowDetails {
+  description:string
+  name: string
+  parameters: WidgetApi[]
 
+}
 function WorkflowParams(props: any){
     if( props['parameters'] == null){
         return (<div></div>)
@@ -26,27 +32,27 @@ function WorkflowParams(props: any){
         (parameter: WidgetApi, index: number)=>{
             if(parameter.widget_type === 'DirectorySelect'){
                 return (
-                    <DirectorySelect key={index} label={parameter.label}/>
+                    <DirectorySelect key={index} label={parameter.label} parameters={parameter}/>
                 )
             }
             if(parameter.widget_type === 'FileSelect'){
                 return (
-                    <FileSelect key={index} label={parameter.label}/>
+                    <FileSelect key={index} label={parameter.label} parameters={parameter}/>
                 )
             }
             if(parameter.widget_type === 'BooleanSelect'){
                 return (
-                    <CheckBoxOption key={index} label={parameter.label}/>
+                    <CheckBoxOption key={index} label={parameter.label} parameters={parameter}/>
                 )
             }
             if(parameter.widget_type === 'ChoiceSelection'){
                 return (
-                    <SelectOption key={index} label={parameter.label}/>
+                    <SelectOption key={index} label={parameter.label} parameters={parameter}/>
                 )
             }
             console.log(parameter)
             return (
-                <SelectOption key={index} label={parameter.label}/>
+                <SelectOption key={index} label={parameter.label} parameters={parameter}/>
             )
         }
     )
@@ -147,9 +153,9 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     useEffect(()=>{
       const changedWorkflowFeedback = ((selectedWorkflow: Workflow)=>{
         const encodeName = encodeURI(selectedWorkflow.name)
-        fetch(`/api/workflow?name=${encodeName}`)
-            .then((res=>res.json())).then(res => {
-            setWorkflowData(res.workflow)
+        axios.get(`/api/workflow?name=${encodeName}`)
+            .then(res => {
+            setWorkflowData(res.data.workflow)
         })
     })
       if (currentWorkflow){
