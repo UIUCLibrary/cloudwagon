@@ -25,7 +25,7 @@ pipeline {
                     }
                     steps{
                         sh 'npm ci'
-                        sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --collectCoverage'
+                        sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --collectCoverage --watchAll=false'
                     }
                     post{
                         always{
