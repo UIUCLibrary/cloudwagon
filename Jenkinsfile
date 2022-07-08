@@ -31,7 +31,7 @@ pipeline {
                         always{
                             junit "reports/*.xml"
                             archiveArtifacts allowEmptyArchive: true, artifacts: "coverage/*.xml"
-                            sh "sed -i 's/main/./g' coverage/cobertura-coverage.xml"
+                            sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
                             publishCoverage(
                                 adapters: [
                                     coberturaAdapter('coverage/cobertura-coverage.xml'),
@@ -43,6 +43,7 @@ pipeline {
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
+                                    [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
                                     [pattern: 'node_modules/', type: 'INCLUDE'],
