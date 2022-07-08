@@ -1,7 +1,16 @@
-import {Button, Grid} from "@mui/material";
-import Typography from '@mui/material/Typography';
-import {DynamicAPISelect} from "./DynamicAPISelect";
-import React, {SyntheticEvent, useEffect} from "react";
+import {Button, Box} from "@mui/material";
+import FormLabel from "@mui/material/FormLabel"
+import Select, {SelectChangeEvent} from  "@mui/material/Select"
+import FormGroup from "@mui/material/FormGroup"
+import MenuItem from "@mui/material/MenuItem"
+import React, {
+  FC,
+  SyntheticEvent,
+  useEffect,
+  useState
+} from "react";
+import axios from 'axios';
+import JobProgressDialog from './JobProgressDialog';
 import {CheckBoxOption, DirectorySelect, FileSelect, SelectOption} from "./Widgets";
 
 interface WidgetApi{
