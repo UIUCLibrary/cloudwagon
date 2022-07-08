@@ -10,18 +10,50 @@ import axios from 'axios';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
-describe('s', () => {
+describe('SubmitJob', () => {
   beforeEach(() => {
 
-    mockedAxios.get.mockResolvedValue(
-        {
-          data:
-              {
-                workflows: [
-                  'Dummy Workflow',
-                ]
-              }
-        })
+    mockedAxios.get.mockImplementation((url) => {
+      if (url === '/api/list_workflows') {
+        return Promise.resolve(
+            {
+              data:
+                  {
+                    workflows: [
+                      'Dummy Workflow',
+                    ]
+                  }
+            });
+      }
+      if (url === '/api/workflow?name=Dummy%20Workflow') {
+        return Promise.resolve(
+            {
+              data: {
+                workflow: {
+                    name: "Dummy Workflow",
+                    description: "something goes here",
+                    parameters: [
+                      {
+                        widget_type: "DirectorySelect",
+                        label: "input"
+                      },
+                      {
+                        widget_type: "ChoiceSelection",
+                        label: "Image File Type",
+                        placeholder_text: "Select an Image Format",
+                        selections: [
+                          "JPEG 2000",
+                          "TIFF"
+                        ]
+                      }
+                    ]
+                  }
+                }
+            }
+          );
+      }
+      return Promise.resolve();
+    });
   });
   test('populate workflows', async () => {
 
@@ -33,6 +65,15 @@ describe('s', () => {
     });
 
     fireEvent.mouseDown(screen.getAllByRole('button')[0])
+    expect(screen.getByText('Dummy Workflow')).toBeInTheDocument()
+  })
+  test('select existing', async () => {
+    render(
+        <SubmitJob workflowName='Dummy Workflow'/>
+    );
+    await waitFor(() => {
+      return waitForElementToBeRemoved(() => screen.getByText('Loading...'));
+    });
     expect(screen.getByText('Dummy Workflow')).toBeInTheDocument()
   })
 })
