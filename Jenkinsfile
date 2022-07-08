@@ -31,6 +31,7 @@ pipeline {
                         always{
                             junit "reports/*.xml"
                             archiveArtifacts allowEmptyArchive: true, artifacts: "coverage/*.xml"
+                            sh "sed -i 's/main/./g' coverage/cobertura-coverage.xml"
                             publishCoverage(
                                 adapters: [
                                     coberturaAdapter('coverage/cobertura-coverage.xml'),
