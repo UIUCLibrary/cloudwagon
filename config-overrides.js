@@ -17,10 +17,12 @@ module.exports = {
     config.testMatch = [
            "**/tests/*.test.{ts,tsx,js}"
     ]
-    config.setupFilesAfterEnv= [
+    config.setupFilesAfterEnv = [
         '<rootDir>/tests/setupTests.ts'
     ]
-    config.collectCoverageFrom= ["frontend/src/**/*.{ts,tsx}"]
+    config.collectCoverageFrom = [
+        "frontend/src/**/*.tsx"
+    ]
     return config
   }
 }
