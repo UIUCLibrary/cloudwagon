@@ -79,7 +79,7 @@ interface IFile {
 }
 export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
   const [openDialogBox, setOpenDialogBox] = useState(false)
-  const [rows, setRows] = useState<IFile[]>([]);
+  const [rows, setRows] = useState<IFile[] | null>(null);
   useEffect(() => {
     const fetchData = async () =>{
       const newFiles: IFile[] = []
@@ -97,6 +97,9 @@ export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
     }
     fetchData();
   }, [])
+  if (rows === null){
+    return <>Loading...</>
+  }
   const handleClose = () => {
     setOpenDialogBox(false)
   }
@@ -177,7 +180,7 @@ export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
             InputProps={{
               readOnly: true,
               endAdornment: <InputAdornment position="end">
-                <IconButton
+                <IconButton aria-label="browse"
                     onMouseDown={handleMouseDown}
                 ><FolderIcon/></IconButton>
               </InputAdornment>
