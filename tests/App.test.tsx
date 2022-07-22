@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from '../frontend/src/App';
-
-test('renders learn react link', () => {
-  // render(<App />);
-  // const linkElement = screen.getByText(/learn react/i);
-  // expect(linkElement).toBeInTheDocument();
-});
+describe('App', ()=>{
+  test('renders with a tablist', () => {
+    render(<App />);
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+  });
+})
