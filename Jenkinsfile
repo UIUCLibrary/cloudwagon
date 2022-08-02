@@ -35,6 +35,22 @@ pipeline {
                                     }
                                 }
                             }
+                             post{
+                                always{
+                                    sh(label: 'combining coverage data',
+                                       script: '''coverage combine
+                                                  coverage xml -o ./reports/coverage-python.xml
+                                                  '''
+                                    )
+                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                    publishCoverage(
+                                        adapters: [
+                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                   )
+                                }
+                            }
                         }
                     }
                 }
