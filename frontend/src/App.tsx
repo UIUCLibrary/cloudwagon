@@ -74,7 +74,6 @@ function SpeedwagonApp({tab}: ISpeedwagonApp) {
     setCurrentTabIndex(tabIndex);
   }
   const workflowName = searchParams.get('workflow')
-  console.log("loading")
   const handleWorkflowChange = (workflow_name: string) =>{
     const encodeName = encodeURI(workflow_name)
     navigate(`/job?workflow=${encodeName}`)
