@@ -19,9 +19,19 @@ pipeline {
                     stages{
                         stage('Quality check'){
                             parallel{
-                                stage('Pytest'){
+                                stage('Run PyTest Unit Tests'){
                                     steps{
-                                        sh ''
+                                        catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                                            sh(
+                                                script: 'coverage run --parallel-mode --source=speedwagon -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                            )
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            junit 'reports/tests/pytest/pytest-junit.xml'
+                                            stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
+                                        }
                                     }
                                 }
                             }
