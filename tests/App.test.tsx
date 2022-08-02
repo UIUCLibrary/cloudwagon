@@ -69,17 +69,4 @@ describe('App', ()=>{
   //   expect(screen.getByTestId('workflow-select-box')).toBeInTheDocument();
   // })
 })
-test('dummy', async () => {
-  render(
-      <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<SpeedwagonApp tab="job"/>}/>
-        </Routes>
-      </BrowserRouter>
-  )
-  await waitFor(() => {
-      return waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
-  });
-  screen.getByLabelText('Workflow')
-  // expect(screen.getByRole('tabljist')).toBeInTheDocument();
-});
+
