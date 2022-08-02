@@ -14,6 +14,9 @@ module.exports = {
     config.roots = [
         "tests"
     ]
+    config.coverageReporters = [
+        ["cobertura", {"file": "coverage-js-cobertura.xml"}]
+    ]
     config.testMatch = [
            "**/tests/*.test.{ts,tsx,js}"
     ]
@@ -21,7 +24,7 @@ module.exports = {
         '<rootDir>/tests/setupTests.ts'
     ]
     config.collectCoverageFrom = [
-        "frontend/src/**/*.tsx"
+        "frontend/src/*.tsx"
     ]
     return config
   }

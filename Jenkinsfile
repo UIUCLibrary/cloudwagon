@@ -2,88 +2,80 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
-        booleanParam  defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
+        booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
 
     stages {
         stage('Test'){
+            agent {
+                dockerfile {
+                    filename 'ci/docker/jenkins/python/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                    args '-v npmcache:/tmp/.npm'
+                  }
+            }
             stages{
-                stage('Python') {
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/jenkins/python/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                          }
-                    }
-                    stages{
-                        stage('Quality check'){
-                            parallel{
-                                stage('Run PyTest Unit Tests'){
-                                    steps{
-                                        catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
-                                            sh(
-                                                script: 'coverage run --parallel-mode --source=speedwagon -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
-                                            )
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            junit 'reports/tests/pytest/pytest-junit.xml'
-                                            stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
-                                        }
-                                    }
-                                }
-                            }
-                             post{
-                                always{
-                                    sh(label: 'combining coverage data',
-                                       script: '''coverage combine
-                                                  coverage xml -o ./reports/coverage-python.xml
-                                                  '''
-                                    )
-                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-                                    publishCoverage(
-                                        adapters: [
-                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                            ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                   )
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Jest'){
-                    agent{
-                        docker{
-                            image 'node'
-                            label 'docker && linux'
-                            args '-v npmcache:/tmp/.npm'
-                        }
-                    }
+                stage('Set up Tests') {
                     environment {
                         HOME = '/tmp/'
-                        JEST_JUNIT_OUTPUT_NAME="js-junit.xml"
-                        JEST_JUNIT_ADD_FILE_ATTRIBUTE="true"
-                        JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
                         sh 'npm ci'
-                        sh 'npm run test -- --reporters=default --reporters=jest-junit --coverageReporters=cobertura --collectCoverage --watchAll=false  --collectCoverageFrom="frontend/src/*.tsx"'
                     }
-                    post{
+                }
+                stage('Perform Tests'){
+                    parallel{
+                        stage('PyTest'){
+                            steps{
+                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                                    sh(
+                                        script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                    )
+                                }
+                            }
+                            post {
+                                always {
+                                    junit 'reports/tests/pytest/pytest-junit.xml'
+                                    stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
+                                }
+                            }
+                        }
+                        stage('Jest'){
+                            environment {
+                                HOME = '/tmp/'
+                                JEST_JUNIT_OUTPUT_NAME='js-junit.xml'
+                                JEST_JUNIT_ADD_FILE_ATTRIBUTE='true'
+                                JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
+                                npm_config_cache = '/tmp/npm-cache'
+                            }
+                            steps{
+                                sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="frontend/src/*.tsx" --coverageDirectory=reports/'
+                            }
+                            post{
+                                always{
+                                    junit 'reports/*.xml'
+                                    sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
+                                }
+                            }
+                        }
+                    }
+                     post{
                         always{
-                            junit "reports/*.xml"
-                            archiveArtifacts allowEmptyArchive: true, artifacts: "coverage/*.xml"
-                            sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
+                            sh(label: 'combining coverage data',
+                               script: '''coverage combine
+                                          coverage xml -o ./reports/coverage-python.xml
+                                          '''
+                            )
+                            stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                             publishCoverage(
                                 adapters: [
-                                    coberturaAdapter('coverage/cobertura-coverage.xml'),
-                                ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                            )
+                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                    ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                           )
+                           archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
                         }
                         cleanup{
                             cleanWs(

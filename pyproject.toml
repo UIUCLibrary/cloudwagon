@@ -42,3 +42,15 @@ ignore_missing_imports = true
 where = ["backend"]
 include = ["speedcloud*"]
 
+[tool.coverage.run]
+relative_files = true
+branch = true
+source = ["backend/"]
+
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:"
+]
+
