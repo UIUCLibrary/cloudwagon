@@ -22,7 +22,7 @@ search_locations: List[str] = [
 @lru_cache()
 def get_settings():
     try:
-        config_file = find_config_file(search_path=search_locations)
+        config_file = find_config_file(search_paths=search_locations)
     except FileNotFoundError as not_found_error:
         logger.error(
             f"Failed to locate config file. "
@@ -38,9 +38,9 @@ def get_settings():
     return Settings(storage=data['main']['storage_path'])
 
 
-def find_config_file(config_file_name="config.toml", search_path=None):
+def find_config_file(config_file_name="config.toml", search_paths=None):
 
-    for location in search_path or search_locations:
+    for location in search_paths or search_locations:
         candidate = os.path.join(location, config_file_name)
         if os.path.exists(candidate):
             return candidate
