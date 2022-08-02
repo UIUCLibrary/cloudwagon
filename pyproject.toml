@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "speedcloud"
+version = "0.0.1"
 authors = [{name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"}]
 description = "Speedwagon in the Cloud!!!"
-dynamic = ["version",]
 dependencies =[
     "aiofiles",
     "fastapi",
