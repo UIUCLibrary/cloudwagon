@@ -2,6 +2,7 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
+        booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
 
@@ -115,6 +116,10 @@ pipeline {
             }
         }
         stage('Build'){
+            when{
+                equals expected: true, actual: params.BUILD_DOCKER
+                beforeInput true
+            }
             matrix {
                 axes {
                     axis {
@@ -164,7 +169,10 @@ pipeline {
         }
         stage('Publish'){
             when{
-                equals expected: true, actual: params.PUBLISH_DOCKER
+                allOf{
+                    equals expected: true, actual: params.PUBLISH_DOCKER
+                    equals expected: true, actual: params.BUILD_DOCKER
+                }
                 beforeInput true
             }
             input {
