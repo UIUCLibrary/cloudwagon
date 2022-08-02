@@ -111,8 +111,7 @@ pipeline {
                               venv/bin/python -m pip install pip --upgrade
                               venv/bin/pip install wheel
                               venv/bin/pip install build
-                              venv/bin/python -m build Speedwagon --outdir dist
-                              venv/bin/python -m build backend --outdir dist
+                              venv/bin/python -m build  --outdir dist
                             '''
                     }
                 }
