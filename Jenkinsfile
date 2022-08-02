@@ -7,7 +7,27 @@ pipeline {
 
     stages {
         stage('Test'){
-            parallel{
+            stages{
+                stage('Python') {
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
+                            label 'linux && docker && x86'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                          }
+                    }
+                    stages{
+                        stage('Quality check'){
+                            parallel{
+                                stage('pytest'){
+                                    steps{
+                                        echo 'here'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 stage('Jest'){
                     agent{
                         docker{
@@ -82,8 +102,8 @@ pipeline {
                 axes {
                     axis {
                         name 'ARCH'
-                        values 'x86'
-//                         values 'arm', 'x86'
+//                         values 'x86'
+                        values 'arm', 'x86'
                     }
                 }
                 stages{
@@ -140,8 +160,8 @@ pipeline {
                 axes {
                     axis {
                         name 'ARCH'
-                        values 'x86'
-//                         values 'arm', 'x86'
+//                         values 'x86'
+                        values 'arm', 'x86'
                     }
                 }
                 stages{
