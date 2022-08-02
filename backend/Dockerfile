@@ -12,18 +12,15 @@ COPY Speedwagon/requirements.txt Speedwagon/requirements.txt
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=cache,id=conan-cache,target={CONAN_USER_HOME} --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip wheel -r requirements.txt -w /wheels
 
-COPY backend/speedcloud speedcloud/
-COPY backend/pyproject.toml ./
+COPY backend/speedcloud backend/speedcloud/
+COPY pyproject.toml ./
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=cache,id=conan-cache,target={CONAN_USER_HOME} --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip install build && \
-    python -m build Speedwagon --outdir /dist/ && \
     python -m build --outdir /dist/
 
 
 FROM ${BASE_IMAGE}
 COPY requirements.txt requirements.txt
-COPY Speedwagon/requirements.txt Speedwagon/requirements.txt
-#COPY backend/speedcloud/ speedcloud/
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
@@ -33,9 +30,6 @@ RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret
     pip install -r requirements.txt -v --find-links=/wheels && \
     pip install pytest
 
-COPY --from=builder /dist/*.whl dist/
-RUN pip install dist/speedwagon-*.whl
-RUN pip install dist/speedcloud-*.whl
 WORKDIR /opt/speedcloud
 RUN mkdir -p /opt/speedcloud/data/
 COPY backend/extra/docker/docker_config.toml /etc/speedcloud/config.toml
