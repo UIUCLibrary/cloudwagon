@@ -11,8 +11,8 @@ pipeline {
                 stage('Python') {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                            label 'linux && docker && x86'
+                            filename 'ci/docker/jenkins/python/Dockerfile'
+                            label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                           }
                     }
