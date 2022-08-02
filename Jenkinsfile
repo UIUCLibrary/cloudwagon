@@ -19,9 +19,9 @@ pipeline {
                     stages{
                         stage('Quality check'){
                             parallel{
-                                stage('pytest'){
+                                stage('Pytest'){
                                     steps{
-                                        echo 'here'
+                                        sh ''
                                     }
                                 }
                             }
