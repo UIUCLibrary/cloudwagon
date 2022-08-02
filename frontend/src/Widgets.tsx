@@ -104,7 +104,6 @@ export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
     setOpenDialogBox(false)
   }
   const handleMouseDown = () => {
-    console.log('clicky');
     setOpenDialogBox(true)
   }
   const columns: GridColDef[] = [
