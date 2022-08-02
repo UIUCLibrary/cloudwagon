@@ -50,7 +50,7 @@ function App() {
 interface ISpeedwagonApp{
   tab: string
 }
-function SpeedwagonApp({tab}: ISpeedwagonApp) {
+export function SpeedwagonApp({tab}: ISpeedwagonApp) {
   let navigate = useNavigate();
   let [searchParams] = useSearchParams();
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0);

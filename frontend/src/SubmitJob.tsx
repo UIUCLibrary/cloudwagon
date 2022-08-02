@@ -93,8 +93,13 @@ const WorkflowSelector: FC<IWorkflowSelector> = ({workflows, defaultValue, onSel
   const value = (!selected && selected !== 0) ? '': selected.toString();
   return (
       <>
-        <InputLabel>Workflow</InputLabel>
-        <Select label="Workflow" name="workflow" value={value} onChange={handleChange}>
+        <InputLabel id='workflow-select'>Workflow</InputLabel>
+        <Select
+            labelId='workflow-select'
+            label="Workflow"
+            name="workflow"
+            value={value}
+            onChange={handleChange}>
           {workflowMenuItems}
         </Select>
       </>
@@ -136,7 +141,8 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     const workflowList = useWorkflowList()  // this causes reloading
     const [currentWorkflow, setCurrentWorkflow] = React.useState<Workflow | null>(null);
     const [workflowData, setWorkflowData] = React.useState<WorkflowDetails | null>(null);
-    const [streamUrl, setStreamUrl] = useState<string|null>(null)
+    const [streamUrlSSE, setStreamUrlSSE] = useState<string|null>(null)
+    const [streamUrlWS, setStreamUrlWS] = useState<string|null>(null)
     const [showDialog, setShowDialog] = useState(false)
 
     const handleChangedWorkflow = (workflow: Workflow)=>{
@@ -177,7 +183,8 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
             .then(
                 (res)=>{
                   console.log(res.data)
-                  setStreamUrl(res.data.consoleStream)
+                  setStreamUrlSSE(res.data.consoleStreamSSE)
+                  setStreamUrlWS(res.data.consoleStreamWS)
                   setShowDialog(true)
                 }
             )
@@ -195,16 +202,27 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     const description = workflowData? workflowData.description: ''
     let workflowDetails = <></>;
     const handleClose = ()=>{
-      setStreamUrl(null)
+      setStreamUrlSSE(null)
+      setStreamUrlWS(null)
       setShowDialog(false)
     }
     if (workflowData){
-      const dialogBox = streamUrl ?
+      const dialogTitle = workflowName ? workflowName :'Running Job';
+      console.log(streamUrlWS)
+      const dialogBox = streamUrlWS ?
           <JobProgressDialog
-              streamUrl={streamUrl}
+              title={dialogTitle}
+              streamUrlWS={streamUrlWS}
               show={showDialog}
               onClose={handleClose}/>
           : <></>
+      // const dialogBox = streamUrlSSE ?
+      //     <JobProgressDialog
+      //         title={dialogTitle}
+      //         streamUrlSSE={streamUrlSSE}
+      //         show={showDialog}
+      //         onClose={handleClose}/>
+      //     : <></>
       workflowDetails = (
           <>
             <Box sx={{my: 2}}>
