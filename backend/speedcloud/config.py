@@ -19,23 +19,19 @@ search_locations: List[str] = [
 ]
 
 
-@lru_cache()
-def get_settings():
-    try:
-        config_file = find_config_file(search_paths=search_locations)
-    except FileNotFoundError as not_found_error:
-        logger.error(
-            f"Failed to locate config file. "
-            f"Searched locations: {search_locations}"
-        )
-        raise not_found_error
-
+def read_settings(config_file):
     logger.debug(f'Using config file "{config_file}".')
 
     with open(config_file, "r") as config_file:
         data = tomlkit.parse(config_file.read())
 
     return Settings(storage=data['main']['storage_path'])
+
+
+@lru_cache()
+def get_settings():
+    config_file = find_config_file(search_paths=search_locations)
+    return read_settings(config_file)
 
 
 def find_config_file(config_file_name="config.toml", search_paths=None):
