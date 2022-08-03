@@ -2,6 +2,7 @@ import asyncio
 import random
 import time
 import typing
+from pathlib import Path
 from typing import List, Optional, Union
 import json
 from fastapi import APIRouter, UploadFile, Depends, Request
@@ -27,6 +28,15 @@ api = APIRouter(
 )
 
 
+def is_within_valid_directory(root, path) -> bool:
+    return os.path.commonpath(
+        [os.path.abspath(root)]
+    ) == os.path.commonpath([
+        os.path.abspath(root),
+        os.path.abspath(path)
+    ])
+
+
 @api.get("/files")
 async def list_data(request: Request, settings: Settings = Depends(get_settings)):
     params = request.query_params
@@ -36,15 +46,55 @@ async def list_data(request: Request, settings: Settings = Depends(get_settings)
             status_code=400,
             detail="Missing required path query"
         )
+    # This fixes if the first item is a slash
+    if path.startswith(os.sep):
+        search_path = path[1:]
+    else:
+        search_path = path
+    if not is_within_valid_directory(settings.storage, os.path.join(settings.storage, search_path)):
+        raise HTTPException(404)
+    contents = \
+        storage.get_path_contents(
+            os.path.join(settings.storage, search_path),
+            starting=settings.storage
+        )
+
+    parent_directory = (
+            Path(settings.storage) / Path(search_path) / ".."
+    ).resolve()
+
+    if is_within_valid_directory(settings.storage, str(parent_directory)):
+        contents.insert(0, {
+            "name": "..",
+            "path": os.path.abspath(os.path.join(path, "..")),
+            "type": "Directory"
+        })
     return {
         "path": path,
-        "files": storage.list_files(settings.storage)
+        "contents": contents
     }
 
 
 @api.post("/files")
-async def upload_file(files: List[UploadFile], settings: Settings = Depends(get_settings)):
+async def upload_file(request: Request, files: List[UploadFile], settings: Settings = Depends(get_settings)):
+    params = request.query_params
+    path = params.get('path', default='/')
+    if path is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing required path query"
+        )
+    # This fixes if the first item is a slash
+    if path.startswith(os.sep):
+        search_path = path[1:]
+    else:
+        search_path = path
+    if not is_within_valid_directory(settings.storage,
+                                     os.path.join(settings.storage,
+                                                  search_path)):
+        raise HTTPException(404)
     files_uploaded = []
+    # todo: upload to the directory specified in path query params
     for file in files:
         if file.filename == '':
             continue
