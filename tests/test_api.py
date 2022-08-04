@@ -40,17 +40,18 @@ class TestFilesRoute:
             "contents": []
         }
 
-    def test_get_error_missing_path(self, client):
+    def test_get_defaults_to_root(self, client):
         response = client.get("/api/files")
-        assert response.status_code == 400
+        assert response.json()["path"] == '/'
 
 
 def test_is_within_valid_directory():
     root = os.path.join("/", "tmp")
     valid = os.path.join("/", "tmp", 'dummy')
-    assert speedcloud.api.routes.is_within_valid_directory(root, valid) is True
+    assert speedcloud.api.storage.is_within_valid_directory(root, valid) is True
+
 
 def test_is_within_valid_directory_invalid():
     root= os.path.join("/", "tmp", 'dummy')
     invalid = os.path.join("/", "tmp")
-    assert speedcloud.api.routes.is_within_valid_directory(root, invalid) is False
+    assert speedcloud.api.storage.is_within_valid_directory(root, invalid) is False

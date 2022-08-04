@@ -7,6 +7,7 @@ from typing import Dict, Any
 
 jobs: Dict[int, Any] = {}
 
+
 async def fake_data_streamer():
     workflows = speedwagon.available_workflows()
     workflow = workflows['Verify HathiTrust Package Completeness']
@@ -42,6 +43,7 @@ async def fake_data_streamer():
         }
         total_packets += 1
         # job_runner.abort = True
+
 
 def create_job(workflow_id, props):
     # todo: make the console dynamically point to the right stream

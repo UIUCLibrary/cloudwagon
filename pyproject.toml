@@ -12,9 +12,10 @@ dependencies =[
     "fastapi",
     "flask",
     "pydantic",
+    'sse_starlette',
     "python-multipart",
     "tomlkit",
-    "speedwagon"
+    "speedwagon>=0.2.0b7"
 ]
 
 [tool.pytest.ini_options]

@@ -1,22 +1,16 @@
 import asyncio
-import random
-import time
 import typing
-from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 import json
 from fastapi import APIRouter, UploadFile, Depends, Request
 from fastapi.responses import StreamingResponse
-from fastapi.responses import JSONResponse
 from fastapi import WebSocket, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
 import os
 import aiofiles
-from starlette.middleware.cors import CORSMiddleware
 
 from ..config import Settings, get_settings
 from . import actions
@@ -28,30 +22,22 @@ api = APIRouter(
 )
 
 
-def is_within_valid_directory(root, path) -> bool:
-    return os.path.commonpath(
-        [os.path.abspath(root)]
-    ) == os.path.commonpath([
-        os.path.abspath(root),
-        os.path.abspath(path)
-    ])
-
-
 @api.get("/files")
-async def list_data(request: Request, settings: Settings = Depends(get_settings)):
+async def list_data(
+        request: Request,
+        settings: Settings = Depends(get_settings)
+):
     params = request.query_params
-    path = params.get('path')
-    if path is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing required path query"
-        )
+    path = os.path.normpath(params.get('path', default='/'))
     # This fixes if the first item is a slash
     if path.startswith(os.sep):
         search_path = path[1:]
     else:
         search_path = path
-    if not is_within_valid_directory(settings.storage, os.path.join(settings.storage, search_path)):
+    if not storage.is_within_valid_directory(
+            settings.storage,
+            os.path.join(settings.storage, search_path)
+    ):
         raise HTTPException(404)
     contents = \
         storage.get_path_contents(
@@ -59,16 +45,6 @@ async def list_data(request: Request, settings: Settings = Depends(get_settings)
             starting=settings.storage
         )
 
-    parent_directory = (
-            Path(settings.storage) / Path(search_path) / ".."
-    ).resolve()
-
-    if is_within_valid_directory(settings.storage, str(parent_directory)):
-        contents.insert(0, {
-            "name": "..",
-            "path": os.path.abspath(os.path.join(path, "..")),
-            "type": "Directory"
-        })
     return {
         "path": path,
         "contents": contents
@@ -76,7 +52,10 @@ async def list_data(request: Request, settings: Settings = Depends(get_settings)
 
 
 @api.post("/files")
-async def upload_file(request: Request, files: List[UploadFile], settings: Settings = Depends(get_settings)):
+async def upload_file(
+        request: Request, files: List[UploadFile],
+        settings: Settings = Depends(get_settings)
+):
     params = request.query_params
     path = params.get('path', default='/')
     if path is None:
@@ -89,17 +68,21 @@ async def upload_file(request: Request, files: List[UploadFile], settings: Setti
         search_path = path[1:]
     else:
         search_path = path
-    if not is_within_valid_directory(settings.storage,
-                                     os.path.join(settings.storage,
-                                                  search_path)):
+    if not storage.is_within_valid_directory(
+            settings.storage,
+            os.path.join(settings.storage, search_path)
+    ):
         raise HTTPException(404)
     files_uploaded = []
     # todo: upload to the directory specified in path query params
     for file in files:
         if file.filename == '':
             continue
-
-        out_path = os.path.join(settings.storage, file.filename)
+        if path.startswith(os.sep):
+            subdir = path[1:]
+        else:
+            subdir = path
+        out_path = os.path.join(settings.storage, subdir, file.filename)
         async with aiofiles.open(out_path, 'wb') as out_file:
             content = await file.read()  # async read
             await out_file.write(content)  # async write
@@ -159,18 +142,12 @@ class StreamBuilder:
         job = job_manager.jobs.get(self.job_id)
         return StreamingResponse(job['status']())
 
-#
-# @api.get('/stream')
+
 async def get_console_stream(job_id: int):
     builder = StreamBuilder()
     builder.set_job_id(job_id)
     return builder.build()
 
-# @api.get("/stream")
-# async def websocket_endpoint(request: Request, job_id: int):
-#     print(job_id)
-#     return EventSourceResponse(job_manager.fake_data_streamer())
-#
 
 @api.websocket("/stream")
 async def websocket_endpoint(websocket: WebSocket, job_id: int):
@@ -214,8 +191,6 @@ async def stream_job(request):
     await request.close()
 
 
-
 @api.get("/stream")
 async def system_event_endpoint(request: Request, job_id: int):
     return EventSourceResponse(stream_job(request))
-

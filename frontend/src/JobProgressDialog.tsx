@@ -30,8 +30,9 @@ function LinearProgressWithLabel(props: LinearProgressProps & { value: number })
 
 async function* decodeStream(stream: AsyncIterable<Uint8Array>) {
   const decoder = new TextDecoder('utf-8');
+
   for await (const buffer of stream) {
-    const chunk = decoder.decode(buffer);
+    const chunk = decoder.decode(buffer, {stream: true});
 
     try {
       const packet = JSON.parse(chunk)
@@ -139,20 +140,141 @@ interface StreamApiData {
 }
 
 interface IJobProgressDialog {
-  streamUrl: string
+  title: string,
+  // streamUrlSSE: string
+  streamUrlWS?: string
   show: boolean
   onClose?: () => void
 }
+const useSSEStream = (url: string):[StreamApiData[] | null, boolean] =>{
+  const [eventSource, setEventSource] = useState<EventSource|null>(null);
+  const [data, setData]= useState<StreamApiData[] | null>(null)
+  const [streamOpen, setStreamOpen] = useState(false)
+  useEffect(()=>{
+    let ignore = false
+    if (eventSource === null){
+      if (!ignore){
+        setEventSource(new EventSource(url));
+        setStreamOpen(true)
+      }
+    }
+    return () =>{
+      ignore = true;
+      if (eventSource) {
+        eventSource.close();
+        setEventSource(null);
+      }
+    }
+  }, [url])
+  if (eventSource) {
+    eventSource.onmessage = function (event) {
+      if(event.data) {
+        if (event.data === 'done') {
+          eventSource.close()
+          setStreamOpen(false);
+        } else {
+          const newData = JSON.parse(event.data) as StreamApiData;
+          setData(existingData => {
+            if (existingData === null) {
+              return [newData]
+            } else {
+              return existingData.concat(newData)
+            }
+          })
+        }
+        return data;
+      }
+      // } catch (e){
+      //   console.error(e)
+      //   console.error(event.data)
+      //   throw e;
+      // }
+    }
+    eventSource.onerror = (event) =>{
+    // eventSource.onerror = (event) =>{
+      console.error("EventSource failed:", event);
 
+      eventSource.close();
+    }
+  }
+  return [data, streamOpen];
+
+}
+const useWebSocketStream = (url: string| undefined):[StreamApiData[] | null, boolean, (value: boolean)=>void] =>{
+  const [ws, setWs] = useState<WebSocket|null>(null);
+  const [data, setData]= useState<StreamApiData[] | null>(null)
+  const [streamOpen, setStreamOpen] = useState(false)
+  const [abort, setAbort] = useState(false)
+  useEffect(()=>{
+    let ignore = false
+    if (url) {
+      if (ws === null){
+        if (!ignore){
+          setWs(new WebSocket(url));
+          setStreamOpen(true)
+        }
+      }
+    }
+
+    return () =>{
+      ignore = true;
+      if (ws) {
+        ws.close();
+        setWs(null);
+        setStreamOpen(false);
+      }
+    }
+  }, [url])
+  if (!url){
+    return [data, streamOpen, setAbort]
+  }
+  if (ws) {
+    ws.onmessage = function(event) {
+      const newData = JSON.parse(JSON.parse(event.data)) as StreamApiData;
+      if (abort){
+        ws.send('abort');
+      } else {
+        ws.send('ok');
+      }
+      setData(existingData =>{
+        if (existingData === null){
+          return [newData]
+        } else {
+          return  existingData.concat(newData)
+        }
+      })
+    }
+    ws.onerror = (event) =>{
+      console.error("websocket failed:", event);
+      ws.close();
+    }
+    ws.onclose = function (event){
+      setData(existingData =>{
+        if (existingData) {
+          return existingData.sort(
+              (a, b) => {
+                return a['order'] < b['order'] ? -1 : 1
+              });
+        }
+        return existingData
+      });
+      setStreamOpen(false)
+    }
+  }
+  return [data, streamOpen, setAbort]
+}
 export default function JobProgressDialog({
-                                            streamUrl,
+                                            title,
+                                            // streamUrlSSE,
                                             show,
+                                            streamUrlWS,
                                             onClose
                                           }: IJobProgressDialog) {
   const [showDialog, setShowDialog] = useState(show)
-  const [streamReader] = useGetStreamHandle(streamUrl);
-  const [streamState] = useJobStream(streamReader);
-  const [currentTask, setCurrentTask] = useState<string | null>(null)
+  const [cancel, setCancel] = useState(false)
+ // const [data, streamOpen] = useSSEStream(streamUrlSSE);
+ const [data, streamOpen, setAbort] = useWebSocketStream(streamUrlWS);
+  const [currentTaskDescription, setCurrentTaskDescription] = useState<string | null>(null)
   const [progress, setProgress] = useState<number | null>(null)
   const terminal = useRef<HTMLTextAreaElement>();
   useEffect(() => {
@@ -160,54 +282,70 @@ export default function JobProgressDialog({
   }, [show])
   useEffect(() => {
     if (terminal.current) {
-      const logLines = streamState.data.map(
-          (packet) => {
-            return packet['log'] ? `${packet['order']} ${packet['log']}` : null
-          }
-      )
-      terminal.current.value = logLines.filter(Boolean).join('\n');
-      if (terminal.current.scrollHeight - terminal.current.scrollTop < 200) {
-        terminal.current.scrollTo({top: terminal.current.scrollHeight});
-      }
-      if (streamState.data) {
-        const current_data: StreamApiData = streamState.data[streamState.data.length - 1]
+      if (data) {
+        const logLines = data.map(
+            (packet) => {
+
+              return packet['log'] ? packet['log'] : null
+              // return packet['log'] ? `${packet['order']} ${packet['log']}` : null
+            }
+        )
+
+        const diff = terminal.current.scrollHeight - terminal.current.scrollTop
+        terminal.current.value = logLines.filter(Boolean).join('\n');
+        if (diff < 200) {
+          terminal.current.scrollTo({top: terminal.current.scrollHeight});
+        }
+        const current_data: StreamApiData = data[data.length - 1]
         if (current_data) {
           if (current_data['progress']) {
             setProgress(current_data['progress'] * 100);
           }
           if (current_data['task']) {
-            setCurrentTask(current_data['task']);
+            setCurrentTaskDescription(current_data['task']);
           }
         }
       }
     }
-  }, [streamState.data])
-
-  const progressBar = progress ?
+  }, [data, streamOpen, progress])
+  useEffect(()=>{
+    console.log("cancel changed")
+    if (cancel){
+      setProgress(0)
+    }
+  }, [cancel, data])
+  // }, [streamState.data])
+  const progressBar = progress != null ?
       <LinearProgressWithLabel value={progress}/>
       : <LinearProgress/>
+  const handleCancel = () => {
+    console.log("Cancle")
+    setCancel(true)
+    setAbort(true)
+  }
   const handelClose = () => {
     if (onClose) {
       onClose();
     }
     setProgress(0);
   }
-
   return (
       <Dialog open={showDialog} fullWidth={true}
               PaperProps={{style: {borderRadius: 10}}}>
-        <DialogTitle>Running Job</DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{currentTask ? currentTask : ''}</DialogContentText>
-          <Box sx={{width: '100%'}}>
+          <DialogContentText>{currentTaskDescription ? currentTaskDescription : ''}</DialogContentText>
+          <Box sx={{
+            width: '100%',
+          }}>
             {progressBar}
           </Box>
           <Box>
             <TextField
                 inputRef={terminal}
                 fullWidth={true}
-                minRows={4}
-                maxRows={4}
+                minRows={8}
+                maxRows={8}
                 InputProps={{
                   readOnly: true,
                 }}
@@ -217,12 +355,12 @@ export default function JobProgressDialog({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handelClose} disabled={streamState.streamOpen}>
+          <Button onClick={handelClose} disabled={streamOpen}>
             close
           </Button>
-          {/*<Button onClick={handleCancel} disabled={true}>*/}
-          {/*  Cancel*/}
-          {/*</Button>*/}
+          <Button color='error' onClick={handleCancel} disabled={!streamOpen}>
+            Cancel
+          </Button>
         </DialogActions>
       </Dialog>
   )

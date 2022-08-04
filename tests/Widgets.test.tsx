@@ -20,18 +20,19 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('DirectorySelect', ()=>{
   beforeEach(() => {
     mockedAxios.get.mockImplementation((url) => {
-      if (url === '/api/files') {
+      if (url === '/api/files' || url === '/api/files?path=/') {
         return Promise.resolve(
             {
               data:
                   {
-                    files: [
+                    contents: [
                       {
                         size: 123,
                         name: "something.txt",
                         type: "File"
                       }
-                    ]
+                    ],
+                    path: "/"
                   }
             });
       }

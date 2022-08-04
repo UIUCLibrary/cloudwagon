@@ -1,15 +1,11 @@
-import asyncio
-import collections
 import collections.abc
 import logging
-import sys
 import typing
 from dataclasses import dataclass
 from logging import LogRecord
 import speedwagon
 from collections import deque
-from typing import Optional, Callable, Iterable, Awaitable, Generator, Dict, \
-    Union, AsyncGenerator, Iterator, Any, AsyncIterator
+from typing import Optional, Callable, Iterator
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -81,7 +77,9 @@ class TaskRunner:
                 with cv:
                     cv.wait_for(self.needs_updating)
                     while len(self._task.parent_task_log_q) > 0:
-                        yield StatusUpdate(log=self._task.parent_task_log_q.pop())
+                        yield StatusUpdate(
+                            log=self._task.parent_task_log_q.pop()
+                        )
         while len(self._task.parent_task_log_q) > 0:
             yield StatusUpdate(log=self._task.parent_task_log_q.pop())
 
@@ -119,8 +117,10 @@ class BufferedHandler(logging.Handler):
             yield StatusUpdate(
                 log=log_message
             )
+
     def clear(self):
         self.values.clear()
+
 
 class JobFinished(Exception):
     pass
@@ -132,11 +132,15 @@ async def flush_messages(output_handler: BufferedHandler):
         yield {"log": log_message}
     output_handler.values.clear()
 
+
 class JobRunner:
     def __init__(self):
         self.abort = None
 
-    async def iter_job(self, workflow: speedwagon.Workflow, workflow_options) -> typing.AsyncIterator[StatusUpdate]:
+    async def iter_job(
+            self,
+            workflow: speedwagon.Workflow, workflow_options
+    ) -> typing.AsyncIterator[StatusUpdate]:
         job_logger = logging.getLogger(__name__)
         job_logger.setLevel(logging.INFO)
 
@@ -145,7 +149,6 @@ class JobRunner:
 
         output_handler = BufferedHandler()
         task_scheduler.logger.addHandler(output_handler)
-
 
         try:
             for task in task_scheduler.iter_tasks(
@@ -160,16 +163,17 @@ class JobRunner:
                     break
                 task_runner = TaskRunner(task, logger=job_logger)
                 yield StatusUpdate(task=task.task_description())
-                # yield {"task": task.task_description()}
-                yield StatusUpdate(progress=await calc_progress(task_scheduler))
-                # yield {"progress": await calc_progress(task_scheduler)}
+                yield StatusUpdate(
+                    progress=await calc_progress(task_scheduler)
+                )
                 async for packet in task_runner.run():
                     async for message in output_handler.iter_messages():
                         yield message
                     output_handler.clear()
                     yield packet
-                # yield {"progress": await calc_progress(task_scheduler)}
-                yield StatusUpdate(progress=await calc_progress(task_scheduler))
+                yield StatusUpdate(
+                    progress=await calc_progress(task_scheduler)
+                )
             async for message in output_handler.iter_messages():
                 yield message
             output_handler.clear()

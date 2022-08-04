@@ -16,5 +16,6 @@ def get_workflow_by_name(name):
         return {
             "name": workflow.name,
             "description": workflow.description,
+            "parameters": [o.serialize() for o in user_options]
         }
     raise ValueError(f"Unknown workflow {name}")

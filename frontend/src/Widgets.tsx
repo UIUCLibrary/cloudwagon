@@ -81,14 +81,23 @@ export const DirectorySelect: FC<APIWidgetData> = ({label}) => {
   const [openDialogBox, setOpenDialogBox] = useState(false)
   const [rows, setRows] = useState<IFile[] | null>(null);
   useEffect(() => {
+    const contentName = (file: IFile) =>{
+      if (file.type === "Directory" ) {
+        if (file.name === "..") {
+          return file.name;
+        }
+        return `${file.name}/`;
+      }
+      return file.name
+    }
     const fetchData = async () =>{
       const newFiles: IFile[] = []
-      for (const x of (await axios.get('/api/files')).data['files']){
+      for (const x of (await axios.get('/api/files?path=/')).data['contents']){
         newFiles.push(
             {
               id: newFiles.length,
               size: x.size,
-              name: x.type === "Directory"? `${x.name}/`: x.name,
+              name: contentName(x),
               type: x.type
             }
         )
