@@ -12,31 +12,29 @@ def is_within_valid_directory(root, path) -> bool:
 
 def get_path_contents(path: str, starting: str):
     file_path = os.path.relpath(path, starting)
-    if file_path == ".":
-        file_path = "/"
+    file_path = "/" if file_path == "." else f'/{file_path}'
+
     if not is_within_valid_directory(path, starting):
-        p = os.path.join(file_path, "..")
         paths = [
             {
                 "name": "..",
-                "path": os.path.normpath(f"/{p}"),
-                "location": os.path.abspath(
-                    os.path.join(file_path, "..")),
+                "path": os.path.normpath(os.path.join(file_path, "..")),
                 "type": "Directory",
                 "size": None
             }
         ]
+
     else:
         paths = []
     paths += [
         {
             "name": entry.name,
             "path": os.path.join(file_path, entry.name),
-            "location": os.path.abspath(os.path.join(file_path, entry.name)),
             "type": "File" if entry.is_file() else "Directory",
             "size": os.path.getsize(entry.path) if entry.is_file() else None
         } for entry in os.scandir(path)
     ]
+
     return paths
 
 

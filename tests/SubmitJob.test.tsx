@@ -81,12 +81,13 @@ describe('SubmitJob', () => {
 describe('WorkflowParams', () => {
   beforeEach(() => {
     mockedAxios.get.mockImplementation((url) => {
-      if (url === '/api/files') {
+      if (url.startsWith('/api/files')) {
         return Promise.resolve(
             {
               data:
                   {
-                    files: []
+                    contents: [],
+                    path: '/'
                   }
             });
       }
@@ -124,7 +125,7 @@ describe('WorkflowParams', () => {
         label: 'directory selection',
       }
     ]
-  ])('testing label matches', async (name: string, metadata: WidgetApi) => {
+  ])('testing label matches %p', async (name: string, metadata: WidgetApi) => {
     render(<WorkflowParams parameters={[metadata]}/>)
 
     await waitFor(()=>{

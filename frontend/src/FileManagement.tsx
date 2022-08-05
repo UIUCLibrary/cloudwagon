@@ -30,7 +30,7 @@ interface IAPIRequest{
     contents: IFileNode[]
 }
 
-interface IRoute{
+export interface IRoute{
   display: string
   path: string
 }
@@ -40,7 +40,7 @@ export const splitRoutes = (pwd: string | null): IRoute[] =>{
     }
     let components: IRoute[] = [
         {
-            display: '(Root)',
+            display: '/',
             path: '/'
         }
     ];
@@ -94,6 +94,7 @@ export default function FileManagement(){
         setRemoveFilesDialogOpen(false)
         if(accept){
             axios.delete('/api/files').then((result) => {
+                console.log(result.data);
                 setData(result.data)
                 setDataIsValid(false)
             })
@@ -180,7 +181,6 @@ export default function FileManagement(){
         </ListItem>
     }): '';
 
-    // const breadCrumbRoutes = error ? splitRoutes('/') : splitRoutes(pwd)
     const breadCrumbComponents = breadCrumbRoutes.map(value => {
         const linkUrl = `/manageFiles/?path=${value.path}`;
         return (

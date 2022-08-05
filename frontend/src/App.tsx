@@ -1,17 +1,21 @@
 import React from 'react';
-import './App.css';
 import {Box, Container, Paper} from "@mui/material";
 import SubmitJob from './SubmitJob'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import FileManagement from "./FileManagement";
+import FileManagement from './FileManagement';
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
+import {styled} from '@mui/system';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
+const StyledPaper = styled(Paper, {})({
+  minHeight: '50vw',
+  borderRadius: 10,
+});
 
 function TabPanel(props: TabPanelProps) {
   const {children, value, index, ...other} = props;
@@ -82,7 +86,8 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
       <div className="App">
         <Box p={2}>
           <Container maxWidth={"md"}>
-            <Paper elevation={10} style={{minHeight: '50vw', borderRadius: 20}}>
+            <StyledPaper elevation={10}>
+            {/*<Paper elevation={10} style={{minHeight: '50vw', borderRadius: 20}}>*/}
               <Box p={2}>
                 <h1 style={{"textAlign": "center"}}>Speedwagon in the Cloud</h1>
                 <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -106,7 +111,7 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
                   </Container>
                 </TabPanel>
               </Box>
-            </Paper>
+            </StyledPaper>
           </Container>
         </Box>
       </div>

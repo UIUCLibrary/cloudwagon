@@ -18,7 +18,7 @@ describe('splitRoutes', ()=>{
           '/',
         [
             {
-              display:'(Root)',
+              display:'/',
               path:'/'
             }
         ]
@@ -27,7 +27,7 @@ describe('splitRoutes', ()=>{
           '/sample',
           [
             {
-              display:'(Root)',
+              display:'/',
               path: '/'
             },
             {
@@ -40,7 +40,7 @@ describe('splitRoutes', ()=>{
           '/multiple/directories',
           [
             {
-              display:'(Root)',
+              display:'/',
               path: '/'
             },
             {

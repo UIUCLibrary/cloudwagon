@@ -39,9 +39,10 @@ async def list_data(
             os.path.join(settings.storage, search_path)
     ):
         raise HTTPException(404)
+    storage_path = os.path.join(settings.storage, search_path)
     contents = \
         storage.get_path_contents(
-            os.path.join(settings.storage, search_path),
+            storage_path,
             starting=settings.storage
         )
 

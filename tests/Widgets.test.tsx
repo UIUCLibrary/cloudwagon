@@ -39,13 +39,10 @@ describe('DirectorySelect', ()=>{
       return Promise.resolve();
     });
   });
-  test('browse Button opens dialog', async ()=>{
+  test('browse Button opens dialog',  ()=>{
     render(
         <DirectorySelect label="tester" parameters={{'selections': []}}/>
       )
-    await waitFor(()=>{
-      return waitForElementToBeRemoved(() => screen.getByText('Loading...'));
-    })
     fireEvent.mouseDown(screen.getByLabelText('browse'))
     expect(screen.getByText('Select a Directory')).toBeInTheDocument()
   })
