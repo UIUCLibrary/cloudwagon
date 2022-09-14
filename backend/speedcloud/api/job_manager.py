@@ -1,8 +1,8 @@
 from __future__ import annotations
+from typing import Dict, Any
 
 import speedwagon
 from .. import runner
-from typing import Dict, Any
 
 
 jobs: Dict[int, Any] = {}
@@ -54,8 +54,10 @@ def create_job(workflow_id, props):
             "id": job_id,
             "workflow_id": workflow_id,
             "properties": props,
-            'consoleStreamWS': f"ws://localhost:8000/api/stream?job_id={job_id}",
-            'consoleStreamSSE': f"http://localhost:8000/api/stream?job_id={job_id}",
+            'consoleStreamWS':
+                f"ws://localhost:8000/api/stream?job_id={job_id}",
+            'consoleStreamSSE':
+                f"http://localhost:8000/api/stream?job_id={job_id}",
         }
     }
     jobs[job['metadata']['id']] = job

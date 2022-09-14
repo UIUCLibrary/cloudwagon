@@ -1,10 +1,10 @@
 from functools import lru_cache
 import os
 from typing import List
+import logging
 
 from pydantic import BaseSettings
 import tomlkit
-import logging
 logger = logging.getLogger(__name__)
 
 

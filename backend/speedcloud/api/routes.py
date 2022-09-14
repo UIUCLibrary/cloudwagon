@@ -2,6 +2,8 @@ import asyncio
 import typing
 from typing import List, Optional
 import json
+import os
+import pkg_resources
 from fastapi import APIRouter, UploadFile, Depends, Request
 from fastapi.responses import StreamingResponse
 from fastapi import WebSocket, HTTPException
@@ -9,7 +11,6 @@ from sse_starlette.sse import EventSourceResponse
 
 from pydantic import BaseModel
 
-import os
 import aiofiles
 
 from ..config import Settings, get_settings

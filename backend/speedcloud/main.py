@@ -37,7 +37,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    import uvicorn
+    import uvicorn  # pylint: disable=import-outside-toplevel
     parser = _get_arg_parser()
     args = parser.parse_args()
     logger.warning(

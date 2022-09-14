@@ -1,5 +1,5 @@
-import speedwagon
 from typing import List, Optional, Type
+import speedwagon
 
 
 def get_workflows() -> List[str]:
