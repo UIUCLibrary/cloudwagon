@@ -1,5 +1,6 @@
 import {Button, Box} from "@mui/material";
 import FormLabel from "@mui/material/FormLabel"
+import FormControl from "@mui/material/FormControl";
 import Select, {SelectChangeEvent} from  "@mui/material/Select"
 import FormGroup from "@mui/material/FormGroup"
 import MenuItem from "@mui/material/MenuItem"
@@ -99,6 +100,7 @@ const WorkflowSelector: FC<IWorkflowSelector> = ({workflows, defaultValue, onSel
             label="Workflow"
             name="workflow"
             value={value}
+            // sx={{minWidth: 'max'}}
             onChange={handleChange}>
           {workflowMenuItems}
         </Select>
@@ -245,8 +247,10 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     }
     return(
         <div>
-            <form onSubmit={handleSubmitNewJob}>
+          <form onSubmit={handleSubmitNewJob}>
+            <FormControl fullWidth={true}>
                 <FormGroup>
+                  {/*<FormLabel>Workflow:</FormLabel>*/}
                   <WorkflowSelector
                       workflows={workflowList}
                       defaultValue={currentWorkflow}
@@ -256,10 +260,17 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
                   {workflowDetails}
               <Box sx={{my: 2}}>
               <FormGroup row={true}>
-                <Button type="submit" variant={"contained"} disabled={currentWorkflow ? false: true}>Start</Button>
+                <Button
+                    type="submit"
+                    variant={"contained"}
+                    disabled={currentWorkflow ? false: true}
+                >
+                  Start
+                </Button>
               </FormGroup>
               </Box>
-            </form>
+            </FormControl>
+          </form>
         </div>
     )
 }
