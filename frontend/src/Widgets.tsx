@@ -1,4 +1,9 @@
-import React, {FC, useState, useEffect, useId} from "react";
+import React, {
+  FC,
+  useState,
+  useEffect,
+  useId,
+} from "react";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select"
 import MenuItem from '@mui/material/MenuItem';
@@ -45,7 +50,7 @@ interface IWidget {
 }
 
 export interface APIWidgetData extends IWidget {
-  parameters: { [key: string]: any }
+  parameters?: { [key: string]: any }
   onAccepted?: (value: string)=>void
 }
 
@@ -79,10 +84,21 @@ export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
   )
 }
 export const CheckBoxOption: FC<APIWidgetData> = ({label}) => {
+  const [value, setValue] = useState(false);
+  const checkbox = <>
+      <Checkbox
+        checked={value}
+        value={value}
+        onChange={()=>{setValue(!value)}}
+      />
+    <input type="hidden" defaultChecked={true} value={value.toString()} name={label}/>
+    </>
   return (
       <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
-        <FormControlLabel name={label} control={<Checkbox></Checkbox>}
-                          label={label}/>
+        <FormControlLabel
+            name={label}
+            control={checkbox}
+            label={label}/>
       </FormControl>
   )
 }

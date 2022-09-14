@@ -135,6 +135,11 @@ const useWorkflowList = ()=>{
   return workflowList
 }
 
+interface IData {
+  consoleStreamSSE: string,
+  consoleStreamWS: string
+}
+
 interface ISubmitJob{
   workflowName? : string | null
   onWorkflowChanged?: (workflowName: string)=>void
@@ -170,36 +175,16 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     if(!workflowList) {
       return <div>Loading...</div>
     }
-    const handleSubmitNewJob = (event: SyntheticEvent) => {
-        event.preventDefault()
-        console.log("POpening up dialog box")
-        const formData = new FormData(event.target as HTMLFormElement);
-        let formProps = Object.fromEntries(formData);
-        const workflowId = formProps['workflow']
-        delete formProps.workflow
-
-        axios.post('/api/submitJob', {
-          'details': formProps,
-          'workflow_id': workflowId
-        })
-            .then(
-                (res)=>{
-                  console.log(res.data)
-                  setStreamUrlSSE(res.data.consoleStreamSSE)
-                  setStreamUrlWS(res.data.consoleStreamWS)
-                  setShowDialog(true)
-                }
-            )
-    };
+    const openDialog = (data: IData) =>{
+      setStreamUrlSSE(data.consoleStreamSSE)
+      setStreamUrlWS(data.consoleStreamWS)
+      setShowDialog(true)
+    }
     if (workflowName){
-      if (!currentWorkflow || workflowName !== currentWorkflow.name){
-        for (const [key, value ]of Object.entries(workflowList)){
-          if ( value.name === workflowName){
-            setCurrentWorkflow(value)
-            break
-          }
+        const workflow = getWorkflow(currentWorkflow, workflowName, workflowList);
+        if (workflow) {
+          setCurrentWorkflow(workflow);
         }
-      }
     }
     const description = workflowData? workflowData.description: ''
     let workflowDetails = <></>;
@@ -247,10 +232,9 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     }
     return(
         <div>
-          <form onSubmit={handleSubmitNewJob}>
+          <form onSubmit={(event => handleSubmitNewJob(event, openDialog))}>
             <FormControl fullWidth={true}>
                 <FormGroup>
-                  {/*<FormLabel>Workflow:</FormLabel>*/}
                   <WorkflowSelector
                       workflows={workflowList}
                       defaultValue={currentWorkflow}
@@ -273,4 +257,37 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
           </form>
         </div>
     )
+}
+
+
+const handleSubmitNewJob = (
+    event: SyntheticEvent,
+    onOpenDialog: (data:IData)=>void
+) => {
+  event.preventDefault()
+  const formData = new FormData(event.target as HTMLFormElement);
+  let formProps = Object.fromEntries(formData);
+  const workflowId = formProps['workflow']
+  delete formProps.workflow
+
+  axios.post('/api/submitJob', {
+    'details': formProps,
+    'workflow_id': workflowId
+  })
+      .then((res)=>onOpenDialog(res.data))
+    };
+
+const getWorkflow = (
+    currentWorkflow: Workflow | null,
+    workflowName: string,
+    workflowList: Workflow[]
+)=>{
+  if (!currentWorkflow || workflowName !== currentWorkflow.name){
+    for (const [key, value ]of Object.entries(workflowList)){
+      if ( value.name === workflowName){
+        return value;
+      }
+    }
+  }
+  return null;
 }
