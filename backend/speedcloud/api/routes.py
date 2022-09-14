@@ -13,6 +13,7 @@ import os
 import aiofiles
 
 from ..config import Settings, get_settings
+from ..info import get_version
 from . import actions
 from . import storage
 from . import job_manager
@@ -195,3 +196,8 @@ async def stream_job(request):
 @api.get("/stream")
 async def system_event_endpoint(request: Request, job_id: int):
     return EventSourceResponse(stream_job(request))
+
+
+@api.get('/info')
+async def info():
+    return {"version": get_version()}

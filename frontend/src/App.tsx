@@ -1,11 +1,12 @@
-import React from 'react';
-import {Box, Container, Paper} from "@mui/material";
+import React, {useEffect, useState} from 'react';
+import {Box, Container, Paper, LinearProgress, Alert} from "@mui/material";
 import SubmitJob from './SubmitJob'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import FileManagement from './FileManagement';
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
 import {styled} from '@mui/system';
+import axios from 'axios';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,18 +39,26 @@ function TabPanel(props: TabPanelProps) {
 }
 
 function App() {
-  return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<SpeedwagonApp tab="job"/>}/>
-          <Route path="/job" element={<SpeedwagonApp tab="job"/>}/>
-          <Route path="/job:workflow" element={<SpeedwagonApp tab="job"/>}/>
-          {/*</Route>*/}
-          <Route path="/manageFiles" element={<SpeedwagonApp tab="manageFiles"/>}/>
-          <Route path="*" element={<div>404</div>}/>
-        </Routes>
-      </BrowserRouter>
-  )
+  const [app, setApp] = useState(<LinearProgress />)
+  useEffect(()=>{
+    axios.get('/api/info').then(()=>{
+      setApp (
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<SpeedwagonApp tab="job"/>}/>
+              <Route path="/job" element={<SpeedwagonApp tab="job"/>}/>
+              <Route path="/job:workflow" element={<SpeedwagonApp tab="job"/>}/>
+              {/*</Route>*/}
+              <Route path="/manageFiles" element={<SpeedwagonApp tab="manageFiles"/>}/>
+              <Route path="*" element={<div>404</div>}/>
+            </Routes>
+          </BrowserRouter>
+      )
+    }).catch(()=>{
+      setApp(<Alert severity="error">Unable to access Speedwagon server api.</Alert>)
+    })
+  }, [])
+  return app
 }
 interface ISpeedwagonApp{
   tab: string
