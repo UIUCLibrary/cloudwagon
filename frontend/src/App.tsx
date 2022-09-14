@@ -4,6 +4,7 @@ import SubmitJob from './SubmitJob'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import FileManagement from './FileManagement';
+import SystemInfo from './SystemInfo';
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
 import {styled} from '@mui/system';
 import axios from 'axios';
@@ -50,6 +51,7 @@ function App() {
               <Route path="/job:workflow" element={<SpeedwagonApp tab="job"/>}/>
               {/*</Route>*/}
               <Route path="/manageFiles" element={<SpeedwagonApp tab="manageFiles"/>}/>
+              <Route path="/info" element={<SpeedwagonApp tab="info"/>}/>
               <Route path="*" element={<div>404</div>}/>
             </Routes>
           </BrowserRouter>
@@ -75,6 +77,7 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
   const tabs: {[key: number]: string} = {
     0: "job",
     1: "manageFiles",
+    2: "info",
   }
   let tabIndex: number | null = null;
   for(const i in Object.keys(tabs)){
@@ -104,6 +107,7 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
                         aria-label="basic tabs example" centered>
                     <Tab label="Job"/>
                     <Tab label="Manage Files"/>
+                    <Tab label="Info"/>
                   </Tabs>
                 </Box>
                 <TabPanel value={currentTabIndex} index={0}>
@@ -117,6 +121,11 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
                 <TabPanel value={currentTabIndex} index={1}>
                   <Container>
                     <FileManagement/>
+                  </Container>
+                </TabPanel>
+                <TabPanel value={currentTabIndex} index={2}>
+                  <Container>
+                    <SystemInfo/>
                   </Container>
                 </TabPanel>
               </Box>

@@ -201,4 +201,10 @@ async def system_event_endpoint(request: Request, job_id: int):
 
 @api.get('/info')
 async def info():
-    return {"version": get_version()}
+    """Get info."""
+    speedwagon_version = pkg_resources.get_distribution('speedwagon').version
+    return {
+        "web_version": get_version(),
+        "speedwagon_version": speedwagon_version,
+        "workflows": actions.get_workflows()
+    }
