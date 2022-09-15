@@ -118,8 +118,8 @@ const useWorkflowList = ()=>{
       if (!ignore) {
         setWorkflowList(
             results.sort().map(
-                (workflowName: string, index: number) => (
-                    {id: index, name: workflowName}
+                (workflow: { id: number, name: string }) => (
+                    {id: workflow.id, name: workflow.name}
                 )
             ))
       }

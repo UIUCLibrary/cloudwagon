@@ -9,7 +9,8 @@ import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell'
 
-import {useEffect, useState, FC} from 'react';
+import React, {useEffect, useState, FC} from 'react';
+import {LinearProgress} from '@mui/material';
 const InfoItem: FC<({metadataKey: string, children: any})> = (props) =>{
  return (
      <TableRow>
@@ -18,36 +19,74 @@ const InfoItem: FC<({metadataKey: string, children: any})> = (props) =>{
      </TableRow>
  )
 }
-const buildInfoItems = (data: {[key: string]: string | string[]} | null)=>{
+interface WorkflowInfo {
+  id: number
+  name: string
+}
+interface SystemInfoData {
+  web_version: string
+  speedwagon_version: string
+  workflows: WorkflowInfo[]
+}
+const buildInfoItems = (data: SystemInfoData | null)=>{
   if (!data){
     return <></>
   }
-  const workflows = data['workflows'] as string[];
-  const workflowsElements = workflows.sort().map((workflowName)=>{
+  const sorter = (a: WorkflowInfo, b: WorkflowInfo): number => {
+    return a.name < b.name ? -1 : 1;
+  }
+  const workflows = data['workflows'];
+  workflows.sort(sorter)
+  const workflowsElements = workflows.map((workflow)=>{
     return (
-      <List dense={true} sx={{ listStyleType: 'disc', pl: 2}} >
-        <ListItem sx = {{display: 'list-item'}} disablePadding>
-          <ListItemText primary={workflowName}/>
+
+        <ListItem key={workflow.id} sx = {{display: 'list-item'}} disablePadding>
+          <ListItemText primary={workflow.name}/>
         </ListItem>
-      </List>
     )
   })
   return (
       <>
         <InfoItem metadataKey={"Site Version"}>{data['web_version']}</InfoItem>
         <InfoItem metadataKey={"Speedwagon Version Used"}>{data['speedwagon_version']}</InfoItem>
-        <InfoItem metadataKey={"Installed Workflows"}>{workflowsElements}</InfoItem>
+        <InfoItem metadataKey={"Installed Workflows"}>
+          <List dense={true} sx={{ listStyleType: 'disc', pl: 2}} >
+            {workflowsElements}
+          </List>
+        </InfoItem>
       </>
   )
 }
-
-export default function SystemInfo(){
-  const [serverData, setServerData] = useState<{[key: string]: string} | null>(null)
+const useServerData = (): [(SystemInfoData| null), boolean]=>{
+  const [serverData, setServerData] = useState<SystemInfoData| null>(null)
+  const [loading, setLoading] = useState(false)
   useEffect(()=>{
-    axios.get('/api/info').then((result)=>{
-      setServerData(result.data)
-    })
+    setLoading(true)
+    axios.get('/api/info')
+        .then((result)=>{
+          setServerData(result.data)
+        })
+        .finally(()=>setLoading(false))
   }, [])
+  return [serverData, loading]
+
+}
+export default function SystemInfo(){
+  const [serverData, loading] = useServerData();
+  // if (loading){
+  //   return (
+  //       <>
+  //         loading
+  //       </>
+  //   )
+  // }
+  const loadingWidget = <>
+    <TableRow>
+      <TableCell colSpan={2} style={{borderBottom:"none"}}>
+        <LinearProgress />
+      </TableCell>
+    </TableRow>
+  </>
   return (
       <>
         <TableContainer>
@@ -59,7 +98,7 @@ export default function SystemInfo(){
               </TableRow>
             </TableHead>
             <TableBody>
-              {buildInfoItems(serverData)}
+              {loading? loadingWidget: buildInfoItems(serverData)}
             </TableBody>
           </Table>
         </TableContainer>

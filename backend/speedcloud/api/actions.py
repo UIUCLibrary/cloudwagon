@@ -1,9 +1,24 @@
-from typing import List, Optional, Type
+from typing import List, Optional, Type, TypedDict
+from dataclasses import dataclass
+
 import speedwagon
 
 
-def get_workflows() -> List[str]:
-    return list(speedwagon.available_workflows().keys())
+@dataclass
+class WorkflowData:
+    id: int
+    name: str
+
+
+_workflows: List[WorkflowData] = []
+
+
+def get_workflows() -> List[WorkflowData]:
+    global _workflows
+    if len(_workflows) == 0:
+        for i, k in enumerate(speedwagon.available_workflows().keys()):
+            _workflows.append(WorkflowData(id=i, name=k))
+    return _workflows
 
 
 def get_workflow_by_name(name):
