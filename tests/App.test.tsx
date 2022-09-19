@@ -19,7 +19,10 @@ describe('App', ()=>{
               data:
                   {
                     workflows: [
-                      'Dummy Workflow',
+                      {
+                        name:'Dummy Workflow',
+                        id: 0,
+                      },
                     ]
                   }
             });
@@ -30,6 +33,7 @@ describe('App', ()=>{
               data: {
                 workflow: {
                   name: "Dummy Workflow",
+                  id: 0,
                   description: "something goes here",
                   parameters: [
                     {
@@ -54,6 +58,9 @@ describe('App', ()=>{
       return Promise.resolve();
     });
   });
+  afterEach(()=>{
+    mockedAxios.get.mockReset();
+  })
   test('renders with a tablist', async () => {
     render(<App />);
     await waitFor(() => {
@@ -69,3 +76,17 @@ describe('App', ()=>{
   //   expect(screen.getByTestId('workflow-select-box')).toBeInTheDocument();
   // })
 })
+// test('dummy', async () => {
+//   render(
+//       <BrowserRouter>
+//         <Routes>
+//           <Route path='/' element={<SpeedwagonApp tab="job"/>}/>
+//         </Routes>
+//       </BrowserRouter>
+//   )
+//   await waitFor(() => {
+//       return waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
+//   });
+//   screen.getByLabelText('Workflow')
+//   // expect(screen.getByRole('tabljist')).toBeInTheDocument();
+// });

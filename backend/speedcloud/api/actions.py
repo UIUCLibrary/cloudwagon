@@ -21,6 +21,13 @@ def get_workflows() -> List[WorkflowData]:
     return _workflows
 
 
+def get_workflow_by_id(workflow_id: int):
+    for workflow in get_workflows():
+        if workflow.id == workflow_id:
+            return get_workflow_by_name(workflow.name)
+    raise ValueError(f"Unknown workflow id {workflow_id}")
+
+
 def get_workflow_by_name(name):
     workflows = speedwagon.available_workflows()
     result: Optional[Type[speedwagon.Workflow]] = workflows.get(name)

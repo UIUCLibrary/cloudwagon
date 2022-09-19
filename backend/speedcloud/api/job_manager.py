@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 import speedwagon
 from .. import runner
+from . import actions
 
 
 jobs: Dict[int, Any] = {}
@@ -44,6 +45,27 @@ async def fake_data_streamer():
         total_packets += 1
         # job_runner.abort = True
 
+def _fixup_props(props, workflow):
+    parameters = workflow['parameters']
+    new_props = props.copy()
+    for p in parameters:
+        if p['widget_type'] == 'BooleanSelect':
+            property_key = p['label']
+            og_value = props[property_key]
+
+            new_value = \
+                {
+                    'true': True,
+                    'True': True,
+                    'false': False,
+                    'False': False,
+                }.get(og_value)
+            if new_value is None:
+                new_value = og_value
+            new_props[property_key] = new_value
+    return new_props
+        # if p['widget_type'] == 'BooleanSelect', : 'Check for page_data in meta.yml', 'value': False}]
+
 
 def create_job(workflow_id, props):
     # todo: make the console dynamically point to the right stream
@@ -53,7 +75,10 @@ def create_job(workflow_id, props):
         "metadata": {
             "id": job_id,
             "workflow_id": workflow_id,
-            "properties": props,
+            "properties": _fixup_props(
+                props,
+                actions.get_workflow_by_id(workflow_id)
+            ),
             'consoleStreamWS':
                 f"ws://localhost:8000/api/stream?job_id={job_id}",
             'consoleStreamSSE':

@@ -5,9 +5,9 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import SubmitJob, {WorkflowParams, WidgetApi} from '../frontend/src/SubmitJob';
+import SubmitJob, {WidgetApi, GetWidget} from '../frontend/src/SubmitJob';
 import axios from 'axios';
-
+import {DirectorySelect} from '../frontend/src/Widgets'
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('SubmitJob', () => {
@@ -20,7 +20,10 @@ describe('SubmitJob', () => {
               data:
                   {
                     workflows: [
-                      'Dummy Workflow',
+                      {
+                        name:'Dummy Workflow',
+                        id: 1
+                      },
                     ]
                   }
             });
@@ -61,7 +64,7 @@ describe('SubmitJob', () => {
         <SubmitJob/>
     );
     await waitFor(() => {
-      return waitForElementToBeRemoved(() => screen.getByText('Loading...'));
+      return waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
     });
 
     fireEvent.mouseDown(screen.getAllByRole('button')[0])
@@ -72,29 +75,13 @@ describe('SubmitJob', () => {
         <SubmitJob workflowName='Dummy Workflow'/>
     );
     await waitFor(() => {
-      return waitForElementToBeRemoved(() => screen.getByText('Loading...'));
+      return waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
     });
     expect(screen.getByText('Dummy Workflow')).toBeInTheDocument()
   })
 })
 
 describe('WorkflowParams', () => {
-  beforeEach(() => {
-    mockedAxios.get.mockImplementation((url) => {
-      if (url.startsWith('/api/files')) {
-        return Promise.resolve(
-            {
-              data:
-                  {
-                    contents: [],
-                    path: '/'
-                  }
-            });
-      }
-      return Promise.resolve();
-    });
-  });
-
   it.each([
     [
       'Choice selection',
@@ -118,20 +105,32 @@ describe('WorkflowParams', () => {
         label: 'file selection',
       }
     ],
-    [
-      'DirectorySelect',
-      {
-        widget_type: 'DirectorySelect',
-        label: 'directory selection',
-      }
-    ]
+    // [
+    //   'DirectorySelect',
+    //   {
+    //     widget_type: 'DirectorySelect',
+    //     label: 'directory selection',
+    //   }
+    // ]
   ])('testing label matches %p', async (name: string, metadata: WidgetApi) => {
-    render(<WorkflowParams parameters={[metadata]}/>)
-
+    mockedAxios.get.mockImplementation((url) => {
+      if (url.startsWith('/api/files')) {
+          const promise =  Promise.resolve(
+            {
+              data:
+                  {
+                    contents: [],
+                    path: '/'
+                  }
+            });
+        return promise;
+      }
+      return Promise.resolve();
+    });
+    render(<GetWidget {...metadata}/>)
     await waitFor(()=>{
       expect(screen.getByLabelText(metadata.label)).toBeInTheDocument()
     })
-
   })
 
 })

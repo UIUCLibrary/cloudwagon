@@ -25,39 +25,38 @@ interface WorkflowDetails {
   parameters: WidgetApi[]
 
 }
-export function WorkflowParams({parameters}: {parameters :WidgetApi[] | null}){
-    if( parameters == null){
-        return (<div></div>)
+const APISelectDir = ({widgetParameter}: { widgetParameter: WidgetApi})=>{
+    const getFilesData = async ()=>{
+      const response = await axios.get('/api/files?path=/');
+      return response.data
+    };
+    return (
+        <DirectorySelect
+            getDataHook={getFilesData}
+            label={widgetParameter.label}
+            parameters={widgetParameter}/>
+    )
+}
+export const GetWidget: FC<WidgetApi> = (parameter)=>{
+    if(parameter.widget_type === 'DirectorySelect'){
+      return <APISelectDir widgetParameter={parameter}/>
     }
-    const s = parameters.map(
-        (parameter: WidgetApi, index: number)=>{
-            if(parameter.widget_type === 'DirectorySelect'){
-                return (
-                    <DirectorySelect key={index} label={parameter.label} parameters={parameter}/>
-                )
-            }
-            if(parameter.widget_type === 'FileSelect'){
-                return (
-                    <FileSelect key={index} label={parameter.label} parameters={parameter}/>
-                )
-            }
-            if(parameter.widget_type === 'BooleanSelect'){
-                return (
-                    <CheckBoxOption key={index} label={parameter.label} parameters={parameter}/>
-                )
-            }
-            if(parameter.widget_type === 'ChoiceSelection'){
-                return (
-                    <SelectOption key={index} label={parameter.label} parameters={parameter}/>
-                )
-            }
-        }
-    )
-    return(
-        <>
-            {s}
-        </>
-    )
+    if(parameter.widget_type === 'FileSelect'){
+        return (
+            <FileSelect label={parameter.label} parameters={parameter}/>
+        )
+    }
+    if(parameter.widget_type === 'BooleanSelect'){
+        return (
+            <CheckBoxOption label={parameter.label} parameters={parameter}/>
+        )
+    }
+    if(parameter.widget_type === 'ChoiceSelection'){
+        return (
+            <SelectOption label={parameter.label} parameters={parameter}/>
+        )
+    }
+    return <></>
 }
 export interface Workflow {
     id: number,
@@ -87,7 +86,7 @@ const WorkflowSelector: FC<IWorkflowSelector> = ({workflows, defaultValue, onSel
     }
   };
   const workflowMenuItems = workflows.map((workflow) => {
-    return <MenuItem key={workflow.id.toString()} value={workflow.id}>
+    return <MenuItem key={workflow.id} value={workflow.id}>
       {workflow.name}
     </MenuItem>;
   });
@@ -195,7 +194,6 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     }
     if (workflowData){
       const dialogTitle = workflowName ? workflowName :'Running Job';
-      console.log(streamUrlWS)
       const dialogBox = streamUrlWS ?
           <JobProgressDialog
               title={dialogTitle}
@@ -224,7 +222,13 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
             <Box sx={{my: 2}}>
               <FormGroup>
                 <FormLabel>Settings:</FormLabel>
-                <WorkflowParams parameters={workflowData ? workflowData['parameters']: null}/>
+                <>
+                  {
+                    workflowData? workflowData['parameters'].map((parameters)=>{
+                      return <GetWidget {...parameters}/>
+                    }): <></>
+                  }
+                </>
               </FormGroup>
             </Box>
           </>

@@ -1,15 +1,18 @@
 import {
   fireEvent,
   render,
-  screen,
+  screen, waitFor,
 } from '@testing-library/react';
 import {
   SelectOption,
   DirectorySelect,
-  CheckBoxOption
+  CheckBoxOption,
+  IFile, IAPIDirectoryContents,
 } from '../frontend/src/Widgets'
 import axios from 'axios';
-import {FormEvent} from 'react';
+import {FormEvent, useRef} from 'react';
+jest.mock('axios');
+
 describe('SelectOption', ()=>{
   it('Label is written', function () {
     render(
@@ -18,36 +21,40 @@ describe('SelectOption', ()=>{
     expect(screen.getByLabelText('tester')).toBeInTheDocument()
   });
 })
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+
 describe('DirectorySelect', ()=>{
-  beforeEach(() => {
-    mockedAxios.get.mockImplementation((url) => {
-      if (url === '/api/files' || url === '/api/files?path=/') {
-        return Promise.resolve(
-            {
-              data:
-                  {
-                    contents: [
-                      {
-                        size: 123,
-                        name: "something.txt",
-                        type: "File"
-                      }
-                    ],
-                    path: "/"
-                  }
-            });
+  test('browse Button opens dialog', async ()=>{
+    const onRejected = jest.fn();
+    const dataHook = ():Promise<IAPIDirectoryContents> =>{
+      return new Promise((resolve, reject) => {
+        resolve({
+          path: '/',
+          contents: [] as IFile[]
       }
-      return Promise.resolve();
-    });
-  });
-  test('browse Button opens dialog',  ()=>{
+        );
+      })
+    }
+    const onLoaded = jest.fn()
     render(
-        <DirectorySelect label="tester" parameters={{'selections': []}}/>
-      )
-    fireEvent.mouseDown(screen.getByLabelText('browse'))
-    expect(screen.getByText('Select a Directory')).toBeInTheDocument()
+        <>
+            <DirectorySelect
+                onReady={onLoaded}
+                getDataHook={dataHook}
+                onRejected={onRejected}
+                label="tester"
+                parameters={{'selections': []}}
+            />
+        </>
+    )
+    await waitFor(()=>expect(onLoaded).toBeCalled());
+    fireEvent.click(screen.getByRole('button', {name: /browse/}));
+    await waitFor(()=>{
+      expect(screen.getByText('Select a Directory')).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByText('Cancel'))
+    await waitFor(()=>{
+      expect(onRejected).toBeCalled();
+    })
   })
 })
 describe('CheckBoxOption', ()=>{
