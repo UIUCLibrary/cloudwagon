@@ -202,8 +202,69 @@ interface IDirectorySelectDialog {
 interface DirectorySelectDialogRef {
   selectedPath: string | null
 }
+
+const fileSizeFormatter = (params: GridValueFormatterParams<number>) => {
+  if (params.value == null) {
+    return '';
+  }
+  return `${params.value} bytes`
+}
+const fileRowClass = (params: GridRowClassNameParams<GridValidRowModel>) => {
+  if (params.row.type === "Directory"){
+    return 'theme-selectable'
+  }
+  return ''
+}
+const fileCellClass = (params: GridCellParams<GridValidRowModel>)=>{
+  if (params.row.type === "File" && params.field === 'name'){
+    return 'theme-disabled'
+  }
+  return ''
+}
+
+const fileOnDoubleClick = (
+    params: GridRowParams<IFile>,
+    loading: boolean,
+    setSelection: (path: string)=>void
+)=> {
+  if (!loading) {
+    if (params.row.type === "Directory") {
+      setSelection(params.row.path);
+    }
+  }
+}
+const fileIsRowSelectable = (params: GridRowParams<GridValidRowModel>, loading: boolean): boolean => {
+  if (loading) {
+    return false;
+  }
+  if (params.row.type === "File"){
+    return false;
+  }
+  return params.row.name !== "..";
+
+}
+const filesOnRowClick = (
+    params: GridRowParams<IFile>,
+    loading: boolean,
+    setSelected: (path: string)=>void
+)=>{
+  if (!loading){
+    if (params.row.type === "Directory" && params.row.name !== ".."){
+      setSelected(params.row.path);
+    }
+
+  }
+}
+
 const DirectorySelectDialog = forwardRef((
-    {startingPath, show, onClose, onAccepted, onRejected, getDataHook}: IDirectorySelectDialog,
+    {
+      startingPath,
+      show,
+      onClose,
+      onAccepted,
+      onRejected,
+      getDataHook
+    }: IDirectorySelectDialog,
     ref: Ref<DirectorySelectDialogRef>
 )=>{
   const [pwd, setPwd] = useState(startingPath)
@@ -243,12 +304,7 @@ const DirectorySelectDialog = forwardRef((
       minWidth: 100,
       flex: 0.2,
       editable: false,
-      valueFormatter: (params: GridValueFormatterParams<number>) => {
-        if (params.value == null) {
-          return '';
-        }
-        return `${params.value} bytes`
-      }
+      valueFormatter: fileSizeFormatter,
     },
     {
       field: 'type',
@@ -287,18 +343,8 @@ const DirectorySelectDialog = forwardRef((
                           color: "text.primary",
                         },
                     }}
-                    getCellClassName={(params: GridCellParams<GridValidRowModel>)=>{
-                      if (params.row.type === "File" && params.field === 'name'){
-                        return 'theme-disabled'
-                      }
-                      return ''
-                    }}
-                    getRowClassName={(params: GridRowClassNameParams<GridValidRowModel>) => {
-                      if (params.row.type === "Directory"){
-                        return 'theme-selectable'
-                      }
-                      return ''
-                    }}
+                    getCellClassName={fileCellClass}
+                    getRowClassName={fileRowClass}
                     columnVisibilityModel={{
                       name: true,
                       size: true,
@@ -316,32 +362,19 @@ const DirectorySelectDialog = forwardRef((
                         loadingOverlay:{role: 'progressBar'}
                       }
                     }
-                    onRowClick={(params: GridRowParams<IFile>)=>{
-                      if (!loading){
-                        if (params.row.type === "Directory" && params.row.name !== ".."){
-                          setSelected(params.row.path);
-                        }
-
-                      }
+                    onRowClick={(params)=> {
+                      return filesOnRowClick(params, loading, setSelected);
                     }}
-                    onRowDoubleClick={(
-                        params: GridRowParams<IFile>,
-                    )=> {
-                      if (!loading) {
-                        if (params.row.type === "Directory") {
-                          setPwd(params.row.path);
-                        }
-                      }
-                    }}
-                    isRowSelectable={(params: GridRowParams<GridValidRowModel>): boolean => {
-                      if (loading) {
-                        return false;
-                      }
-                      if (params.row.type === "File"){
-                        return false;
-                      }
-                      return params.row.name !== "..";
-
+                    onRowDoubleClick={
+                      (params: GridRowParams<IFile>)=> fileOnDoubleClick(
+                          params,
+                          loading,
+                          setPwd
+                      )
+                    }
+                    isRowSelectable={
+                      (params: GridRowParams<GridValidRowModel>): boolean => {
+                        return fileIsRowSelectable(params, loading)
                     }}
                     rows={files? files: []}
                     columns={columns}
