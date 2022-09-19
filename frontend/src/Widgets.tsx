@@ -381,7 +381,7 @@ export const DirectorySelect = forwardRef(
     const files = useGetFileData(rawData)
     useImperativeHandle(ref, () =>({
       value: dialogBoxRef.current ? dialogBoxRef.current.selectedPath : null
-    }), [dialogBoxRef.current]);
+    }), []);
     useEffect(()=>{
       if (getDataHook) {
         setLoading(true);
