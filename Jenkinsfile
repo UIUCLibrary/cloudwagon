@@ -23,7 +23,12 @@ pipeline {
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
-                        sh 'npm ci'
+                        cache(maxCacheSize: 250, defaultBranch: 'develop', caches: [
+                            arbitraryFileCache(path: 'node_modules', cacheValidityDecidingFile: 'package-lock.json')
+                        ]) {
+                            sh 'npm ci'
+                        }
+
                     }
                 }
                 stage('Perform Tests'){
