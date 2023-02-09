@@ -1,0 +1,15 @@
+.*/
+001/
+build/
+coverage/
+dist/
+node_modules/
+temp/
+reports/
+logs/
+.tox/
+/.scannerwork/
+.sonar/
+.eggs/
+venv/
+venv310/

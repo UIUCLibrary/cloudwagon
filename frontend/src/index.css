@@ -1,0 +1,20 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Roboto";
+}
+
+.sidebar {
+  height: 100%;
+  width: 350px;
+  position: fixed;
+  z-index: 1;
+}
+
+.main {
+  position: fixed;
+  padding-left: 350px;
+  height: 100%;
+  width: 100%;
+}

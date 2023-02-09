@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "speedcloud"
+version = "0.0.1"
+authors = [{name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"}]
+description = "Speedwagon in the Cloud!!!"
+dependencies =[
+    "aiofiles",
+    "fastapi",
+    "flask",
+    "pydantic",
+    'sse_starlette',
+    "python-multipart",
+    "tomlkit",
+    "speedwagon>=0.2.0b7"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--verbose -m \"not notFromSetupPy\""
+norecursedirs = "thirdparty"
+pythonpath = "backend"
+junit_family="xunit2"
+markers=[
+    "adapter",
+    "slow: mark test as slow.",
+    "model_data"
+]
+
+[tool.pydocstyle]
+# Ignore files that end in _ui.py because they are machine generated
+match="((?!test).*)(^(?!.*(ui)).*)\\.py"
+
+[tool.mypy]
+python_version = "3.8"
+ignore_missing_imports = true
+
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["speedcloud*"]
+
+[tool.coverage.run]
+relative_files = true
+branch = true
+source = ["backend/"]
+
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:"
+]
+

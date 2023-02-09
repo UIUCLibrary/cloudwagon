@@ -2,10 +2,120 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
-        booleanParam  defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
+        booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
+        booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
 
     stages {
+        stage('Test'){
+            agent {
+                dockerfile {
+                    filename 'ci/docker/jenkins/python/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+//                    args '-v npmcache:/tmp/.npm'
+                  }
+            }
+            stages{
+                stage('Set up Tests') {
+                    environment {
+//                        HOME = '/tmp/'
+                        npm_config_cache = '/tmp/npm-cache'
+                    }
+                    steps{
+                        cache(maxCacheSize: 1000, caches: [
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                        ]) {
+                            sh 'npm install'
+                        }
+                    }
+                }
+                stage('Perform Tests'){
+                    parallel{
+                        stage('PyTest'){
+                            steps{
+                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
+                                    sh(
+                                        script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                    )
+                                }
+                            }
+                            post {
+                                always {
+                                    junit 'reports/tests/pytest/pytest-junit.xml'
+                                    stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
+                                }
+                            }
+                        }
+                        stage('Jest'){
+                            environment {
+                                HOME = '/tmp/'
+                                JEST_JUNIT_OUTPUT_NAME='js-junit.xml'
+                                JEST_JUNIT_ADD_FILE_ATTRIBUTE='true'
+                                JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
+                                npm_config_cache = '/tmp/npm-cache'
+                            }
+                            steps{
+                                sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="frontend/src/*.tsx" --coverageDirectory=reports/'
+                            }
+                            post{
+                                always{
+                                    junit 'reports/*.xml'
+                                    sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
+                                }
+                            }
+                        }
+                        stage('ESlint'){
+                            steps{
+                                timeout(10){
+                                    catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
+                                        sh(
+                                            label:  "Running ESlint",
+                                            script: 'npm run eslint-output'
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    sh 'ls reports'
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
+                                    recordIssues(tools: [esLint(pattern: 'reports/eslint_report.xml')])
+                                }
+                            }
+                        }
+                    }
+                     post{
+                        always{
+                            sh(label: 'combining coverage data',
+                               script: '''coverage combine
+                                          coverage xml -o ./reports/coverage-python.xml
+                                          '''
+                            )
+                            stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                            publishCoverage(
+                                adapters: [
+                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                    ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                           )
+                           archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'main/', type: 'INCLUDE'],
+                                    [pattern: 'coverage/', type: 'INCLUDE'],
+                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
+                    }
+                }
+            }
+        }
         stage('Build wheel'){
             agent {
                 label 'linux && docker'
@@ -17,8 +127,7 @@ pipeline {
                               venv/bin/python -m pip install pip --upgrade
                               venv/bin/pip install wheel
                               venv/bin/pip install build
-                              venv/bin/python -m build Speedwagon --outdir dist
-                              venv/bin/python -m build backend --outdir dist
+                              venv/bin/python -m build  --outdir dist
                             '''
                     }
                 }
@@ -30,10 +139,15 @@ pipeline {
             }
         }
         stage('Build'){
+            when{
+                equals expected: true, actual: params.BUILD_DOCKER
+                beforeInput true
+            }
             matrix {
                 axes {
                     axis {
                         name 'ARCH'
+//                         values 'x86'
                         values 'arm', 'x86'
                     }
                 }
@@ -78,7 +192,10 @@ pipeline {
         }
         stage('Publish'){
             when{
-                equals expected: true, actual: params.PUBLISH_DOCKER
+                allOf{
+                    equals expected: true, actual: params.PUBLISH_DOCKER
+                    equals expected: true, actual: params.BUILD_DOCKER
+                }
                 beforeInput true
             }
             input {
@@ -91,6 +208,7 @@ pipeline {
                 axes {
                     axis {
                         name 'ARCH'
+//                         values 'x86'
                         values 'arm', 'x86'
                     }
                 }
@@ -116,7 +234,9 @@ pipeline {
                             configFileProvider([configFile(fileId: 'docker_props', variable: 'CONFIG_FILE')]) {
                                 script{
                                     def deploySettings = readProperties(file: CONFIG_FILE)
-                                    docker.withRegistry(deploySettings['registry'], deploySettings['credentialsId']){
+                                    def registryUrl = "https://${deploySettings['registry']}"
+                                    echo "Using Docker registry: ${registryUrl} "
+                                    docker.withRegistry(registryUrl, deploySettings['credentialsId']){
                                         docker.image(params.DOCKER_IMAGE_NAME).push(DOCKER_TAG)
                                     }
                                 }

@@ -2,22 +2,20 @@ import argparse
 import logging
 
 from fastapi import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from speedcloud.site import site
-from speedcloud.api import api
+from .api import api
 
 origins = [
-    "http://localhost:3000",
-    "localhost:3000"
+    "*"
+    # "http://localhost:3000",
+    # "localhost:3000"
 ]
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(docs_url="/api")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,9 +26,8 @@ app.add_middleware(
 )
 
 
-
 app.include_router(api)
-app.mount("/", WSGIMiddleware(site))
+# app.mount("/", WSGIMiddleware(site))
 
 
 def _get_arg_parser() -> argparse.ArgumentParser:
@@ -40,7 +37,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    import uvicorn
+    import uvicorn  # pylint: disable=import-outside-toplevel
     parser = _get_arg_parser()
     args = parser.parse_args()
     logger.warning(

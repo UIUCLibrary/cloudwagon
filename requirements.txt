@@ -1,8 +1,11 @@
--r Speedwagon/requirements.txt
 aiofiles
 fastapi
 Flask
+httpx
 pydantic
 python-multipart
 tomlkit
 uvicorn
+sse_starlette
+websockets
+speedwagon>=0.2.0b7
