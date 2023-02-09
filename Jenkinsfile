@@ -13,23 +13,27 @@ pipeline {
                     filename 'ci/docker/jenkins/python/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                    args '-v npmcache:/tmp/.npm'
+//                    args '-v npmcache:/tmp/.npm'
                   }
             }
             stages{
                 stage('Set up Tests') {
                     environment {
-                        HOME = '/tmp/'
+//                        HOME = '/tmp/'
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
-                        cache(maxCacheSize: 250, caches: [
-                            arbitraryFileCache(path: 'node_modules', cacheValidityDecidingFile: 'package-lock.json')
+                        cache(maxCacheSize: 500, caches: [
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                         ]) {
                             sh 'npm install'
                         }
-
                     }
+//                    post{
+//                        always{
+//                            sh 'ls -aR'
+//                        }
+//                    }
                 }
                 stage('Perform Tests'){
                     parallel{
@@ -90,7 +94,7 @@ pipeline {
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+//                                    [pattern: 'node_modules/', type: 'INCLUDE'],
                                 ]
                             )
                         }
