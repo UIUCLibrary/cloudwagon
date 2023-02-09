@@ -1,6 +1,7 @@
 aiofiles
 fastapi
 Flask
+httpx
 pydantic
 python-multipart
 tomlkit
