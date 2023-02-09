@@ -23,7 +23,7 @@ pipeline {
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
-                        cache(maxCacheSize: 500, caches: [
+                        cache(maxCacheSize: 1000, caches: [
                             arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                         ]) {
                             sh 'npm install'
