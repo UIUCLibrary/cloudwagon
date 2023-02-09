@@ -29,11 +29,6 @@ pipeline {
                             sh 'npm install'
                         }
                     }
-//                    post{
-//                        always{
-//                            sh 'ls -aR'
-//                        }
-//                    }
                 }
                 stage('Perform Tests'){
                     parallel{
@@ -94,7 +89,7 @@ pipeline {
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
-//                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                    [pattern: 'node_modules/', type: 'INCLUDE'],
                                 ]
                             )
                         }
