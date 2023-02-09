@@ -65,6 +65,25 @@ pipeline {
                                 }
                             }
                         }
+                        stage('ESlint'){
+                            steps{
+                                timeout(10){
+                                    catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
+                                        sh(
+                                            label:  "Running ESlint",
+                                            script: 'npm run eslint-output'
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    sh 'ls reports'
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
+                                    recordIssues(tools: [esLint(pattern: 'reports/eslint_report.xml')])
+                                }
+                            }
+                        }
                     }
                      post{
                         always{
