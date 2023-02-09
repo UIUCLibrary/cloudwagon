@@ -43,7 +43,7 @@ async function* decodeStream(stream: AsyncIterable<Uint8Array>) {
   }
 }
 
-export async function* asyncIterableFromStream<T>(stream: ReadableStreamReader<T>): AsyncIterable<T> {
+export async function* asyncIterableFromStream<T>(stream: ReadableStreamDefaultReader<T>): AsyncIterable<T> {
   try {
     while (true) {
       const {done, value} = await stream.read();
