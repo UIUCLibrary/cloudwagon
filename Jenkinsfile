@@ -43,7 +43,33 @@ pipeline {
                             post {
                                 always {
                                     junit 'reports/tests/pytest/pytest-junit.xml'
-                                    stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
+                                }
+                            }
+                        }
+                        stage('MyPy') {
+                            steps{
+                                timeout(10){
+                                    tee('logs/mypy.log') {
+                                        catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                            sh(
+                                                label: "Running MyPy",
+                                                script: '''mypy --version
+                                                           mkdir -p reports/mypy/html
+                                                           mkdir -p logs
+                                                           mypy backend/speedcloud --html-report reports/mypy/html
+                                                           '''
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                    recordIssues(
+                                        filters: [excludeFile('/stubs/*')],
+                                        tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')]
+                                        )
                                 }
                             }
                         }

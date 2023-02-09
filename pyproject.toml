@@ -37,7 +37,8 @@ match="((?!test).*)(^(?!.*(ui)).*)\\.py"
 [tool.mypy]
 python_version = "3.8"
 ignore_missing_imports = true
-
+mypy_path = "backend"
+namespace_packages = false
 
 [tool.setuptools.packages.find]
 where = ["backend"]
