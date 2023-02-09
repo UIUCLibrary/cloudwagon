@@ -270,7 +270,7 @@ const handleSubmitNewJob = (
 ) => {
   event.preventDefault()
   const formData = new FormData(event.target as HTMLFormElement);
-  let formProps = Object.fromEntries(formData);
+  const formProps = Object.fromEntries(formData);
   const workflowId = formProps['workflow']
   delete formProps.workflow
 
@@ -287,7 +287,7 @@ const getWorkflow = (
     workflowList: Workflow[]
 )=>{
   if (!currentWorkflow || workflowName !== currentWorkflow.name){
-    for (const [key, value ]of Object.entries(workflowList)){
+    for (const value of Object.values(workflowList)){
       if ( value.name === workflowName){
         return value;
       }

@@ -66,8 +66,8 @@ interface ISpeedwagonApp{
   tab: string
 }
 export function SpeedwagonApp({tab}: ISpeedwagonApp) {
-  let navigate = useNavigate();
-  let [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {

@@ -7,7 +7,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Breadcrumbs from '@mui/material/Breadcrumbs'
 import {Alert, AlertTitle} from '@mui/material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import {Folder, FilePresent} from '@mui/icons-material';
+import {Folder} from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton  from '@mui/material/IconButton';
 import Collapse from '@mui/material/Collapse';
@@ -15,7 +15,7 @@ import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar';
 import MenuItem from '@mui/material/MenuItem';
 import AppBar from '@mui/material/AppBar';
-import {Link, NavLink, useNavigate, useSearchParams} from 'react-router-dom';
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {AddFilesDialog, ConfirmRemovalFiles} from './FilesDialog'
 import axios from "axios";
 interface IFileNode{
@@ -38,13 +38,13 @@ export const splitRoutes = (pwd: string | null): IRoute[] =>{
     if (!pwd){
         return [];
     }
-    let components: IRoute[] = [
+    const components: IRoute[] = [
         {
             display: '/',
             path: '/'
         }
     ];
-    let root = ['']
+    const root = ['']
     for (const x of pwd.trim().split('/').filter(element => element)){
         components.push(
             {
@@ -69,8 +69,8 @@ export default function FileManagement(){
         {display: 'Root', path:'/'}
     ])
 
-    let [searchParams] = useSearchParams();
-    let navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [pwd, setPwd] = useState(searchParams.get('path') ? searchParams.get('path'): '/')
     useEffect(()=>{
         const newUrl = `./?path=${pwd}`
@@ -168,7 +168,7 @@ export default function FileManagement(){
         return file.name;
     }
     const n = 8
-    const loadingSkeleton = [...Array(n)].map((value, index, array)=> (
+    const loadingSkeleton = [...Array(n)].map((value, index)=> (
         <Stack key={index} direction="row" spacing={2}>
             <Skeleton animation="wave" variant="circular" width={40} height={40} />
             <Skeleton animation="wave"  height={40} width="100%" style={{ marginBottom: 6 }}/>
@@ -229,9 +229,9 @@ export default function FileManagement(){
                         {breadCrumbComponents}
                     </Breadcrumbs>
                     <MenuItem
-                        onClick={(event)=>{setAddFilesDialogOpen(true) }}
+                        onClick={()=>{setAddFilesDialogOpen(true) }}
                     >Add Files</MenuItem>
-                    <MenuItem onClick={(event)=>{setRemoveFilesDialogOpen(true)}}>Remove All Files</MenuItem>
+                    <MenuItem onClick={()=>{setRemoveFilesDialogOpen(true)}}>Remove All Files</MenuItem>
                 </Toolbar>
             </AppBar>
             {errorBlock}
