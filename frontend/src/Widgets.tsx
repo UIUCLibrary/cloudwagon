@@ -50,6 +50,7 @@ interface IWidget {
 }
 
 export interface APIWidgetData extends IWidget {
+
   parameters?: { [key: string]: any }
   onAccepted?: (value: string)=>void
   onRejected?: ()=>void,
@@ -70,6 +71,12 @@ interface IDirectorySelect extends APIWidgetData{
 }
 export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
   const id = useId();
+  if (!parameters){
+    return (
+        <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
+        </FormControl>
+    )
+  }
   const params = parameters as IChoiceSelection;
   const options = params.selections.map(
       (option, index) => {

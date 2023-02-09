@@ -37,8 +37,8 @@ async function* decodeStream(stream: AsyncIterable<Uint8Array>) {
     try {
       const packet = JSON.parse(chunk)
       yield {data: packet, error: null}
-    } catch (e: any) {
-      yield {data: null, error: e.toString()}
+    } catch (e: unknown) {
+      yield {data: null, error: e ? e.toString(): null}
     }
   }
 }
@@ -248,7 +248,7 @@ const useWebSocketStream = (url: string| undefined):[StreamApiData[] | null, boo
       console.error("websocket failed:", event);
       ws.close();
     }
-    ws.onclose = function (event){
+    ws.onclose = function (){
       setData(existingData =>{
         if (existingData) {
           return existingData.sort(
