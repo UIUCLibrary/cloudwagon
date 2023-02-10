@@ -17,7 +17,7 @@ pipeline {
             agent {
                 dockerfile {
                     filename 'ci/docker/jenkins/python/Dockerfile'
-                    label 'linux && docker'
+                    label 'linux && docker && x86'
                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
 //                    args '-v npmcache:/tmp/.npm'
                   }
