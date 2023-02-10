@@ -233,19 +233,19 @@ pipeline {
                 }
                 stage('Build wheel'){
                     agent {
-                        label 'linux && docker'
-                    }
-                    steps{
-                        script{
-                            docker.image('python').inside('-v pipcache_speedwagon:/.cache/pip'){
-                                sh '''python -m venv venv
-                                      venv/bin/python -m pip install pip --upgrade
-                                      venv/bin/pip install wheel
-                                      venv/bin/pip install build
-                                      venv/bin/python -m build  --outdir dist
-                                    '''
-                            }
+                        docker {
+                            image 'python'
+                            label 'linux && docker'
                         }
+                    }
+
+                    steps{
+                        sh '''python -m venv venv
+                              venv/bin/python -m pip install pip --upgrade
+                              venv/bin/pip install wheel
+                              venv/bin/pip install build
+                              venv/bin/python -m build  --outdir dist
+                            '''
                     }
                     post{
                         success{
