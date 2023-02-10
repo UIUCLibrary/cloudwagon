@@ -1,4 +1,4 @@
-from typing import List, Optional, Type, TypedDict
+from typing import List, Optional, Type
 from dataclasses import dataclass
 
 import speedwagon

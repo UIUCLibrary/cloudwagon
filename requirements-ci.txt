@@ -6,3 +6,4 @@ types-setuptools
 types-aiofiles
 pylint
 pytest
+requests

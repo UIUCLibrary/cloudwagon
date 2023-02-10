@@ -5,30 +5,29 @@ FROM ${BASE_IMAGE} as builder
 #COPY ../Speedwagon ./Speedwagon/
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-ARG CONAN_USER_HOME=/conan
-COPY requirements.txt requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 #COPY Speedwagon/requirements.txt Speedwagon/requirements.txt
 
-RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=cache,id=conan-cache,target={CONAN_USER_HOME} --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip wheel -r requirements.txt -w /wheels
+RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
+    pip wheel --no-cache-dir -r /tmp/requirements.txt -w /wheels
 
-COPY backend/speedcloud backend/speedcloud/
-COPY pyproject.toml ./
-RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=cache,id=conan-cache,target={CONAN_USER_HOME} --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install build && \
-    python -m build --outdir /dist/
+COPY backend/speedcloud /tmp/project/backend/speedcloud/
+COPY pyproject.toml /tmp/project
+RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
+    pip install --no-cache-dir build && \
+    python -m build /tmp/project --outdir /wheels/
 
 
 FROM ${BASE_IMAGE}
-COPY requirements.txt requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
 COPY --from=builder /wheels/*.whl /wheels/
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install -r requirements.txt -v --find-links=/wheels && \
-    pip install pytest
+    pip install --no-cache-dir -r /tmp/requirements.txt -v --find-links=/wheels && \
+    pip install --no-cache-dir --find-links=/wheels speedcloud
 
 WORKDIR /opt/speedcloud
 RUN mkdir -p /opt/speedcloud/data/
