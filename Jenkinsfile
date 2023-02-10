@@ -2,11 +2,11 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
-        booleanParam defaultValue: false, description: 'Run checks', name: 'RUN_CHECKS'
+        booleanParam defaultValue: true, description: 'Run checks', name: 'RUN_CHECKS'
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
+        booleanParam defaultValue: false, description: 'Package', name: 'PACKAGE'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
-
     stages {
         stage('Test'){
             when{
@@ -149,6 +149,9 @@ pipeline {
             }
         }
         stage('Packaging'){
+            when{
+                equals expected: true, actual: params.PACKAGE
+            }
             parallel{
                 stage('Create Production Build'){
                     agent {
