@@ -52,6 +52,18 @@ pipeline {
                                 }
                             }
                         }
+                        stage('Flake8') {
+                            steps{
+                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                                    sh script: 'flake8  backend/speedcloud --tee --output-file=logs/flake8.log'
+                                }
+                            }
+                            post {
+                                always {
+                                      recordIssues(tools: [flake8(pattern: 'logs/flake8.log')])
+                                }
+                            }
+                        }
                         stage('MyPy') {
                             steps{
                                 timeout(10){
