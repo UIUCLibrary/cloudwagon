@@ -158,6 +158,7 @@ pipeline {
                             sh 'npm install'
                         }
 //                        todo: make this into a webpack package
+                        sh 'npx --yes browserslist@latest --update-db'
                         sh(label: 'Building npm production', script: 'npm run build')
                     }
                 }
