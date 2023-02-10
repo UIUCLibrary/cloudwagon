@@ -91,6 +91,31 @@ pipeline {
                                 }
                             }
                         }
+                        stage('Pylint') {
+                            steps{
+                                withEnv(['PYLINTHOME=.']) {
+                                    sh 'pylint --version'
+                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                        tee('reports/pylint_issues.txt'){
+                                            sh(
+                                                label: 'Running pylint',
+                                                script: 'pylint speedwagon -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                            )
+                                        }
+                                    }
+                                    sh(
+                                        label: 'Running pylint for sonarqube',
+                                        script: 'pylint backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                        returnStatus: true
+                                    )
+                                }
+                            }
+                            post{
+                                always{
+                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint_issues.txt')])
+                                }
+                            }
+                        }
                         stage('Jest'){
                             environment {
                                 HOME = '/tmp/'
