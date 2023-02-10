@@ -121,6 +121,18 @@ pipeline {
                                 recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
                             }
                         }
+                        stage('Hadolint'){
+                            steps{
+                                catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
+                                    sh 'hadolint --format json backend/Dockerfile > logs/hadolint.log'
+                                }
+                            }
+                            post{
+                                always{
+                                    recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
+                                }
+                            }
+                        }
                         stage('Jest'){
                             environment {
                                 HOME = '/tmp/'
