@@ -7,7 +7,7 @@ module.exports = {
         '<rootDir>/tests/setupTests.ts'
     ],
     collectCoverageFrom:[
-        "frontend/src/**/*.{ts,tsx}"
+        "src/**/*.{ts,tsx}"
     ],
     transform: {
     "^.+\\.tsx?$": "ts-jest"

@@ -39,6 +39,24 @@
 .MuiDataGrid-root .MuiDataGrid-cell:focus-within {
     outline: none !important;
 }
+.App-MainWindow {
+  min-height: 500px;
+  /*background-color: #61dafb;*/
+  /*border: 2px solid red;*/
+  /*border-radius;*/
+
+}
+/*.App-MainWindow .MuiOutlinedInput-root {*/
+.App-MainWindow
+  .MuiPaper-root {
+     border: rad;
+   }
+
+
+/*  border-radius: 50px;*/
+/* .MuiPaper-root {*/
+/*  border-radius: 50px;*/
+/*}*/
 /*.MuiDataGrid-panelHeader {*/
 /*  background-color: "grey.100";*/
 /*}*/

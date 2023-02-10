@@ -32,7 +32,7 @@ pipeline {
                         cache(maxCacheSize: 1000, caches: [
                             arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                         ]) {
-                            sh 'npm install'
+                            sh 'npm --prefix frontend install'
                         }
                         sh 'mkdir -p logs'
                     }
@@ -56,7 +56,7 @@ pipeline {
                         stage('Flake8') {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                    sh script: 'flake8  backend/speedcloud --tee --output-file=logs/flake8.log'
+                                    sh script: 'flake8 backend/speedcloud --tee --output-file=logs/flake8.log'
                                 }
                             }
                             post {
@@ -143,7 +143,7 @@ pipeline {
                                 npm_config_cache = '/tmp/npm-cache'
                             }
                             steps{
-                                sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="frontend/src/*.tsx" --coverageDirectory=reports/'
+                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory../reports/'
                             }
                             post{
                                 always{
@@ -158,7 +158,7 @@ pipeline {
                                     catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
                                         sh(
                                             label:  "Running ESlint",
-                                            script: 'npm run eslint-output'
+                                            script: 'npm --prefix frontend run eslint-output'
                                         )
                                     }
                                 }
@@ -167,7 +167,7 @@ pipeline {
                                 always{
                                     sh 'ls reports'
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
-                                    recordIssues(tools: [esLint(pattern: 'reports/eslint_report.xml')])
+                                    recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
                                 }
                             }
                         }
@@ -220,14 +220,14 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
                         ]) {
-                            sh 'npm install'
+                            sh 'npm --prefix frontend install'
                         }
 //                        todo: make this into a webpack package
-                        sh 'npx --yes browserslist@latest --update-db'
+                        sh 'cd frontend && npx --yes browserslist@latest --update-db'
                         catchError(buildResult: 'SUCCESS', message: 'There are issues with building production build', stageResult: 'UNSTABLE') {
-                            sh(label: 'Creating production build', script: 'npm run build')
+                            sh(label: 'Creating production build', script: 'npm --prefix frontend  run build')
                         }
                     }
                 }

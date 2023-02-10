@@ -5,9 +5,9 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import SubmitJob, {WidgetApi, GetWidget} from '../frontend/src/SubmitJob';
+import SubmitJob, {WidgetApi, GetWidget} from '../src/SubmitJob';
 import axios from 'axios';
-import {DirectorySelect} from '../frontend/src/Widgets'
+import {DirectorySelect} from '../src/Widgets'
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('SubmitJob', () => {

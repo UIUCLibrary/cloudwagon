@@ -8,7 +8,7 @@ import {
   DirectorySelect,
   CheckBoxOption,
   IFile, IAPIDirectoryContents,
-} from '../frontend/src/Widgets'
+} from '../src/Widgets'
 import axios from 'axios';
 import {FormEvent, useRef} from 'react';
 jest.mock('axios');
