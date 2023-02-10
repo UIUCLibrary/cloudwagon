@@ -142,25 +142,46 @@ pipeline {
                 }
             }
         }
-        stage('Build wheel'){
-            agent {
-                label 'linux && docker'
-            }
-            steps{
-                script{
-                    docker.image('python').inside('-v pipcache_speedwagon:/.cache/pip'){
-                        sh '''python -m venv venv
-                              venv/bin/python -m pip install pip --upgrade
-                              venv/bin/pip install wheel
-                              venv/bin/pip install build
-                              venv/bin/python -m build  --outdir dist
-                            '''
+        stage('Packaging'){
+            parallel{
+                stage('Build npm package'){
+                    agent {
+                        docker {
+                            image 'node'
+                            label 'linux && docker'
+                        }
+                    }
+                    steps{
+                        cache(maxCacheSize: 1000, caches: [
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                        ]) {
+                            sh 'npm install'
+                        }
+//                        todo: make this into a webpack package
+                        sh(label: 'Building npm production', script: 'npm run build')
                     }
                 }
-            }
-            post{
-                success{
-                    stash includes: 'dist/*,whl', name: 'wheel'
+                stage('Build wheel'){
+                    agent {
+                        label 'linux && docker'
+                    }
+                    steps{
+                        script{
+                            docker.image('python').inside('-v pipcache_speedwagon:/.cache/pip'){
+                                sh '''python -m venv venv
+                                      venv/bin/python -m pip install pip --upgrade
+                                      venv/bin/pip install wheel
+                                      venv/bin/pip install build
+                                      venv/bin/python -m build  --outdir dist
+                                    '''
+                            }
+                        }
+                    }
+                    post{
+                        success{
+                            stash includes: 'dist/*,whl', name: 'wheel'
+                        }
+                    }
                 }
             }
         }
