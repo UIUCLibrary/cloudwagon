@@ -34,6 +34,7 @@ pipeline {
                         ]) {
                             sh 'npm install'
                         }
+                        sh 'mkdir -p logs'
                     }
                 }
                 stage('Perform Tests'){
