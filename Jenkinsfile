@@ -116,6 +116,11 @@ pipeline {
                                 }
                             }
                         }
+                        stage('Task Scanner'){
+                            steps{
+                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
+                            }
+                        }
                         stage('Jest'){
                             environment {
                                 HOME = '/tmp/'
