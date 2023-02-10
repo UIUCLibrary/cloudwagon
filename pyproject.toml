@@ -27,7 +27,8 @@ junit_family="xunit2"
 markers=[
     "adapter",
     "slow: mark test as slow.",
-    "model_data"
+    "model_data",
+    "integration"
 ]
 
 [tool.pydocstyle]

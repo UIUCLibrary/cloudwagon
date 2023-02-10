@@ -280,7 +280,6 @@ pipeline {
                             stage('Building Docker Container'){
 
                                 steps{
-                                    unstash 'wheel'
                                     echo "DOCKER_IMAGE_TEMP_NAME = ${env.DOCKER_IMAGE_TEMP_NAME}"
 
                                     withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
@@ -290,8 +289,18 @@ pipeline {
                                                     docker.build(
                                                         env.DOCKER_IMAGE_TEMP_NAME,
                                                         '-f backend/Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL .'
-                                                        ).inside('-v pipcache_speedwagon:/.cache/pip'){
-    //                                                        sh 'cd Speedwagon && pytest'
+                                                        ).withRun('-p 8000:80'){ c->
+                                                            docker.image('python').inside("--link ${c.id}:db") {
+                                                                withEnv(['PIP_NO_CACHE_DIR=off']) {
+                                                                    sh '''
+                                                                        python -m venv venv --upgrade-deps
+                                                                        . ./venv/bin/activate
+                                                                        pip install --no-cache-dir pytest requests
+                                                                        pytest tests/test_integration.py --server-url=http://db
+                                                                        rm -rf venv
+                                                                        '''
+                                                                }
+                                                            }
                                                         }
                                                 }
                                             }
