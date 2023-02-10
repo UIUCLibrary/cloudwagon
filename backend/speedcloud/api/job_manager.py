@@ -45,6 +45,7 @@ async def fake_data_streamer():
         total_packets += 1
         # job_runner.abort = True
 
+
 def _fixup_props(props, workflow):
     parameters = workflow['parameters']
     new_props = props.copy()
@@ -64,7 +65,6 @@ def _fixup_props(props, workflow):
                 new_value = og_value
             new_props[property_key] = new_value
     return new_props
-        # if p['widget_type'] == 'BooleanSelect', : 'Check for page_data in meta.yml', 'value': False}]
 
 
 def create_job(workflow_id, props):
