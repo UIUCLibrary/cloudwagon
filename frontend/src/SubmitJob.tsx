@@ -147,7 +147,7 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     const workflowList = useWorkflowList()  // this causes reloading
     const [currentWorkflow, setCurrentWorkflow] = React.useState<Workflow | null>(null);
     const [workflowData, setWorkflowData] = React.useState<WorkflowDetails | null>(null);
-    const [streamUrlSSE, setStreamUrlSSE] = useState<string|null>(null)
+    // const [streamUrlSSE, setStreamUrlSSE] = useState<string|null>(null)
     const [streamUrlWS, setStreamUrlWS] = useState<string|null>(null)
     const [showDialog, setShowDialog] = useState(false)
 
@@ -175,7 +175,7 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
       return <div>Loading...</div>
     }
     const openDialog = (data: IData) =>{
-      setStreamUrlSSE(data.consoleStreamSSE)
+      // setStreamUrlSSE(data.consoleStreamSSE)
       setStreamUrlWS(data.consoleStreamWS)
       setShowDialog(true)
     }
@@ -188,12 +188,13 @@ export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob)
     const description = workflowData? workflowData.description: ''
     let workflowDetails = <></>;
     const handleClose = ()=>{
-      setStreamUrlSSE(null)
+      // setStreamUrlSSE(null)
       setStreamUrlWS(null)
       setShowDialog(false)
     }
     if (workflowData){
       const dialogTitle = workflowName ? workflowName :'Running Job';
+
       const dialogBox = streamUrlWS ?
           <JobProgressDialog
               title={dialogTitle}

@@ -2,16 +2,22 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
+        booleanParam defaultValue: true, description: 'Run checks', name: 'RUN_CHECKS'
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
+        booleanParam defaultValue: false, description: 'Package', name: 'PACKAGE'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
-
     stages {
         stage('Test'){
+            when{
+                equals expected: true, actual: params.RUN_CHECKS
+                beforeInput true
+                beforeAgent true
+            }
             agent {
                 dockerfile {
                     filename 'ci/docker/jenkins/python/Dockerfile'
-                    label 'linux && docker'
+                    label 'linux && docker && x86'
                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
 //                    args '-v npmcache:/tmp/.npm'
                   }
@@ -28,6 +34,7 @@ pipeline {
                         ]) {
                             sh 'npm install'
                         }
+                        sh 'mkdir -p logs'
                     }
                 }
                 stage('Perform Tests'){
@@ -43,7 +50,87 @@ pipeline {
                             post {
                                 always {
                                     junit 'reports/tests/pytest/pytest-junit.xml'
-                                    stash includes: 'reports/tests/pytest/*.xml', name: 'PYTEST_UNIT_TEST_RESULTS'
+                                }
+                            }
+                        }
+                        stage('Flake8') {
+                            steps{
+                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                                    sh script: 'flake8  backend/speedcloud --tee --output-file=logs/flake8.log'
+                                }
+                            }
+                            post {
+                                always {
+                                      recordIssues(tools: [flake8(pattern: 'logs/flake8.log')])
+                                }
+                            }
+                        }
+                        stage('MyPy') {
+                            steps{
+                                timeout(10){
+                                    tee('logs/mypy.log') {
+                                        catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                            sh(
+                                                label: "Running MyPy",
+                                                script: '''mypy --version
+                                                           mkdir -p reports/mypy/html
+                                                           mkdir -p logs
+                                                           mypy backend/speedcloud --html-report reports/mypy/html
+                                                           '''
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                    recordIssues(
+                                        filters: [excludeFile('/stubs/*')],
+                                        tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')]
+                                        )
+                                }
+                            }
+                        }
+                        stage('Pylint') {
+                            steps{
+                                withEnv(['PYLINTHOME=.']) {
+                                    sh 'pylint --version'
+                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                        tee('reports/pylint_issues.txt'){
+                                            sh(
+                                                label: 'Running pylint',
+                                                script: 'pylint speedwagon -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                            )
+                                        }
+                                    }
+                                    sh(
+                                        label: 'Running pylint for sonarqube',
+                                        script: 'pylint backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                        returnStatus: true
+                                    )
+                                }
+                            }
+                            post{
+                                always{
+                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint_issues.txt')])
+                                }
+                            }
+                        }
+                        stage('Task Scanner'){
+                            steps{
+                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
+                            }
+                        }
+                        stage('Hadolint'){
+                            steps{
+                                catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
+                                    sh 'hadolint --format json backend/Dockerfile > logs/hadolint.log'
+                                }
+                            }
+                            post{
+                                always{
+                                    recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
                                 }
                             }
                         }
@@ -116,13 +203,43 @@ pipeline {
                 }
             }
         }
-        stage('Build wheel'){
-            agent {
-                label 'linux && docker'
+        stage('Packaging'){
+            when{
+                equals expected: true, actual: params.PACKAGE
             }
-            steps{
-                script{
-                    docker.image('python').inside('-v pipcache_speedwagon:/.cache/pip'){
+            parallel{
+                stage('Create Production Build'){
+                    agent {
+                        docker {
+                            image 'node'
+                            label 'linux && docker'
+                        }
+                    }
+                    environment {
+                        npm_config_cache = '/tmp/npm-cache'
+                    }
+                    steps{
+                        cache(maxCacheSize: 1000, caches: [
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                        ]) {
+                            sh 'npm install'
+                        }
+//                        todo: make this into a webpack package
+                        sh 'npx --yes browserslist@latest --update-db'
+                        catchError(buildResult: 'SUCCESS', message: 'There are issues with building production build', stageResult: 'UNSTABLE') {
+                            sh(label: 'Creating production build', script: 'npm run build')
+                        }
+                    }
+                }
+                stage('Build wheel'){
+                    agent {
+                        docker {
+                            image 'python'
+                            label 'linux && docker'
+                        }
+                    }
+
+                    steps{
                         sh '''python -m venv venv
                               venv/bin/python -m pip install pip --upgrade
                               venv/bin/pip install wheel
@@ -130,11 +247,11 @@ pipeline {
                               venv/bin/python -m build  --outdir dist
                             '''
                     }
-                }
-            }
-            post{
-                success{
-                    stash includes: 'dist/*,whl', name: 'wheel'
+                    post{
+                        success{
+                            stash includes: 'dist/*,whl', name: 'wheel'
+                        }
+                    }
                 }
             }
         }
@@ -169,12 +286,14 @@ pipeline {
                                     withCredentials([file(credentialsId: 'private_pypi', variable: 'NETRC')]) {
                                         configFileProvider([configFile(fileId: 'pypi_props', variable: 'PYPI_PROPS')]) {
                                             script{
-                                                docker.build(
-                                                    env.DOCKER_IMAGE_TEMP_NAME,
-                                                    "-f backend/Dockerfile --secret id=netrc,src=\$NETRC --build-arg PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']} ."
-                                                    ).inside('-v pipcache_speedwagon:/.cache/pip'){
-                                                        sh 'cd Speedwagon && pytest'
-                                                    }
+                                                withEnv(["PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']}"]) {
+                                                    docker.build(
+                                                        env.DOCKER_IMAGE_TEMP_NAME,
+                                                        '-f backend/Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL .'
+                                                        ).inside('-v pipcache_speedwagon:/.cache/pip'){
+    //                                                        sh 'cd Speedwagon && pytest'
+                                                        }
+                                                }
                                             }
                                         }
                                     }
