@@ -64,6 +64,7 @@ interface JobStreamState {
 
 }
 
+// eslint-disable-next-line
 const useJobStream = (streamHandleReader: ReadableStreamDefaultReader<Uint8Array> | null | undefined) => {
   const [state, setState] =
       useState<JobStreamState>({
@@ -114,7 +115,7 @@ const useJobStream = (streamHandleReader: ReadableStreamDefaultReader<Uint8Array
   }, [streamHandleReader]);
   return [state]
 };
-
+// eslint-disable-next-line
 const useGetStreamHandle = (apiUrl?: string) => {
   const [streamReader, setStreamReader] = useState<ReadableStreamDefaultReader | null | undefined>(null)
   const fetchStream = async (url: string) => {
@@ -146,6 +147,7 @@ interface IJobProgressDialog {
   show: boolean
   onClose?: () => void
 }
+// eslint-disable-next-line
 const useSSEStream = (url: string):[StreamApiData[] | null, boolean] =>{
   const [eventSource, setEventSource] = useState<EventSource|null>(null);
   const [data, setData]= useState<StreamApiData[] | null>(null)
