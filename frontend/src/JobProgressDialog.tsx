@@ -167,6 +167,7 @@ const useSSEStream = (url: string):[StreamApiData[] | null, boolean] =>{
         setEventSource(null);
       }
     }
+  // eslint-disable-next-line
   }, [url])
   if (eventSource) {
     eventSource.onmessage = function (event) {
@@ -226,6 +227,7 @@ const useWebSocketStream = (url: string| undefined):[StreamApiData[] | null, boo
         setStreamOpen(false);
       }
     }
+  // eslint-disable-next-line
   }, [url])
   if (!url){
     return [data, streamOpen, setAbort]
