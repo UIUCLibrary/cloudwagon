@@ -2,12 +2,18 @@ pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
+        booleanParam defaultValue: false, description: 'Run checks', name: 'RUN_CHECKS'
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
 
     stages {
         stage('Test'){
+            when{
+                equals expected: true, actual: params.RUN_CHECKS
+                beforeInput true
+                beforeAgent true
+            }
             agent {
                 dockerfile {
                     filename 'ci/docker/jenkins/python/Dockerfile'
