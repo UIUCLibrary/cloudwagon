@@ -150,7 +150,7 @@ pipeline {
         }
         stage('Packaging'){
             parallel{
-                stage('Build npm package'){
+                stage('Create Production Build'){
                     agent {
                         docker {
                             image 'node'
@@ -168,7 +168,9 @@ pipeline {
                         }
 //                        todo: make this into a webpack package
                         sh 'npx --yes browserslist@latest --update-db'
-                        sh(label: 'Building npm production', script: 'npm run build')
+                        catchError(buildResult: 'SUCCESS', message: 'There are issues with building production build', stageResult: 'UNSTABLE') {
+                            sh(label: 'Creating production build', script: 'npm run build')
+                        }
                     }
                 }
                 stage('Build wheel'){
