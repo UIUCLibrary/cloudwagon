@@ -80,9 +80,11 @@ def create_job(workflow_id, props):
                 actions.get_workflow_by_id(workflow_id)
             ),
             'consoleStreamWS':
-                f"ws://localhost:8000/api/stream?job_id={job_id}",
+                f"ws://localhost:8000/stream?job_id={job_id}",
+                # f"ws://localhost:8000/api/stream?job_id={job_id}",
             'consoleStreamSSE':
-                f"http://localhost:8000/api/stream?job_id={job_id}",
+                f"http://localhost:8000/stream?job_id={job_id}",
+                # f"http://localhost:8000/api/stream?job_id={job_id}",
         }
     }
     jobs[job['metadata']['id']] = job

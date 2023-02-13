@@ -33,4 +33,5 @@ WORKDIR /opt/speedcloud
 RUN mkdir -p /opt/speedcloud/data/
 COPY backend/extra/docker/docker_config.toml /etc/speedcloud/config.toml
 COPY backend/extra/docker/log_info.yaml /etc/speedcloud/log_config.yaml
+EXPOSE 8000
 CMD ["uvicorn", "speedcloud:app", "--host", "0.0.0.0", "--port", "80", "--log-config", "/etc/speedcloud/log_config.yaml"]

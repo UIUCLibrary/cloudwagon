@@ -19,7 +19,7 @@ from . import actions
 from . import storage
 from . import job_manager
 api = APIRouter(
-    prefix="/api",
+    # prefix="/api",
     responses={404: {"description": "Not found"}},
 )
 

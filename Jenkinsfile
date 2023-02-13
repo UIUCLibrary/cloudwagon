@@ -125,7 +125,7 @@ pipeline {
                         stage('Hadolint'){
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
-                                    sh 'hadolint --format json backend/Dockerfile > logs/hadolint.log'
+                                    sh 'hadolint --format json backend/Dockerfile frontend/Dockerfile > logs/hadolint.log'
                                 }
                             }
                             post{
