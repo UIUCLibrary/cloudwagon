@@ -30,7 +30,7 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                         ]) {
                             sh 'npm --prefix frontend install'
                         }
@@ -143,7 +143,7 @@ pipeline {
                                 npm_config_cache = '/tmp/npm-cache'
                             }
                             steps{
-                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory../reports/'
+                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/'
                             }
                             post{
                                 always{
@@ -220,7 +220,7 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
+                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
                         ]) {
                             sh 'npm --prefix frontend install'
                         }
