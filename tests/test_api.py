@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 def test_api_root():
     client = TestClient(app)
-    response = client.get("/api")
+    response = client.get("/")
     assert response.status_code == 200
 
 
@@ -34,14 +34,14 @@ class TestFilesRoute:
         return TestClient(app)
 
     def test_get_empty(self, client):
-        response = client.get("/api/files?path=%2F")
+        response = client.get("/files?path=%2F")
         assert response.json() == {
             "path": '/',
             "contents": []
         }
 
     def test_get_defaults_to_root(self, client):
-        response = client.get("/api/files")
+        response = client.get("/files")
         assert response.json()["path"] == '/'
 
 

@@ -19,6 +19,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.4.0",
     "react-scripts": "5.0.1",
+    "http-proxy-middleware":  "^2.0.6",
     "web-vitals": "^3.0.2"
   },
   "scripts": {
@@ -50,7 +51,6 @@
     "addFileAttribute": "true",
     "includeConsoleOutput": true
   },
-  "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@types/react-test-renderer": "^18.0.0",

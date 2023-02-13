@@ -15,7 +15,7 @@ origins = [
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(docs_url="/api")
+app = FastAPI(docs_url="/")
 
 app.add_middleware(
     CORSMiddleware,

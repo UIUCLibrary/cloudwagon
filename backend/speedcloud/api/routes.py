@@ -19,7 +19,7 @@ from . import actions
 from . import storage
 from . import job_manager
 api = APIRouter(
-    prefix="/api",
+    # prefix="/api",
     responses={404: {"description": "Not found"}},
 )
 
@@ -129,8 +129,12 @@ class Job(BaseModel):
 
 
 @api.post('/submitJob')
-async def submit_job(job: Job):
-    return job_manager.create_job(job.workflow_id, job.details)
+async def submit_job(job: Job, request: Request):
+    return job_manager.create_job(
+        job.workflow_id,
+        job.details,
+        netloc=request.url.netloc
+    )
 
 
 class StreamBuilder:

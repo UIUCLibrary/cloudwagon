@@ -67,7 +67,7 @@ def _fixup_props(props, workflow):
     return new_props
 
 
-def create_job(workflow_id, props):
+def create_job(workflow_id, props, netloc):
     # todo: make the console dynamically point to the right stream
     job_id = len(jobs)
     job = {
@@ -80,9 +80,9 @@ def create_job(workflow_id, props):
                 actions.get_workflow_by_id(workflow_id)
             ),
             'consoleStreamWS':
-                f"ws://localhost:8000/api/stream?job_id={job_id}",
+                f"ws://{netloc}/stream?job_id={job_id}",
             'consoleStreamSSE':
-                f"http://localhost:8000/api/stream?job_id={job_id}",
+                f"http://{netloc}/stream?job_id={job_id}",
         }
     }
     jobs[job['metadata']['id']] = job
