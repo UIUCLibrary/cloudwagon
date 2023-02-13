@@ -130,7 +130,11 @@ class Job(BaseModel):
 
 @api.post('/submitJob')
 async def submit_job(job: Job, request: Request):
-    return job_manager.create_job(job.workflow_id, job.details, netloc=request.url.netloc)
+    return job_manager.create_job(
+        job.workflow_id,
+        job.details,
+        netloc=request.url.netloc
+    )
 
 
 class StreamBuilder:
