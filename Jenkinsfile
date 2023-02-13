@@ -25,7 +25,6 @@ pipeline {
             stages{
                 stage('Set up Tests') {
                     environment {
-//                        HOME = '/tmp/'
                         npm_config_cache = '/tmp/npm-cache'
                     }
                     steps{
@@ -35,12 +34,7 @@ pipeline {
                             sh 'npm --prefix frontend install'
                         }
                         sh 'mkdir -p logs'
-                        sh '''
-                            mkdir -p main && ln -s $PWD/frontend/src main/src
-                            ls -l
-                            ls -la main/
-                            ls -lRa main/
-                           '''
+                        sh 'mkdir -p main && ln -s $PWD/frontend/src main/src'
                     }
                 }
                 stage('Perform Tests'){
