@@ -1,0 +1,8 @@
+services:
+  backend:
+    build:
+      args:
+        # Add the url to a python index that includes the required python deps
+        # PIP_EXTRA_INDEX_URL:
+    ports:
+      - "8081:8000"
