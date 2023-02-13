@@ -30,11 +30,17 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                         ]) {
-                            sh 'npm install'
+                            sh 'npm --prefix frontend install'
                         }
                         sh 'mkdir -p logs'
+                        sh '''
+                            mkdir -p main && ln -s $PWD/frontend/src main/src
+                            ls -l
+                            ls -la main/
+                            ls -lRa main/
+                           '''
                     }
                 }
                 stage('Perform Tests'){
@@ -56,7 +62,7 @@ pipeline {
                         stage('Flake8') {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                    sh script: 'flake8  backend/speedcloud --tee --output-file=logs/flake8.log'
+                                    sh script: 'flake8 backend/speedcloud --tee --output-file=logs/flake8.log'
                                 }
                             }
                             post {
@@ -143,12 +149,11 @@ pipeline {
                                 npm_config_cache = '/tmp/npm-cache'
                             }
                             steps{
-                                sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="frontend/src/*.tsx" --coverageDirectory=reports/'
+                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
                             }
                             post{
                                 always{
                                     junit 'reports/*.xml'
-                                    sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
                                 }
                             }
                         }
@@ -158,7 +163,7 @@ pipeline {
                                     catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
                                         sh(
                                             label:  "Running ESlint",
-                                            script: 'npm run eslint-output'
+                                            script: 'npm --prefix frontend run eslint-output'
                                         )
                                     }
                                 }
@@ -167,7 +172,7 @@ pipeline {
                                 always{
                                     sh 'ls reports'
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
-                                    recordIssues(tools: [esLint(pattern: 'reports/eslint_report.xml')])
+                                    recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
                                 }
                             }
                         }
@@ -182,7 +187,7 @@ pipeline {
                             stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                             publishCoverage(
                                 adapters: [
-                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage*.xml')
                                     ],
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                            )
@@ -195,7 +200,7 @@ pipeline {
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                    [pattern: '**/node_modules/', type: 'INCLUDE'],
                                 ]
                             )
                         }
@@ -220,14 +225,14 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
                         ]) {
-                            sh 'npm install'
+                            sh 'npm --prefix frontend install'
                         }
 //                        todo: make this into a webpack package
-                        sh 'npx --yes browserslist@latest --update-db'
+                        sh 'cd frontend && npx --yes browserslist@latest --update-db'
                         catchError(buildResult: 'SUCCESS', message: 'There are issues with building production build', stageResult: 'UNSTABLE') {
-                            sh(label: 'Creating production build', script: 'npm run build')
+                            sh(label: 'Creating production build', script: 'npm --prefix frontend  run build')
                         }
                     }
                 }

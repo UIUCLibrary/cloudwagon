@@ -1,6 +1,6 @@
 
 {
-  "files": ["frontend"],
+  "files": ["."],
   "formats": [
     {
       "name": "stylish",
