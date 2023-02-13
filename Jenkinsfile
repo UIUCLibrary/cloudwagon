@@ -35,6 +35,12 @@ pipeline {
                             sh 'npm --prefix frontend install'
                         }
                         sh 'mkdir -p logs'
+                        sh '''
+                            mkdir -p main && ln -s $PWD/frontend/src main/src
+                            ls -l
+                            ls -la main/
+                            ls -lRa main/
+                           '''
                     }
                 }
                 stage('Perform Tests'){
@@ -143,12 +149,11 @@ pipeline {
                                 npm_config_cache = '/tmp/npm-cache'
                             }
                             steps{
-                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/'
+                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
                             }
                             post{
                                 always{
                                     junit 'reports/*.xml'
-                                    sh 'mkdir -p main && cp -R ./frontend ./main/frontend'
                                 }
                             }
                         }
@@ -182,7 +187,7 @@ pipeline {
                             stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                             publishCoverage(
                                 adapters: [
-                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage*.xml')
                                     ],
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                            )
@@ -195,7 +200,7 @@ pipeline {
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: 'node_modules/', type: 'INCLUDE'],
+                                    [pattern: '**/node_modules/', type: 'INCLUDE'],
                                 ]
                             )
                         }

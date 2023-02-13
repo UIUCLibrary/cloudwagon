@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom'
 import {
   fireEvent,
   render,
@@ -8,7 +9,7 @@ import {
   DirectorySelect,
   CheckBoxOption,
   IFile, IAPIDirectoryContents,
-} from '../src/Widgets'
+} from '../Widgets'
 import axios from 'axios';
 import {FormEvent, useRef} from 'react';
 jest.mock('axios');
@@ -16,7 +17,7 @@ jest.mock('axios');
 describe('SelectOption', ()=>{
   it('Label is written', function () {
     render(
-      <SelectOption label="tester" parameters={{'selections': []}}/>
+        <SelectOption label="tester" parameters={{'selections': []}}/>
     )
     expect(screen.getByLabelText('tester')).toBeInTheDocument()
   });
@@ -28,22 +29,22 @@ describe('DirectorySelect', ()=>{
     const dataHook = ():Promise<IAPIDirectoryContents> =>{
       return new Promise((resolve, reject) => {
         resolve({
-          path: '/',
-          contents: [] as IFile[]
-      }
+              path: '/',
+              contents: [] as IFile[]
+            }
         );
       })
     }
     const onLoaded = jest.fn()
     render(
         <>
-            <DirectorySelect
-                onReady={onLoaded}
-                getDataHook={dataHook}
-                onRejected={onRejected}
-                label="tester"
-                parameters={{'selections': []}}
-            />
+          <DirectorySelect
+              onReady={onLoaded}
+              getDataHook={dataHook}
+              onRejected={onRejected}
+              label="tester"
+              parameters={{'selections': []}}
+          />
         </>
     )
     await waitFor(()=>expect(onLoaded).toBeCalled());
@@ -66,13 +67,13 @@ describe('CheckBoxOption', ()=>{
       expect(formProps).toStrictEqual({foo: 'false'});
     }
     render(
-      <>
-        <form onSubmit={onSubmit}>
-          <CheckBoxOption label={'foo'}/>
-          <button type='submit'>Submit</button>
-        </form>
-      </>
-      )
+        <>
+          <form onSubmit={onSubmit}>
+            <CheckBoxOption label={'foo'}/>
+            <button type='submit'>Submit</button>
+          </form>
+        </>
+    )
     fireEvent.click(screen.getByText('Submit'))
   })
   test('true', ()=>{
@@ -83,13 +84,13 @@ describe('CheckBoxOption', ()=>{
       expect(formProps).toStrictEqual({foo: 'true'});
     }
     render(
-      <>
-        <form onSubmit={onSubmit}>
-          <CheckBoxOption label={'foo'}/>
-          <button type='submit'>Submit</button>
-        </form>
-      </>
-      )
+        <>
+          <form onSubmit={onSubmit}>
+            <CheckBoxOption label={'foo'}/>
+            <button type='submit'>Submit</button>
+          </form>
+        </>
+    )
     fireEvent.click(screen.getByLabelText('foo'));
 
     fireEvent.click(screen.getByText('Submit'))
@@ -102,13 +103,13 @@ describe('CheckBoxOption', ()=>{
       expect(formProps).toStrictEqual({foo: 'false'});
     }
     render(
-      <>
-        <form onSubmit={onSubmit}>
-          <CheckBoxOption label={'foo'}/>
-          <button type='submit'>Submit</button>
-        </form>
-      </>
-      )
+        <>
+          <form onSubmit={onSubmit}>
+            <CheckBoxOption label={'foo'}/>
+            <button type='submit'>Submit</button>
+          </form>
+        </>
+    )
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByText('Submit'))

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom'
 import {
   fireEvent,
   render,
@@ -5,9 +6,9 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import SubmitJob, {WidgetApi, GetWidget} from '../src/SubmitJob';
+import SubmitJob, {WidgetApi, GetWidget} from '../SubmitJob';
 import axios from 'axios';
-import {DirectorySelect} from '../src/Widgets'
+import {DirectorySelect} from '../Widgets'
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('SubmitJob', () => {
@@ -115,7 +116,7 @@ describe('WorkflowParams', () => {
   ])('testing label matches %p', async (name: string, metadata: WidgetApi) => {
     mockedAxios.get.mockImplementation((url) => {
       if (url.startsWith('/api/files')) {
-          const promise =  Promise.resolve(
+        const promise =  Promise.resolve(
             {
               data:
                   {

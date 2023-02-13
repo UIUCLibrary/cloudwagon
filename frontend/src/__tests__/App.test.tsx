@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom'
+
 import React from 'react';
 import {
   render,
@@ -5,7 +7,7 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import App, {SpeedwagonApp} from '../src/App';
+import App, {SpeedwagonApp} from '../App';
 import axios from 'axios';
 import {BrowserRouter, Routes, Route} from 'react-router-dom';
 jest.mock('axios');
