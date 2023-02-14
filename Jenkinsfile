@@ -94,6 +94,23 @@ pipeline {
                                         }
                                     }
                                 }
+                                stage("PyDocStyle"){
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
+                                            tee('reports/pydocstyle-report.txt'){
+                                                sh(
+                                                    label: 'Run pydocstyle',
+                                                    script: 'pydocstyle backend/speedcloud'
+                                                )
+                                            }
+                                        }
+                                    }
+                                    post {
+                                        always{
+                                            recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
+                                        }
+                                    }
+                                }
                                 stage('Pylint') {
                                     steps{
                                         withEnv(['PYLINTHOME=.']) {
@@ -102,7 +119,7 @@ pipeline {
                                                 tee('reports/pylint_issues.txt'){
                                                     sh(
                                                         label: 'Running pylint',
-                                                        script: 'pylint speedwagon -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                        script: 'pylint backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
                                                     )
                                                 }
                                             }
