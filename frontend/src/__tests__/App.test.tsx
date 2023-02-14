@@ -7,9 +7,8 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import App, {SpeedwagonApp} from '../App';
+import App from '../App';
 import axios from 'axios';
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('App', ()=>{
