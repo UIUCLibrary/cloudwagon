@@ -3,200 +3,228 @@ pipeline {
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
         booleanParam defaultValue: true, description: 'Run checks', name: 'RUN_CHECKS'
+        booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
         booleanParam defaultValue: false, description: 'Package', name: 'PACKAGE'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
     stages {
         stage('Test'){
-            when{
-                equals expected: true, actual: params.RUN_CHECKS
-                beforeInput true
-                beforeAgent true
-            }
-            agent {
-                dockerfile {
-                    filename 'ci/docker/jenkins/python/Dockerfile'
-                    label 'linux && docker && x86'
-                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                    args '-v npmcache:/tmp/.npm'
-                  }
-            }
             stages{
-                stage('Set up Tests') {
-                    environment {
-                        npm_config_cache = '/tmp/npm-cache'
+                stage('Code Quality'){
+                    when{
+                        equals expected: true, actual: params.RUN_CHECKS
+                        beforeInput true
+                        beforeAgent true
                     }
-                    steps{
-                        cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
-                        ]) {
-                            sh 'npm --prefix frontend install'
-                        }
-                        sh 'mkdir -p logs'
-                        sh 'mkdir -p main && ln -s $PWD/frontend/src main/src'
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/jenkins/python/Dockerfile'
+                            label 'linux && docker && x86'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                          }
                     }
-                }
-                stage('Perform Tests'){
-                    parallel{
-                        stage('PyTest'){
-                            steps{
-                                catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
-                                    sh(
-                                        script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
-                                    )
-                                }
+                    stages{
+                        stage('Set up Tests') {
+                            environment {
+                                npm_config_cache = '/tmp/npm-cache'
                             }
-                            post {
-                                always {
-                                    junit 'reports/tests/pytest/pytest-junit.xml'
+                            steps{
+                                cache(maxCacheSize: 1000, caches: [
+                                    arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                                ]) {
+                                    sh 'npm --prefix frontend install'
                                 }
+                                sh 'mkdir -p logs'
+                                sh 'mkdir -p main && ln -s $PWD/frontend/src main/src'
                             }
                         }
-                        stage('Flake8') {
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                    sh script: 'flake8 backend/speedcloud --tee --output-file=logs/flake8.log'
-                                }
-                            }
-                            post {
-                                always {
-                                      recordIssues(tools: [flake8(pattern: 'logs/flake8.log')])
-                                }
-                            }
-                        }
-                        stage('MyPy') {
-                            steps{
-                                timeout(10){
-                                    tee('logs/mypy.log') {
-                                        catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                        stage('Perform Tests'){
+                            parallel{
+                                stage('PyTest'){
+                                    steps{
+                                        catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                             sh(
-                                                label: "Running MyPy",
-                                                script: '''mypy --version
-                                                           mkdir -p reports/mypy/html
-                                                           mkdir -p logs
-                                                           mypy backend/speedcloud --html-report reports/mypy/html
-                                                           '''
+                                                script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                            )
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            junit 'reports/tests/pytest/pytest-junit.xml'
+                                        }
+                                    }
+                                }
+                                stage('Flake8') {
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
+                                            sh script: 'flake8 backend/speedcloud --tee --output-file=logs/flake8.log'
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                              recordIssues(tools: [flake8(pattern: 'logs/flake8.log')])
+                                        }
+                                    }
+                                }
+                                stage('MyPy') {
+                                    steps{
+                                        timeout(10){
+                                            tee('logs/mypy.log') {
+                                                catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: "Running MyPy",
+                                                        script: '''mypy --version
+                                                                   mkdir -p reports/mypy/html
+                                                                   mkdir -p logs
+                                                                   mypy backend/speedcloud --html-report reports/mypy/html
+                                                                   '''
+                                                        )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                            recordIssues(
+                                                filters: [excludeFile('/stubs/*')],
+                                                tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')]
                                                 )
                                         }
                                     }
                                 }
-                            }
-                            post {
-                                always {
-                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                    recordIssues(
-                                        filters: [excludeFile('/stubs/*')],
-                                        tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')]
-                                        )
-                                }
-                            }
-                        }
-                        stage('Pylint') {
-                            steps{
-                                withEnv(['PYLINTHOME=.']) {
-                                    sh 'pylint --version'
-                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                        tee('reports/pylint_issues.txt'){
+                                stage('Pylint') {
+                                    steps{
+                                        withEnv(['PYLINTHOME=.']) {
+                                            sh 'pylint --version'
+                                            catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                tee('reports/pylint_issues.txt'){
+                                                    sh(
+                                                        label: 'Running pylint',
+                                                        script: 'pylint speedwagon -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                    )
+                                                }
+                                            }
                                             sh(
-                                                label: 'Running pylint',
-                                                script: 'pylint speedwagon -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                label: 'Running pylint for sonarqube',
+                                                script: 'pylint backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                                returnStatus: true
                                             )
                                         }
                                     }
-                                    sh(
-                                        label: 'Running pylint for sonarqube',
-                                        script: 'pylint backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
-                                        returnStatus: true
-                                    )
+                                    post{
+                                        always{
+                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint_issues.txt')])
+                                        }
+                                    }
                                 }
-                            }
-                            post{
-                                always{
-                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint_issues.txt')])
+                                stage('Task Scanner'){
+                                    steps{
+                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
+                                    }
                                 }
-                            }
-                        }
-                        stage('Task Scanner'){
-                            steps{
-                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
-                            }
-                        }
-                        stage('Hadolint'){
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
-                                    sh 'hadolint --format json backend/Dockerfile frontend/Dockerfile > logs/hadolint.log'
+                                stage('Hadolint'){
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
+                                            sh 'hadolint --format json backend/Dockerfile frontend/Dockerfile > logs/hadolint.log'
+                                        }
+                                    }
+                                    post{
+                                        always{
+                                            recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
+                                        }
+                                    }
                                 }
-                            }
-                            post{
-                                always{
-                                    recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
+                                stage('Jest'){
+                                    environment {
+                                        HOME = '/tmp/'
+                                        JEST_JUNIT_OUTPUT_NAME='js-junit.xml'
+                                        JEST_JUNIT_ADD_FILE_ATTRIBUTE='true'
+                                        JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
+                                        npm_config_cache = '/tmp/npm-cache'
+                                    }
+                                    steps{
+                                        sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
+                                    }
+                                    post{
+                                        always{
+                                            junit 'reports/*.xml'
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        stage('Jest'){
-                            environment {
-                                HOME = '/tmp/'
-                                JEST_JUNIT_OUTPUT_NAME='js-junit.xml'
-                                JEST_JUNIT_ADD_FILE_ATTRIBUTE='true'
-                                JEST_JUNIT_OUTPUT_DIR="${WORKSPACE}/reports"
-                                npm_config_cache = '/tmp/npm-cache'
-                            }
-                            steps{
-                                sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
-                            }
-                            post{
-                                always{
-                                    junit 'reports/*.xml'
-                                }
-                            }
-                        }
-                        stage('ESlint'){
-                            steps{
-                                timeout(10){
-                                    catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
-                                        sh(
-                                            label:  "Running ESlint",
-                                            script: 'npm --prefix frontend run eslint-output'
-                                        )
+                                stage('ESlint'){
+                                    steps{
+                                        timeout(10){
+                                            catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
+                                                sh(
+                                                    label:  "Running ESlint",
+                                                    script: 'npm --prefix frontend run eslint-output'
+                                                )
+                                            }
+                                        }
+                                    }
+                                    post{
+                                        always{
+                                            recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
+                                        }
                                     }
                                 }
                             }
-                            post{
+                             post{
                                 always{
-                                    sh 'ls reports'
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
-                                    recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
+                                    sh(label: 'combining coverage data',
+                                       script: '''coverage combine
+                                                  coverage xml -o ./reports/coverage-python.xml
+                                                  '''
+                                    )
+                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                    publishCoverage(
+                                        adapters: [
+                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage*.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                   )
+                                   archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'main/', type: 'INCLUDE'],
+                                            [pattern: 'coverage/', type: 'INCLUDE'],
+                                            [pattern: 'reports/', type: 'INCLUDE'],
+                                            [pattern: '**/node_modules/', type: 'INCLUDE'],
+                                        ]
+                                    )
                                 }
                             }
                         }
                     }
-                     post{
-                        always{
-                            sh(label: 'combining coverage data',
-                               script: '''coverage combine
-                                          coverage xml -o ./reports/coverage-python.xml
-                                          '''
-                            )
-                            stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-                            publishCoverage(
-                                adapters: [
-                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage*.xml')
-                                    ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                           )
-                           archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
-                        }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'main/', type: 'INCLUDE'],
-                                    [pattern: 'coverage/', type: 'INCLUDE'],
-                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: '**/node_modules/', type: 'INCLUDE'],
-                                ]
-                            )
+                }
+                stage('Tox'){
+                    when{
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    steps{
+                        script{
+                            def tox = fileLoader.fromGit(
+                                        'tox',
+                                        'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                        '8',
+                                        null,
+                                        ''
+                                    )
+                            parallel(
+                                tox.getToxTestsParallel(
+                                    envNamePrefix: 'Tox Linux',
+                                    label: 'linux && docker && x86',
+                                    dockerfile: 'ci/docker/tox/linux/Dockerfile',
+                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_CACHE_DIR=/.cache/pip',
+                                    dockerRunArgs: "-v pipcache_dockerSpeedwagon:/.cache/pip",
+                                    retry: 2
+                                    )
+                                )
                         }
                     }
                 }
