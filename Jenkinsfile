@@ -166,8 +166,6 @@ pipeline {
                                     }
                                     post{
                                         always{
-                                            sh 'ls reports'
-                                            archiveArtifacts allowEmptyArchive: true, artifacts: "reports/*.xml"
                                             recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
                                         }
                                     }
