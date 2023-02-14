@@ -77,7 +77,7 @@ async def upload_file(
     ):
         raise HTTPException(404)
     files_uploaded = []
-    # todo: upload to the directory specified in path query params
+    # TODO: upload to the directory specified in path query params
     for file in files:
         if file.filename == '':
             continue
