@@ -14,8 +14,8 @@ FROM base
 ARG PIP_CACHE_DIR
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-RUN mkdir -p ${PIP_CACHE_DIR} && chmod -R 777 ${PIP_CACHE_DIR}
-
+RUN mkdir -p ${PIP_CACHE_DIR} && chmod -R 777 ${PIP_CACHE_DIR} && \
+    mkdir -p /.local/share && chmod -R 777 /.local/share
 
 RUN python3 -m pip install --no-cache-dir pip --upgrade && \
     python3 -m pip install --no-cache-dir wheel tox
