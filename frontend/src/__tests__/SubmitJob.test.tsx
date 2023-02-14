@@ -8,7 +8,6 @@ import {
 } from '@testing-library/react';
 import SubmitJob, {WidgetApi, GetWidget} from '../SubmitJob';
 import axios from 'axios';
-import {DirectorySelect} from '../Widgets'
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('SubmitJob', () => {

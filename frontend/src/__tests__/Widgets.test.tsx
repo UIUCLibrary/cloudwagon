@@ -10,8 +10,7 @@ import {
   CheckBoxOption,
   IFile, IAPIDirectoryContents,
 } from '../Widgets'
-import axios from 'axios';
-import {FormEvent, useRef} from 'react';
+import {FormEvent} from 'react';
 jest.mock('axios');
 
 describe('SelectOption', ()=>{
