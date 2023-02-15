@@ -38,8 +38,15 @@ import FolderIcon from "@mui/icons-material/Folder";
 import InputLabel from "@mui/material/InputLabel";
 import {splitRoutes} from './FileManagement';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import PortraitOutlinedIcon from '@mui/icons-material/PortraitOutlined';
+import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
+// import PhotoCameraFrontOutlinedIcon from '@mui/icons-material/PhotoCameraFrontOutlined';
+
+
 import {
-  GridCellParams,
+  GridCellParams, GridRenderCellParams,
   GridValueFormatterParams
 } from '@mui/x-data-grid/models/params/gridCellParams';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -141,9 +148,6 @@ const StyledDataGrid = styled(DataGrid, {})({
         border: "1px solid grey"
       },
     },
-  "&.MuiDataGrid-toolbarContainer":{
-
-  }
 })
 interface IRoute{
   display: string
@@ -175,15 +179,6 @@ const CurrentPath: FC<IToolbar> = ({selected, setPwd})=> {
 
 const useGetFileData = (source: { contents: IFile[]} | null): IFile[] | null=>{
   const [files, setFiles] = useState<IFile[] | null>(null);
-  const contentName = (file: IFile) =>{
-    if (file.type === "Directory" ) {
-      if (file.name === "..") {
-        return file.name;
-      }
-      return `${file.name}/`;
-    }
-    return file.name
-  }
   useEffect(()=>{
     if (source) {
         const newFiles: IFile[] = []
@@ -192,7 +187,7 @@ const useGetFileData = (source: { contents: IFile[]} | null): IFile[] | null=>{
                 {
                   id: newFiles.length,
                   size: fileNode.size,
-                  name: contentName(fileNode),
+                  name: fileNode.name,
                   type: fileNode.type,
                   path: fileNode.path,
                 }
@@ -215,7 +210,6 @@ interface IDirectorySelectDialog {
 interface DirectorySelectDialogRef {
   selectedPath: string | null
 }
-
 const fileSizeFormatter = (params: GridValueFormatterParams<number>) => {
   if (params.value == null) {
     return '';
@@ -269,6 +263,28 @@ const filesOnRowClick = (
   }
 }
 
+const formatWithIcon = (params: GridRenderCellParams<any, any, any>) => {
+  if (params.row.type === "Directory"){
+    return <><FolderOutlinedIcon/><Box sx={{pl:1}}>{params.value}</Box></>
+  }
+  if (params.row.type === "File"){
+    const fileNameLowerCase = params.value.toLowerCase()
+    if (
+        fileNameLowerCase.endsWith('.jp2') ||
+        fileNameLowerCase.endsWith('.tif') ||
+        fileNameLowerCase.endsWith('.gif') ||
+        fileNameLowerCase.endsWith('.jpg') ||
+        fileNameLowerCase.endsWith('.jpeg')
+    ){
+      return <><PortraitOutlinedIcon/><Box sx={{pl:1}}>{params.value}</Box></>
+    }
+    if (params.value.endsWith('.txt')){
+      return <><TextSnippetOutlinedIcon/><Box sx={{pl:1}}>{params.value}</Box></>
+    }
+    return <><InsertDriveFileOutlinedIcon/><Box sx={{pl:1}}>{params.value}</Box></>
+  }
+  return params.value
+}
 const DirectorySelectDialog = forwardRef((
     {
       startingPath,
@@ -321,6 +337,8 @@ const DirectorySelectDialog = forwardRef((
       flex: 0.5,
       minWidth: 250,
       editable: false,
+      renderCell: formatWithIcon
+      // valueFormatter: nameFormatter
     },
     {
       field: 'size',
@@ -359,64 +377,66 @@ const DirectorySelectDialog = forwardRef((
             </IconButton>
           </DialogTitle>
           <DialogContent style={{ overflow: "hidden"}}>
-            <Box style={{ display: 'flex', minHeight: 400}}>
+            <Box sx={{ display: 'flex', minHeight: 400}}>
               <Box sx={{ flexGrow: 2, borderColor: "text.disabled", overflow: "hidden", p:1, pb:5}}>
-                <CurrentPath selected={pwd} setPwd={setPwd}/>
-                <StyledDataGrid
-                    sx={{
-                      '& .MuiDataGrid-panelContent':{
-                        color: "blue"
-                      },
-                      overflow: "hidden",
-                      '& .theme-disabled': {
-                          color: "text.disabled",
+                  <CurrentPath selected={pwd} setPwd={setPwd}/>
+
+                  <StyledDataGrid
+                      sx={{
+                        '& .MuiDataGrid-panelContent':{
+                          color: "blue"
                         },
-                      '& .theme-selectable': {
-                          color: "text.primary",
-                        },
-                      '& .theme-selected': {
-                          color: "text.primary",
-                        },
-                    }}
-                    getCellClassName={fileCellClass}
-                    getRowClassName={fileRowClass}
-                    columnVisibilityModel={{
-                      name: true,
-                      size: true,
-                      type: true,
-                      location: false
-                    }}
-                    components={{
-                      LoadingOverlay: LinearProgress,
-                    }}
-                    loading={loading}
-                    componentsProps={
-                      {
-                        toolbar: {selected: selectedPath, setPwd: setPwd},
-                        loadingOverlay:{role: 'progressBar'},
+                        overflow: "hidden",
+                        '& .theme-disabled': {
+                            color: "text.disabled",
+                          },
+                        '& .theme-selectable': {
+                            color: "text.primary",
+                          },
+                        '& .theme-selected': {
+                            color: "text.primary",
+                          },
+                      }}
+                      getCellClassName={fileCellClass}
+                      getRowClassName={fileRowClass}
+                      columnVisibilityModel={{
+                        name: true,
+                        size: true,
+                        type: true,
+                        location: false
+                      }}
+                      components={{
+                        LoadingOverlay: LinearProgress,
+                      }}
+                      loading={loading}
+                      componentsProps={
+                        {
+                          toolbar: {selected: selectedPath, setPwd: setPwd},
+                          loadingOverlay:{role: 'progressBar'},
+                        }
                       }
-                    }
-                    onRowClick={(params)=> {
-                      return filesOnRowClick(params, loading, setSelectedPath);
-                    }}
-                    onRowDoubleClick={
-                      (params: GridRowParams<IFile>)=> fileOnDoubleClick(
-                          params,
-                          loading,
-                          setPwd
-                      )
-                    }
-                    isRowSelectable={
-                      (params: GridRowParams<GridValidRowModel>): boolean => {
-                        return fileIsRowSelectable(params, loading)
-                    }}
-                    rows={files? files: []}
-                    columns={columns}
-                    disableColumnMenu={true}
-                    hideFooterSelectedRowCount={true}
-                    hideFooter={true}
-                    rowHeight={40}
-                />
+                      onRowClick={(params)=> {
+                        return filesOnRowClick(params, loading, setSelectedPath);
+                      }}
+                      onRowDoubleClick={
+                        (params: GridRowParams<IFile>)=> fileOnDoubleClick(
+                            params,
+                            loading,
+                            setPwd
+                        )
+                      }
+                      isRowSelectable={
+                        (params: GridRowParams<GridValidRowModel>): boolean => {
+                          return fileIsRowSelectable(params, loading)
+                      }}
+                      rows={files? files: []}
+                      columns={columns}
+                      disableColumnMenu={true}
+                      hideFooterSelectedRowCount={true}
+                      hideFooter={true}
+                      rowHeight={40}
+                  />
+
               </Box>
             </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', pt:1}}>

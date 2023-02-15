@@ -72,10 +72,10 @@ describe('DirectorySelect', ()=>{
       const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
       await waitFor(()=>{
-        expect(screen.getByText('t2/')).toBeInTheDocument()
+        expect(screen.getByText('t2')).toBeInTheDocument()
       })
       const selectedPathDisplay = screen.getByLabelText('selected path')
-      fireEvent.click(screen.getByText('t2/'));
+      fireEvent.click(screen.getByText('t2'));
       expect(selectedPathDisplay).toHaveTextContent("/t2")
       fireEvent.click(screen.getByText('Accept'));
       await waitFor(()=>expect(onAccepted).toBeCalled());
@@ -86,10 +86,10 @@ describe('DirectorySelect', ()=>{
       const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
       await waitFor(()=>{
-        expect(screen.getByText('t2/')).toBeInTheDocument()
+        expect(screen.getByText('t2')).toBeInTheDocument()
       })
       const selectedPathDisplay = screen.getByLabelText('selected path')
-      fireEvent.click(screen.getByText('t2/'));
+      fireEvent.click(screen.getByText('t2'));
       expect(selectedPathDisplay).toHaveTextContent("/t2")
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(()=>expect(onRejected).toBeCalled());
@@ -106,10 +106,10 @@ describe('DirectorySelect', ()=>{
       const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
       await waitFor(()=>{
-        expect(screen.getByText('t2/')).toBeInTheDocument()
+        expect(screen.getByText('t2')).toBeInTheDocument()
       })
       const selectedPathDisplay = screen.getByLabelText('selected path')
-      fireEvent.click(screen.getByText('t2/'));
+      fireEvent.click(screen.getByText('t2'));
       expect(selectedPathDisplay).toHaveTextContent("/t2")
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(()=>expect(onRejected).toBeCalled());
