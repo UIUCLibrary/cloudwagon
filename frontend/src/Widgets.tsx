@@ -438,7 +438,7 @@ export interface SelectionRef {
 }
 export const DirectorySelect = forwardRef(
     (
-        {label, onRejected, getDataHook, onReady}: IDirectorySelect,
+        {label, onRejected, getDataHook, onAccepted, onReady}: IDirectorySelect,
         ref: Ref<SelectionRef>) => {
   const dialogBoxRef = useRef<DirectorySelectDialogRef>(null);
   const [openDialogBox, setOpenDialogBox] = useState(false)
@@ -447,6 +447,12 @@ export const DirectorySelect = forwardRef(
   const handleMouseDown = () => {
     setBrowsePath(selected ? selected : '/');
     setOpenDialogBox(true)
+  }
+  const handleAccepted = (value: string) =>{
+    setSelected(value)
+    if (onAccepted){
+      onAccepted(value)
+    }
   }
   const useHook = (path: string | null, update: boolean):[boolean, IFile[] | null] => {
     const [loading, setLoading] = useState(false);
@@ -493,7 +499,7 @@ export const DirectorySelect = forwardRef(
             startingPath={browsePath}
             show={openDialogBox}
             getDataHook={useHook}
-            onAccepted={(value)=>setSelected(value)}
+            onAccepted={handleAccepted}
             onRejected={onRejected}
             onClose={()=>setOpenDialogBox(false)}
         />

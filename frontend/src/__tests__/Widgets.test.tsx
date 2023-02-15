@@ -23,29 +23,38 @@ describe('SelectOption', ()=>{
 })
 
 describe('DirectorySelect', ()=>{
+  const onLoaded = jest.fn()
+  const onRejected = jest.fn()
+  const onAccepted = jest.fn()
+  afterEach(()=>{
+    onLoaded.mockReset()
+    onAccepted.mockReset()
+    onRejected.mockReset()
+  })
+  const directoryContents = {
+    path: '/',
+    contents: [
+      {name: "t2", path: "/t2", type: "Directory", size: null}
+    ] as IFile[]
+  }
+  const element = <>
+    <DirectorySelect
+        getDataHook={
+          ():Promise<IAPIDirectoryContents> =>{
+            return new Promise((resolve, reject) => {
+              resolve(directoryContents);
+            })
+          }
+        }
+        onReady={onLoaded}
+        onRejected={onRejected}
+        onAccepted={onAccepted}
+        label="tester"
+        parameters={{'selections': []}}
+    />
+  </>
   test('browse Button opens dialog', async ()=>{
-    const onRejected = jest.fn();
-    const dataHook = ():Promise<IAPIDirectoryContents> =>{
-      return new Promise((resolve, reject) => {
-        resolve({
-              path: '/',
-              contents: [] as IFile[]
-            }
-        );
-      })
-    }
-    const onLoaded = jest.fn()
-    render(
-        <>
-          <DirectorySelect
-              onReady={onLoaded}
-              getDataHook={dataHook}
-              onRejected={onRejected}
-              label="tester"
-              parameters={{'selections': []}}
-          />
-        </>
-    )
+    render(element)
     await waitFor(()=>expect(onLoaded).toBeCalled());
     fireEvent.click(screen.getByRole('button', {name: /browse/}));
     await waitFor(()=>{
@@ -56,35 +65,45 @@ describe('DirectorySelect', ()=>{
       expect(onRejected).toBeCalled();
     })
   })
+  describe('callbacks', ()=>{
+    test('Accept button calls onAccepted', async ()=>{
+      render(element)
+
+      const browseButton = screen.getByRole('button', {name: /browse/})
+      fireEvent.click(browseButton);
+      await waitFor(()=>{
+        expect(screen.getByText('t2/')).toBeInTheDocument()
+      })
+      const selectedPathDisplay = screen.getByLabelText('selected path')
+      fireEvent.click(screen.getByText('t2/'));
+      expect(selectedPathDisplay).toHaveTextContent("/t2")
+      fireEvent.click(screen.getByText('Accept'));
+      await waitFor(()=>expect(onAccepted).toBeCalled());
+    })
+    test('Cancel button calls onRejected', async ()=>{
+      render(element)
+
+      const browseButton = screen.getByRole('button', {name: /browse/})
+      fireEvent.click(browseButton);
+      await waitFor(()=>{
+        expect(screen.getByText('t2/')).toBeInTheDocument()
+      })
+      const selectedPathDisplay = screen.getByLabelText('selected path')
+      fireEvent.click(screen.getByText('t2/'));
+      expect(selectedPathDisplay).toHaveTextContent("/t2")
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(()=>expect(onRejected).toBeCalled());
+
+    })
+  })
   describe('open dialog is reset dialog after close', ()=>{
 
-    const directoryContents = {
-      path: '/',
-      contents: [
-        {name: "t2", path: "/t2", type: "Directory", size: null}
-      ] as IFile[]
-    }
-    test('resets the directory name', async ()=>{
-      const dataHook = ():Promise<IAPIDirectoryContents> =>{
-        return new Promise((resolve, reject) => {
-          resolve(directoryContents);
-        })
-      }
-      const onLoaded = jest.fn()
-      const onRejected = jest.fn()
-      render(
-          <>
-            <DirectorySelect
-                onReady={onLoaded}
-                getDataHook={dataHook}
-                onRejected={onRejected}
-                label="tester"
-                parameters={{'selections': []}}
-            />
-          </>
-      )
-      const browseButton = screen.getByRole('button', {name: /browse/})
 
+
+    test('resets the directory name', async ()=>{
+      render(element)
+
+      const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
       await waitFor(()=>{
         expect(screen.getByText('t2/')).toBeInTheDocument()
@@ -98,33 +117,10 @@ describe('DirectorySelect', ()=>{
       expect(selectedPathDisplay).not.toHaveTextContent("/t2")
     })
     test('current path does not change', async ()=>{
-      const dataHook = ():Promise<IAPIDirectoryContents> =>{
-        return new Promise((resolve, reject) => {
-          resolve(directoryContents);
-        })
-      }
-      const onLoaded = jest.fn()
-      const onRejected = jest.fn()
-      render(
-          <>
-            <DirectorySelect
-                onReady={onLoaded}
-                getDataHook={dataHook}
-                onRejected={onRejected}
-                label="tester"
-                parameters={{'selections': []}}
-            />
-          </>
-      )
-      const browseButton = screen.getByRole('button', {name: /browse/})
+      render(element)
 
+      const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
-      // await waitFor(()=>{
-      //   expect(onLoaded).toBeCalled()
-      // })
-      // await waitFor(()=>{
-      //   expect(screen.getByText('t2/')).toBeInTheDocument()
-      // })
       const workingPathDisplay = screen.getByLabelText('working path')
       expect(workingPathDisplay).toHaveTextContent("/")
       fireEvent.click(screen.getByText('Cancel'));
