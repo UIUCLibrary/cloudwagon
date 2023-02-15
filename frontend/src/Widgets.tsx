@@ -42,8 +42,6 @@ import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import PortraitOutlinedIcon from '@mui/icons-material/PortraitOutlined';
 import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
-// import PhotoCameraFrontOutlinedIcon from '@mui/icons-material/PhotoCameraFrontOutlined';
-
 
 import {
   GridCellParams, GridRenderCellParams,
@@ -51,6 +49,8 @@ import {
 } from '@mui/x-data-grid/models/params/gridCellParams';
 import LinearProgress from '@mui/material/LinearProgress';
 import CloseIcon from '@mui/icons-material/Close';
+import axios from 'axios';
+import {TextFieldProps} from '@mui/material/TextField/TextField';
 
 
 interface IWidget {
@@ -461,15 +461,17 @@ export const DirectorySelect = forwardRef(
         {label, onRejected, getDataHook, onAccepted, onReady}: IDirectorySelect,
         ref: Ref<SelectionRef>) => {
   const dialogBoxRef = useRef<DirectorySelectDialogRef>(null);
+  const textBoxRef = useRef<TextFieldProps>(null);
   const [openDialogBox, setOpenDialogBox] = useState(false)
-  const [selected, setSelected] = useState<undefined | string>();
   const [browsePath, setBrowsePath] = useState<undefined | string>();
+  const [valueIsValid, setValueIsValid] = useState(true)
+  const [value, setValue] = useState('')
   const handleMouseDown = () => {
-    setBrowsePath(selected ? selected : '/');
+    setBrowsePath(valueIsValid ? value : '/');
     setOpenDialogBox(true)
   }
   const handleAccepted = (value: string) =>{
-    setSelected(value)
+    setValue(value)
     if (onAccepted){
       onAccepted(value)
     }
@@ -478,9 +480,19 @@ export const DirectorySelect = forwardRef(
     const [loading, setLoading] = useState(false);
     const [rawData, setRawData] = useState<{ contents: IFile[]} | null>(null);
     const files = useGetFileData(rawData)
+
     useImperativeHandle(ref, () =>({
       value: dialogBoxRef.current ? dialogBoxRef.current.selectedPath : null
     }), []);
+    useEffect(()=>{
+      if (value === ''){
+        setValueIsValid(false)
+      }
+      axios.get(`/api/files/exists?path=${value}`)
+          .then(res => {
+            setValueIsValid(res.data.exists)
+          }).catch(console.error)
+    })
     useEffect(()=>{
       if (!update){
         if (onReady){
@@ -512,6 +524,7 @@ export const DirectorySelect = forwardRef(
 
     return [loading, files];
   }
+
   return (
       <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
         <DirectorySelectDialog
@@ -524,10 +537,12 @@ export const DirectorySelect = forwardRef(
             onClose={()=>setOpenDialogBox(false)}
         />
         <TextField
+            inputRef={textBoxRef}
+            error={!valueIsValid}
             label={label}
-            value={selected ? selected : ''}
+            onChange={(event: any) =>{setValue(event.target.value)}}
+            value={value}
             InputProps={{
-              readOnly: true,
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton aria-label="browse" onClick={handleMouseDown}>

@@ -11,6 +11,7 @@ import {
   IFile, IAPIDirectoryContents,
 } from '../Widgets'
 import {FormEvent} from 'react';
+import axios from 'axios';
 jest.mock('axios');
 
 describe('SelectOption', ()=>{
@@ -21,8 +22,22 @@ describe('SelectOption', ()=>{
     expect(screen.getByLabelText('tester')).toBeInTheDocument()
   });
 })
-
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('DirectorySelect', ()=>{
+  beforeEach(()=>{
+    mockedAxios.get.mockImplementation((url) => {
+      if (url.startsWith('/api/files/exists')) {
+        return Promise.resolve(
+            {
+              data:
+                  {
+                   exists: true
+                  }
+            });
+      }
+      return Promise.resolve();
+    })
+  })
   const onLoaded = jest.fn()
   const onRejected = jest.fn()
   const onAccepted = jest.fn()

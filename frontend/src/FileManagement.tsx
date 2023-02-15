@@ -111,7 +111,7 @@ export default function FileManagement(){
         if(!dataIsValid){
             const path = pwd ? pwd: '/';
             setLoading(true)
-            axios.get(`/api/files?path=${encodeURI(path)}`)
+            axios.get(`/api/files/contents?path=${encodeURI(path)}`)
                 .then((result) => {
                     setData(result.data)
                     setError(null);

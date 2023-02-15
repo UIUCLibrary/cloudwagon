@@ -34,14 +34,14 @@ class TestFilesRoute:
         return TestClient(app)
 
     def test_get_empty(self, client):
-        response = client.get("/files?path=%2F")
+        response = client.get("/files/contents?path=%2F")
         assert response.json() == {
             "path": '/',
             "contents": []
         }
 
     def test_get_defaults_to_root(self, client):
-        response = client.get("/files")
+        response = client.get("/files/contents")
         assert response.json()["path"] == '/'
 
 

@@ -27,7 +27,7 @@ interface WorkflowDetails {
 }
 const APISelectDir = ({widgetParameter}: { widgetParameter: WidgetApi})=>{
     const getFilesData = async (path: string)=>{
-      const response = await axios.get(`/api/files?path=${path}`);
+      const response = await axios.get(`/api/files/contents?path=${path}`);
       return response.data
     };
     return (
