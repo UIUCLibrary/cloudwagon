@@ -56,6 +56,83 @@ describe('DirectorySelect', ()=>{
       expect(onRejected).toBeCalled();
     })
   })
+  describe('open dialog is reset dialog after close', ()=>{
+
+    const directoryContents = {
+      path: '/',
+      contents: [
+        {name: "t2", path: "/t2", type: "Directory", size: null}
+      ] as IFile[]
+    }
+    test('resets the directory name', async ()=>{
+      const dataHook = ():Promise<IAPIDirectoryContents> =>{
+        return new Promise((resolve, reject) => {
+          resolve(directoryContents);
+        })
+      }
+      const onLoaded = jest.fn()
+      const onRejected = jest.fn()
+      render(
+          <>
+            <DirectorySelect
+                onReady={onLoaded}
+                getDataHook={dataHook}
+                onRejected={onRejected}
+                label="tester"
+                parameters={{'selections': []}}
+            />
+          </>
+      )
+      const browseButton = screen.getByRole('button', {name: /browse/})
+
+      fireEvent.click(browseButton);
+      await waitFor(()=>{
+        expect(screen.getByText('t2/')).toBeInTheDocument()
+      })
+      const selectedPathDisplay = screen.getByLabelText('selected path')
+      fireEvent.click(screen.getByText('t2/'));
+      expect(selectedPathDisplay).toHaveTextContent("/t2")
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(()=>expect(onRejected).toBeCalled());
+      fireEvent.click(browseButton);
+      expect(selectedPathDisplay).not.toHaveTextContent("/t2")
+    })
+    test('current path does not change', async ()=>{
+      const dataHook = ():Promise<IAPIDirectoryContents> =>{
+        return new Promise((resolve, reject) => {
+          resolve(directoryContents);
+        })
+      }
+      const onLoaded = jest.fn()
+      const onRejected = jest.fn()
+      render(
+          <>
+            <DirectorySelect
+                onReady={onLoaded}
+                getDataHook={dataHook}
+                onRejected={onRejected}
+                label="tester"
+                parameters={{'selections': []}}
+            />
+          </>
+      )
+      const browseButton = screen.getByRole('button', {name: /browse/})
+
+      fireEvent.click(browseButton);
+      // await waitFor(()=>{
+      //   expect(onLoaded).toBeCalled()
+      // })
+      // await waitFor(()=>{
+      //   expect(screen.getByText('t2/')).toBeInTheDocument()
+      // })
+      const workingPathDisplay = screen.getByLabelText('working path')
+      expect(workingPathDisplay).toHaveTextContent("/")
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(()=>expect(onRejected).toBeCalled());
+      fireEvent.click(browseButton);
+      expect(workingPathDisplay).toHaveTextContent("/")
+    })
+  })
 })
 describe('CheckBoxOption', ()=>{
   test('default', ()=>{

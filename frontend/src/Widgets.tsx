@@ -43,6 +43,7 @@ import {
   GridValueFormatterParams
 } from '@mui/x-data-grid/models/params/gridCellParams';
 import LinearProgress from '@mui/material/LinearProgress';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 interface IWidget {
@@ -66,7 +67,7 @@ export interface IAPIDirectoryContents {
   contents: IFile[]
 }
 interface IDirectorySelect extends APIWidgetData{
-  getDataHook: ()=>Promise<IAPIDirectoryContents | null>
+  getDataHook: (path: string)=>Promise<IAPIDirectoryContents | null>
   onReady?: ()=>void
 }
 export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
@@ -94,7 +95,7 @@ export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
             id={id}>{label}</InputLabel>
         <Select
             labelId={id}
-            name={label} label={label} defaultValue=''>{options}</Select>
+            name={label} label={label} defaultValue='z'>{options}</Select>
       </FormControl>
   )
 }
@@ -119,7 +120,7 @@ export const CheckBoxOption: FC<APIWidgetData> = ({label}) => {
 }
 export interface IFile {
   id: number
-  size: number
+  size: number | null
   name: string
   type: string
   path: string
@@ -139,20 +140,21 @@ const StyledDataGrid = styled(DataGrid, {})({
       ".MuiDataGrid-row.Mui-selected": {
         border: "1px solid grey"
       },
+    },
+  "&.MuiDataGrid-toolbarContainer":{
 
-    }
+  }
 })
 interface IRoute{
   display: string
   path: string
 }
 interface IToolbar {
-  selected: string
+  selected: string | undefined
   setPwd: (pwd: string)=>void
 }
-const CustomToolBar: FC<IToolbar> = ({selected, setPwd})=> {
-  const routes = splitRoutes(selected)
-  const breadcrumbs = routes.map( (route: IRoute, index)=>{
+const CurrentPath: FC<IToolbar> = ({selected, setPwd})=> {
+  const breadcrumbs = selected ? splitRoutes(selected).map( (route: IRoute, index)=>{
     return <Link
         key={index}
         underline="hover"
@@ -161,13 +163,16 @@ const CustomToolBar: FC<IToolbar> = ({selected, setPwd})=> {
         onClick={()=> {
           setPwd(route.path)
     }}>{route.display}</Link>
-  })
+  }): <></>
   return (
-      <Box sx={{ p: 1, borderBottom: '1px solid', borderColor: 'text.disabled' }}>
-        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>{breadcrumbs}</Breadcrumbs>
+      <Box sx={{ pb: 1, borderColor: 'text.disabled' }}>
+        <Box aria-label={'working path'} sx={{pl:1, minHeight: 28, border: "2px inset"}}>
+          <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>{breadcrumbs}</Breadcrumbs>
+        </Box>
       </Box>
   );
 }
+
 const useGetFileData = (source: { contents: IFile[]} | null): IFile[] | null=>{
   const [files, setFiles] = useState<IFile[] | null>(null);
   const contentName = (file: IFile) =>{
@@ -199,8 +204,9 @@ const useGetFileData = (source: { contents: IFile[]} | null): IFile[] | null=>{
   return files
 }
 interface IDirectorySelectDialog {
-  getDataHook: (path: string | null)=>[loading: boolean, files: IFile[] | null],
+  getDataHook: (path: string | null, update: boolean)=>[loading: boolean, files: IFile[] | null],
   startingPath?: string,
+  defaultValue?: string,
   show: boolean
   onClose?: ()=>void
   onAccepted?: (path: string)=>void
@@ -266,6 +272,7 @@ const filesOnRowClick = (
 const DirectorySelectDialog = forwardRef((
     {
       startingPath,
+      defaultValue,
       show,
       onClose,
       onAccepted,
@@ -275,17 +282,29 @@ const DirectorySelectDialog = forwardRef((
     ref: Ref<DirectorySelectDialogRef>
 )=>{
   const [pwd, setPwd] = useState(startingPath)
-  const [selected, setSelected] = useState(pwd)
-  const [loading, files] = getDataHook(pwd ? pwd: null)
+  const [selectedPath, setSelectedPath] = useState(pwd)
+  const [selectionIsValid, setSelectionIsValid] = useState(false)
+  const [loading, files] = getDataHook(pwd ? pwd: null, show)
+  useEffect(()=>{
+    setPwd(startingPath)
+  },[startingPath, show])
+  useEffect(()=>{
+    setSelectedPath(pwd)
+  }, [pwd])
+  useEffect(()=>{
+    setSelectionIsValid(!!selectedPath)
+  }, [selectedPath])
   const handleClose = () => {
+    setPwd(undefined)
+    setSelectedPath(undefined)
     if (onClose) {
       onClose()
     }
   }
   const handleAccept = ()=> {
     handleClose();
-    if (onAccepted && selected) {
-      onAccepted(selected)
+    if (onAccepted && selectedPath) {
+      onAccepted(selectedPath)
     }
   }
   const handelRejected = ()=>{
@@ -323,23 +342,32 @@ const DirectorySelectDialog = forwardRef((
   ];
   useImperativeHandle(ref, () => (
       {
-        selectedPath: selected ? selected : null
+        selectedPath: selectedPath ? selectedPath : null
       }
-  ), [selected]);
+  ), [selectedPath]);
   return(
     <Dialog
         PaperProps={{style: {borderRadius: 10}}}
             open={show} fullWidth={true} maxWidth="md">
           <DialogTitle id="alert-dialog-title">
             {"Select a Directory"}
+            <IconButton
+                aria-label="close"
+                onClick={handelRejected}
+                sx={{  position: 'absolute', right: 8, top:8}}>
+              <CloseIcon/>
+            </IconButton>
           </DialogTitle>
           <DialogContent style={{ overflow: "hidden"}}>
-            <div style={{ display: 'flex', minHeight: 400}}>
-            <div style={{ flexGrow: 1 }}>
-
+            <Box style={{ display: 'flex', minHeight: 400}}>
+              <Box sx={{ flexGrow: 2, borderColor: "text.disabled", overflow: "hidden", p:1, pb:5}}>
+                <CurrentPath selected={pwd} setPwd={setPwd}/>
                 <StyledDataGrid
                     sx={{
-                      borderRadius: 2,
+                      '& .MuiDataGrid-panelContent':{
+                        color: "blue"
+                      },
+                      overflow: "hidden",
                       '& .theme-disabled': {
                           color: "text.disabled",
                         },
@@ -359,18 +387,17 @@ const DirectorySelectDialog = forwardRef((
                       location: false
                     }}
                     components={{
-                      Toolbar: CustomToolBar,
-                      LoadingOverlay: LinearProgress
+                      LoadingOverlay: LinearProgress,
                     }}
                     loading={loading}
                     componentsProps={
                       {
-                        toolbar: {selected: selected, setPwd: setPwd},
-                        loadingOverlay:{role: 'progressBar'}
+                        toolbar: {selected: selectedPath, setPwd: setPwd},
+                        loadingOverlay:{role: 'progressBar'},
                       }
                     }
                     onRowClick={(params)=> {
-                      return filesOnRowClick(params, loading, setSelected);
+                      return filesOnRowClick(params, loading, setSelectedPath);
                     }}
                     onRowDoubleClick={
                       (params: GridRowParams<IFile>)=> fileOnDoubleClick(
@@ -390,11 +417,15 @@ const DirectorySelectDialog = forwardRef((
                     hideFooter={true}
                     rowHeight={40}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', pt:1}}>
+                <Box sx={{mr:2, ml:2}}>Directory Name:</Box>
+                <Box aria-label={"selected path"} sx={{border: "2px inset", flexGrow: 1, pl:1}}>{selectedPath}</Box>
+              </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleAccept}>Accept</Button>
+            <Button disabled={!selectionIsValid} onClick={handleAccept}>Accept</Button>
             <Button onClick={handelRejected} autoFocus>
               Cancel
             </Button>
@@ -412,10 +443,12 @@ export const DirectorySelect = forwardRef(
   const dialogBoxRef = useRef<DirectorySelectDialogRef>(null);
   const [openDialogBox, setOpenDialogBox] = useState(false)
   const [selected, setSelected] = useState<undefined | string>();
+  const [browsePath, setBrowsePath] = useState<undefined | string>();
   const handleMouseDown = () => {
+    setBrowsePath(selected ? selected : '/');
     setOpenDialogBox(true)
   }
-  const useHook = (path: string | null):[boolean, IFile[] | null] => {
+  const useHook = (path: string | null, update: boolean):[boolean, IFile[] | null] => {
     const [loading, setLoading] = useState(false);
     const [rawData, setRawData] = useState<{ contents: IFile[]} | null>(null);
     const files = useGetFileData(rawData)
@@ -423,22 +456,33 @@ export const DirectorySelect = forwardRef(
       value: dialogBoxRef.current ? dialogBoxRef.current.selectedPath : null
     }), []);
     useEffect(()=>{
-      if (getDataHook) {
-        setLoading(true);
-        getDataHook()
-            .then((response) => {
-              setRawData(response)
-            })
-            .catch(console.error)
-            .finally(() => {
-              setLoading(false);
-              if (onReady){
-                onReady()
-              }
-            });
+      if (!update){
+        if (onReady){
+          onReady()
+        }
+        return
       }
-
-    }, [path])
+      if (path){
+        if (getDataHook) {
+            setLoading(true);
+            getDataHook(path)
+              .then((response) => {
+                setRawData(response)
+              })
+              .catch(console.error)
+              .finally(() => {
+                setLoading(false);
+                if (onReady){
+                  onReady()
+                }
+              });
+        }
+      } else {
+        if (onReady){
+          onReady()
+        }
+      }
+    }, [path, update])
 
     return [loading, files];
   }
@@ -446,7 +490,7 @@ export const DirectorySelect = forwardRef(
       <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
         <DirectorySelectDialog
             ref={dialogBoxRef}
-            startingPath={selected}
+            startingPath={browsePath}
             show={openDialogBox}
             getDataHook={useHook}
             onAccepted={(value)=>setSelected(value)}
@@ -493,7 +537,7 @@ export const FileSelect: FC<APIWidgetData> = ({label}) => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Accept</Button>
-            <Button onClick={handleClose} autoFocus>
+            <Button aria-label="cancel" onClick={handleClose} autoFocus>
               Cancel
             </Button>
           </DialogActions>
