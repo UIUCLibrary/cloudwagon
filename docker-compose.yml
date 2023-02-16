@@ -9,7 +9,7 @@ services:
       context: .
       dockerfile: ./frontend/Dockerfile
     ports:
-      - "8080:80"
+      - "8000:80"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile
       - caddy-data:/data

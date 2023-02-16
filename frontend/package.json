@@ -18,24 +18,19 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.4.0",
-    "react-scripts": "5.0.1",
-    "http-proxy-middleware":  "^2.0.6",
     "web-vitals": "^3.0.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview",
     "lint": "eslint src",
+    "test": "jest",
     "eslint-output": "eslint-output"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
+  "include": [
+    "src"
+  ],
   "browserslist": {
     "production": [
       ">0.2%",
@@ -48,15 +43,28 @@
       "last 1 safari version"
     ]
   },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest-setup.ts"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|less)$": "identity-obj-proxy"
+    }
+  },
   "jest-junit": {
     "addFileAttribute": "true",
     "includeConsoleOutput": true
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.20.2",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
     "@testing-library/jest-dom": "^5.16.4",
     "@types/react-test-renderer": "^18.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.51.0",
+    "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.51.0",
+    "@vitejs/plugin-react": "^3.1.0",
     "babel-jest": "^29.0.3",
     "eslint": "^8.33.0",
     "eslint-output": "^3.0.1",
@@ -64,6 +72,9 @@
     "jest-junit": "^14.0.0",
     "react-test-renderer": "^18.2.0",
     "ts-jest": "^29.0.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "vite": "^4.1.1",
+    "vite-plugin-svgr": "^2.4.0",
+    "vite-tsconfig-paths": "^4.0.5"
   }
 }
