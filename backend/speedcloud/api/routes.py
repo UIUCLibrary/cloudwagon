@@ -24,7 +24,27 @@ api = APIRouter(
 )
 
 
-@api.get("/files")
+@api.get("/files/exists")
+async def filesystem_entry_exists(
+        request: Request,
+        settings: Settings = Depends(get_settings)
+):
+    params = request.query_params
+    path = os.path.normpath(params.get('path'))
+    if not path:
+        return {
+            "path": path,
+            "exists": False
+        }
+
+    storage_path = os.path.normpath(f'{settings.storage}{path}')
+    value = {
+        "path": path,
+        "exists": os.path.exists(storage_path)
+    }
+    return value
+
+@api.get("/files/contents")
 async def list_data(
         request: Request,
         settings: Settings = Depends(get_settings)

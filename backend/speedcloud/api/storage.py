@@ -13,9 +13,16 @@ def is_within_valid_directory(root, path) -> bool:
 def get_path_contents(path: str, starting: str):
     file_path = os.path.relpath(path, starting)
     file_path = "/" if file_path == "." else f'/{file_path}'
-
+    paths = [
+        {
+            "name": ".",
+            "path": os.path.normpath(os.path.join(file_path, ".")),
+            "type": "Directory",
+            "size": None
+        }
+    ]
     if not is_within_valid_directory(path, starting):
-        paths = [
+        paths += [
             {
                 "name": "..",
                 "path": os.path.normpath(os.path.join(file_path, "..")),
@@ -23,9 +30,6 @@ def get_path_contents(path: str, starting: str):
                 "size": None
             }
         ]
-
-    else:
-        paths = []
     paths += [
         {
             "name": entry.name,

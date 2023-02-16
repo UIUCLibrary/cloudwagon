@@ -68,7 +68,6 @@ def _fixup_props(props, workflow):
 
 
 def create_job(workflow_id, props, netloc):
-    # TODO: make the console dynamically point to the right stream
     job_id = len(jobs)
     job = {
         "status": fake_data_streamer,
