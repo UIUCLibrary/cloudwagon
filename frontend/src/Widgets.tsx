@@ -52,7 +52,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
 import {TextFieldProps} from '@mui/material/TextField/TextField';
 
-
 interface IWidget {
   label: string
 }
@@ -74,7 +73,8 @@ export interface IAPIDirectoryContents {
   contents: IFile[]
 }
 interface IDirectorySelect extends APIWidgetData{
-  getDataHook: (path: string)=>Promise<IAPIDirectoryContents | null>
+  // getDataHook: (path: string)=>Promise<IAPIDirectoryContents | null>
+  getDataHook: (path: string | null)=> { data: IAPIDirectoryContents | null, error: string, loaded:boolean }
   onReady?: ()=>void
 }
 export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
@@ -154,7 +154,7 @@ interface IRoute{
   path: string
 }
 interface IToolbar {
-  selected: string | undefined
+  selected: string | undefined | null
   setPwd: (pwd: string)=>void
 }
 const CurrentPath: FC<IToolbar> = ({selected, setPwd})=> {
@@ -177,33 +177,13 @@ const CurrentPath: FC<IToolbar> = ({selected, setPwd})=> {
   );
 }
 
-const useGetFileData = (source: { contents: IFile[]} | null): IFile[] | null=>{
-  const [files, setFiles] = useState<IFile[] | null>(null);
-  useEffect(()=>{
-    if (source) {
-        const newFiles: IFile[] = []
-          for (const fileNode of source['contents']) {
-            newFiles.push(
-                {
-                  id: newFiles.length,
-                  size: fileNode.size,
-                  name: fileNode.name,
-                  type: fileNode.type,
-                  path: fileNode.path,
-                }
-            )
-          }
-          setFiles(newFiles)
-    }
-  }, [source])
-  return files
-}
 interface IDirectorySelectDialog {
-  getDataHook: (path: string | null, update: boolean)=>[loading: boolean, files: IFile[] | null],
-  startingPath?: string,
+  getDataHook: (path: string | null)=> { data: IAPIDirectoryContents | null, error: string, loaded:boolean }
+  startingPath?: string | null,
   defaultValue?: string,
   show: boolean
   onClose?: ()=>void
+  onReady?: ()=>void
   onAccepted?: (path: string)=>void
   onRejected?: ()=>void
 }
@@ -288,11 +268,11 @@ const formatWithIcon = (params: GridRenderCellParams<any, any, any>) => {
 const DirectorySelectDialog = forwardRef((
     {
       startingPath,
-      defaultValue,
       show,
       onClose,
       onAccepted,
       onRejected,
+      onReady,
       getDataHook
     }: IDirectorySelectDialog,
     ref: Ref<DirectorySelectDialogRef>
@@ -300,7 +280,22 @@ const DirectorySelectDialog = forwardRef((
   const [pwd, setPwd] = useState(startingPath)
   const [selectedPath, setSelectedPath] = useState(pwd)
   const [selectionIsValid, setSelectionIsValid] = useState(false)
-  const [loading, files] = getDataHook(pwd ? pwd: null, show)
+  const directoryHook = useDirectory(pwd ? pwd: null, getDataHook)
+  const [loading, setLoading] = useState(!directoryHook.loaded)
+  const [files, setFiles] = useState<null | IFile[]>(null)
+  useEffect(()=>{
+    setLoading(!directoryHook.loaded)
+    if (directoryHook.loaded){
+      if (onReady){
+        onReady()
+      }
+    }
+  }, [directoryHook.loaded])
+
+  useEffect(()=>{
+    setFiles(directoryHook.data)
+  },[directoryHook.data])
+
   useEffect(()=>{
     setPwd(startingPath)
   },[startingPath, show])
@@ -456,6 +451,60 @@ const DirectorySelectDialog = forwardRef((
 export interface SelectionRef {
   value: string | null
 }
+const useFilePathIsValid = (pathName: string | null) =>{
+  const [result, setResult] = useState<null | boolean>(null)
+  const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false)
+  const controllerRef = useRef(new AbortController());
+  const cancel = () =>{
+    controllerRef.current.abort()
+  }
+  useEffect(()=>{
+    if (pathName) {
+      if (pathName === '' || !pathName.startsWith("/")) {
+        setResult(false)
+      } else {
+        setLoaded(false)
+        axios.get(`/api/files/exists?path=${pathName}`, {signal: controllerRef.current.signal})
+            .then(res => {
+              setResult(res.data.exists)
+            }).catch(setError)
+            .finally(()=>{setLoaded(true)})
+      }
+    }
+  }, [pathName])
+  return {cancel, result, error, loaded}
+}
+const useDirectory = (
+    path: string | null,
+    getDataHook: (path: string | null)=> { data: IAPIDirectoryContents | null, error: string, loaded:boolean }
+) =>{
+  const [data, setData] = useState<null | IFile[]>(null)
+  const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false)
+  const s = getDataHook(path)
+  useEffect(()=> {
+    if (s.data){
+      const result = s.data
+      const newFiles: IFile[] = []
+      for (const fileNode of result['contents']) {
+        newFiles.push(
+            {
+              id: newFiles.length,
+              size: fileNode.size,
+              name: fileNode.name,
+              type: fileNode.type,
+              path: fileNode.path,
+            }
+        )
+      }
+      setData(newFiles)
+    }
+    setLoaded(s.loaded)
+    setError(s.error)
+  }, [path, s.data])
+  return {data, error, loaded}
+}
 export const DirectorySelect = forwardRef(
     (
         {label, onRejected, getDataHook, onAccepted, onReady}: IDirectorySelect,
@@ -463,11 +512,10 @@ export const DirectorySelect = forwardRef(
   const dialogBoxRef = useRef<DirectorySelectDialogRef>(null);
   const textBoxRef = useRef<TextFieldProps>(null);
   const [openDialogBox, setOpenDialogBox] = useState(false)
-  const [browsePath, setBrowsePath] = useState<undefined | string>();
-  const [valueIsValid, setValueIsValid] = useState(true)
+  const [browsePath, setBrowsePath] = useState<null | string>(null);
   const [value, setValue] = useState('')
   const handleMouseDown = () => {
-    setBrowsePath(valueIsValid ? value : '/');
+    setBrowsePath(value ? value : '/')
     setOpenDialogBox(true)
   }
   const handleAccepted = (value: string) =>{
@@ -476,54 +524,6 @@ export const DirectorySelect = forwardRef(
       onAccepted(value)
     }
   }
-  const useHook = (path: string | null, update: boolean):[boolean, IFile[] | null] => {
-    const [loading, setLoading] = useState(false);
-    const [rawData, setRawData] = useState<{ contents: IFile[]} | null>(null);
-    const files = useGetFileData(rawData)
-
-    useImperativeHandle(ref, () =>({
-      value: dialogBoxRef.current ? dialogBoxRef.current.selectedPath : null
-    }), []);
-    useEffect(()=>{
-      if (value === ''){
-        setValueIsValid(false)
-      }
-      axios.get(`/api/files/exists?path=${value}`)
-          .then(res => {
-            setValueIsValid(res.data.exists)
-          }).catch(console.error)
-    })
-    useEffect(()=>{
-      if (!update){
-        if (onReady){
-          onReady()
-        }
-        return
-      }
-      if (path){
-        if (getDataHook) {
-            setLoading(true);
-            getDataHook(path)
-              .then((response) => {
-                setRawData(response)
-              })
-              .catch(console.error)
-              .finally(() => {
-                setLoading(false);
-                if (onReady){
-                  onReady()
-                }
-              });
-        }
-      } else {
-        if (onReady){
-          onReady()
-        }
-      }
-    }, [path, update])
-
-    return [loading, files];
-  }
 
   return (
       <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
@@ -531,16 +531,16 @@ export const DirectorySelect = forwardRef(
             ref={dialogBoxRef}
             startingPath={browsePath}
             show={openDialogBox}
-            getDataHook={useHook}
+            getDataHook={getDataHook}
             onAccepted={handleAccepted}
             onRejected={onRejected}
+            onReady={onReady}
             onClose={()=>setOpenDialogBox(false)}
         />
         <TextField
             inputRef={textBoxRef}
-            error={!valueIsValid}
             label={label}
-            onChange={(event: any) =>{setValue(event.target.value)}}
+            onChange={(event) =>{setValue(event.target.value)}}
             value={value}
             InputProps={{
               endAdornment: (

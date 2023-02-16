@@ -55,10 +55,8 @@ describe('DirectorySelect', ()=>{
   const element = <>
     <DirectorySelect
         getDataHook={
-          ():Promise<IAPIDirectoryContents> =>{
-            return new Promise((resolve, reject) => {
-              resolve(directoryContents);
-            })
+          ()=>{
+            return {data: directoryContents, error:'', loaded:true}
           }
         }
         onReady={onLoaded}

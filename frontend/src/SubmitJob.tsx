@@ -12,7 +12,13 @@ import React, {
 } from "react";
 import axios from 'axios';
 import JobProgressDialog from './JobProgressDialog';
-import {CheckBoxOption, DirectorySelect, FileSelect, SelectOption} from "./Widgets";
+import {
+  CheckBoxOption,
+  DirectorySelect,
+  FileSelect,
+  IAPIDirectoryContents,
+  SelectOption
+} from "./Widgets";
 import InputLabel from '@mui/material/InputLabel';
 export interface WidgetApi{
     widget_type: string
@@ -25,14 +31,30 @@ interface WorkflowDetails {
   parameters: WidgetApi[]
 
 }
+
 const APISelectDir = ({widgetParameter}: { widgetParameter: WidgetApi})=>{
-    const getFilesData = async (path: string)=>{
-      const response = await axios.get(`/api/files/contents?path=${path}`);
-      return response.data
-    };
+    const useAPI = (path: string | null) =>{
+      const [data, setData]= useState<IAPIDirectoryContents | null>(null)
+      const [error, setError]= useState('')
+      const [loaded, setLoaded] = useState(false)
+
+      useEffect(()=>{
+        if (path) {
+          setLoaded(false)
+          axios.get(`/api/files/contents?path=${path}`)
+              .then(response => {
+                setData(response.data)
+              })
+              .catch(setError)
+              .finally(()=>{setLoaded(true)})
+        }
+      }, [path])
+
+      return {data: data, error: error, loaded: loaded}
+    }
     return (
         <DirectorySelect
-            getDataHook={getFilesData}
+            getDataHook={useAPI}
             label={widgetParameter.label}
             parameters={widgetParameter}/>
     )
