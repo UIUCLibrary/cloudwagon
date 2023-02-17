@@ -8,7 +8,7 @@ import {
   SelectOption,
   DirectorySelect,
   CheckBoxOption,
-  IFile, IAPIDirectoryContents,
+  IFile, NewDirectoryDialog,
 } from '../Widgets'
 import {FormEvent} from 'react';
 import axios from 'axios';
@@ -52,11 +52,10 @@ describe('DirectorySelect', ()=>{
       {name: "t2", path: "/t2", type: "Directory", size: null}
     ] as IFile[]
   }
-  const element = <>
-    <DirectorySelect
+  const element = <DirectorySelect
         getDataHook={
           ()=>{
-            return {data: directoryContents, error:'', loaded:true}
+            return {data: directoryContents, error:'', loaded:true, update: ()=>{}}
           }
         }
         onReady={onLoaded}
@@ -65,7 +64,6 @@ describe('DirectorySelect', ()=>{
         label="tester"
         parameters={{'selections': []}}
     />
-  </>
   test('browse Button opens dialog', async ()=>{
     render(element)
     await waitFor(()=>expect(onLoaded).toBeCalled());
@@ -198,5 +196,27 @@ describe('CheckBoxOption', ()=>{
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByText('Submit'))
+  })
+})
+
+describe('NewDirectory', ()=>{
+  test.each([
+      ['s', 1],
+      ['dummy', 1],
+      ['', 0],
+  ])("clicking okay with '%s' calls makeRequest %d times", (directoryName, calledNumber)=>{
+    const makeRequest = jest.fn()
+    makeRequest.mockImplementation((name: string)=>{
+      return Promise.resolve()
+    })
+    render(
+        <NewDirectoryDialog open={true} onCreate={makeRequest} path={'/'}/>
+    )
+    fireEvent.change(screen.getByLabelText('Name'), {target: {value: directoryName}})
+    fireEvent.click(screen.getByText('Ok'));
+    expect(makeRequest).toBeCalledTimes(calledNumber)
+  })
+  test('hook', ()=> {
+
   })
 })

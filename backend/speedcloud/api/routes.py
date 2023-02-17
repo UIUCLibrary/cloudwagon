@@ -15,6 +15,7 @@ import aiofiles
 
 from ..config import Settings, get_settings
 from ..info import get_version
+from ..exceptions import CloudWagonException
 from . import actions
 from . import storage
 from . import job_manager
@@ -22,6 +23,10 @@ api = APIRouter(
     # prefix="/api",
     responses={404: {"description": "Not found"}},
 )
+
+
+class InvalidNamingException(CloudWagonException):
+    pass
 
 
 @api.get("/files/exists")
@@ -43,6 +48,7 @@ async def filesystem_entry_exists(
         "exists": os.path.exists(storage_path)
     }
     return value
+
 
 @api.get("/files/contents")
 async def list_data(
@@ -114,6 +120,58 @@ async def upload_file(
     return {
         "response": "ok",
         "filename": files_uploaded
+    }
+
+
+class NewDirectory(BaseModel):
+    path: str
+    name: str
+
+
+@api.post("/files/directory")
+async def new_directory(
+        item: NewDirectory,
+        settings: Settings = Depends(get_settings)
+):
+    if item.path.startswith(os.sep):
+        backend_path = item.path[1:]
+    else:
+        backend_path = item.path
+    if "." in item.name:
+        raise InvalidNamingException('invalid file name')
+    storage.create_directory(
+        os.path.join(settings.storage, backend_path),
+        item.name
+    )
+    return {
+        "name": item.name,
+        "location": item.path,
+        "path": os.path.join(item.path, item.name)
+    }
+
+
+class RemoveDirectory(BaseModel):
+    path: str
+
+
+@api.delete("/files/directory")
+async def remove_directory(
+        item: RemoveDirectory,
+        settings: Settings = Depends(get_settings)
+):
+    if item.path.startswith(os.sep):
+        backend_path = item.path[1:]
+    else:
+        backend_path = item.path
+    try:
+        storage.remove_path_from_storage(
+            os.path.join(settings.storage, backend_path)
+        )
+    except FileNotFoundError as e:
+        raise CloudWagonException from e
+    return {
+        "path": item.path,
+        "response": "success"
     }
 
 

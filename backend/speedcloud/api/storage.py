@@ -79,3 +79,11 @@ def clear_files(folder):
             files += clear_files(file.path)
             os.rmdir(file.path)
     return files
+
+
+def create_directory(path, name):
+    os.mkdir(os.path.join(path, name))
+
+
+def remove_path_from_storage(path):
+    os.rmdir(path)

@@ -188,7 +188,10 @@ pipeline {
                                     }
                                 }
                             }
-                             post{
+                            post{
+                                unsuccessful{
+                                    sh 'pip list'
+                                }
                                 always{
                                     sh(label: 'combining coverage data',
                                        script: '''coverage combine

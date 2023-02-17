@@ -37,20 +37,27 @@ const APISelectDir = ({widgetParameter}: { widgetParameter: WidgetApi})=>{
       const [data, setData]= useState<IAPIDirectoryContents | null>(null)
       const [error, setError]= useState('')
       const [loaded, setLoaded] = useState(false)
+      const [outOfDate, setOutOfDate] = useState(true)
 
+      const update = ()=>{
+        setOutOfDate(true)
+        setLoaded(false)
+      }
       useEffect(()=>{
-        if (path) {
+        if (path && !loaded) {
           setLoaded(false)
           axios.get(`/api/files/contents?path=${path}`)
               .then(response => {
                 setData(response.data)
               })
               .catch(setError)
-              .finally(()=>{setLoaded(true)})
+              .finally(()=>{
+                setLoaded(true)
+                setOutOfDate(false)
+              })
         }
-      }, [path])
-
-      return {data: data, error: error, loaded: loaded}
+      }, [path, outOfDate])
+      return {data: data, error: error, loaded: loaded, update: update}
     }
     return (
         <DirectorySelect

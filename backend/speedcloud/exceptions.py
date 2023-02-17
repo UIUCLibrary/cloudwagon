@@ -1,0 +1,2 @@
+class CloudWagonException(Exception):
+    pass
