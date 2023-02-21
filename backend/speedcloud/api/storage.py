@@ -1,7 +1,12 @@
 import os
+from typing import TypedDict, List, Optional
+try:
+    from typing import NotRequired
+except ImportError:
+    from typing_extensions import NotRequired
 
 
-def is_within_valid_directory(root, path) -> bool:
+def is_within_valid_directory(root: str, path: str) -> bool:
     return os.path.commonpath(
         [os.path.abspath(root)]
     ) == os.path.commonpath([
@@ -10,10 +15,17 @@ def is_within_valid_directory(root, path) -> bool:
     ])
 
 
-def get_path_contents(path: str, starting: str):
+class PathContent(TypedDict):
+    name: str
+    path: NotRequired[str]
+    type: str
+    size: Optional[int]
+
+
+def get_path_contents(path: str, starting: str) -> List[PathContent]:
     file_path = os.path.relpath(path, starting)
     file_path = "/" if file_path == "." else f'/{file_path}'
-    paths = [
+    paths: List[PathContent] = [
         {
             "name": ".",
             "path": os.path.normpath(os.path.join(file_path, ".")),
@@ -42,8 +54,8 @@ def get_path_contents(path: str, starting: str):
     return paths
 
 
-def list_files(source_path):
-    data = []
+def list_files(source_path: str) -> List[PathContent]:
+    data: List[PathContent] = []
     for root_dir, dirs, files in os.walk(source_path):
         data.extend(
             {
@@ -69,7 +81,7 @@ def list_files(source_path):
 #     return "ok"
 
 
-def clear_files(folder):
+def clear_files(folder: str) -> List[str]:
     files = []
     for file in os.scandir(folder):
         files.append(os.path.relpath(file.path, start=folder))
@@ -81,9 +93,9 @@ def clear_files(folder):
     return files
 
 
-def create_directory(path, name):
+def create_directory(path: str, name: str) -> None:
     os.mkdir(os.path.join(path, name))
 
 
-def remove_path_from_storage(path):
+def remove_path_from_storage(path: str) -> None:
     os.rmdir(path)

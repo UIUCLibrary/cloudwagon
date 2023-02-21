@@ -38,7 +38,7 @@ markers=[
 match="((?!test).*)(^(?!.*(ui)).*)\\.py"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 ignore_missing_imports = true
 mypy_path = "backend"
 namespace_packages = false

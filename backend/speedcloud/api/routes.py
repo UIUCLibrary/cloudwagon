@@ -1,8 +1,11 @@
 import asyncio
 import typing
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from collections.abc import AsyncIterable
 import json
 import os
+
+import fastapi
 import pkg_resources
 from fastapi import APIRouter, UploadFile, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -35,7 +38,7 @@ async def filesystem_entry_exists(
         settings: Settings = Depends(get_settings)
 ):
     params = request.query_params
-    path = os.path.normpath(params.get('path'))
+    path = os.path.normpath(params['path'])
     if not path:
         return {
             "path": path,
@@ -93,6 +96,7 @@ async def upload_file(
             detail="Missing required path query"
         )
     # This fixes if the first item is a slash
+    search_path: str
     if path.startswith(os.sep):
         search_path = path[1:]
     else:
@@ -111,6 +115,8 @@ async def upload_file(
             subdir = path[1:]
         else:
             subdir = path
+        if not file.filename:
+            raise ValueError("required field missing: filename")
         out_path = os.path.join(settings.storage, subdir, file.filename)
         async with aiofiles.open(out_path, 'wb') as out_file:
             content = await file.read()  # async read
@@ -185,14 +191,14 @@ async def clear_files(settings: Settings = Depends(get_settings)):
 
 
 @api.get("/list_workflows")
-async def speedwagon_workflows():
+async def speedwagon_workflows() -> Dict[str, List[actions.WorkflowData]]:
     return {
         "workflows": actions.get_workflows()
     }
 
 
 @api.get("/workflow")
-async def get_workflow(name: Optional[str] = None):
+async def get_workflow(name: Optional[str] = None) -> Dict[str, Any]:
     print(name)
     if name:
         return {
@@ -216,26 +222,28 @@ async def submit_job(job: Job, request: Request):
 
 
 class StreamBuilder:
-    def __init__(self):
+    def __init__(self) -> None:
         self.job_id: Optional[int] = None
         self._job = None
 
-    def set_job_id(self, job_id):
+    def set_job_id(self, job_id: int) -> None:
         self.job_id = job_id
 
-    def build(self):
-        job = job_manager.jobs.get(self.job_id)
+    def build(self) -> StreamingResponse:
+        if self.job_id is None:
+            raise ValueError("job_id not set")
+        job = job_manager.jobs[self.job_id]
         return StreamingResponse(job['status']())
 
 
-async def get_console_stream(job_id: int):
+async def get_console_stream(job_id: int) -> StreamingResponse:
     builder = StreamBuilder()
     builder.set_job_id(job_id)
     return builder.build()
 
 
 @api.websocket("/stream")
-async def websocket_endpoint(websocket: WebSocket, job_id: int):
+async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
     print(job_id)
     await websocket.accept()
     async for payload in job_manager.fake_data_streamer():
@@ -267,7 +275,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: int):
     # await websocket.send_text('done')
 
 
-async def stream_job(request):
+async def stream_job(request: fastapi.Request) -> AsyncIterable[str]:
     async for payload in job_manager.fake_data_streamer():
         if await request.is_disconnected():
             print("client disconnected!!!")
@@ -277,12 +285,15 @@ async def stream_job(request):
 
 
 @api.get("/stream")
-async def system_event_endpoint(request: Request, job_id: int):
+async def system_event_endpoint(
+        request: Request,
+        job_id: int
+) -> EventSourceResponse:
     return EventSourceResponse(stream_job(request))
 
 
 @api.get('/info')
-async def info():
+async def info() -> Dict[str, Any]:
     """Get info."""
     speedwagon_version = pkg_resources.get_distribution('speedwagon').version
     return {

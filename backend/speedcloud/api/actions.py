@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, TypedDict
 from dataclasses import dataclass
 
 import speedwagon
@@ -21,14 +21,26 @@ def get_workflows() -> List[WorkflowData]:
     return _workflows
 
 
-def get_workflow_by_id(workflow_id: int):
+class WorkflowParam(TypedDict):
+    widget_type: str
+    label: str
+    required: bool
+
+
+class WorkflowValues(TypedDict):
+    name: str
+    description: str
+    parameters: List[WorkflowParam]
+
+
+def get_workflow_by_id(workflow_id: int) -> WorkflowValues:
     for workflow in get_workflows():
         if workflow.id == workflow_id:
             return get_workflow_by_name(workflow.name)
     raise ValueError(f"Unknown workflow id {workflow_id}")
 
 
-def get_workflow_by_name(name):
+def get_workflow_by_name(name: str) -> WorkflowValues:
     workflows = speedwagon.available_workflows()
     if result := workflows.get(name):
         workflow = result()
@@ -42,6 +54,6 @@ def get_workflow_by_name(name):
             "name": workflow.name,
             "description": workflow.description,
             "parameters": parameters,
-
         }
+
     raise ValueError(f"Unknown workflow {name}")
