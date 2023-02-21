@@ -66,6 +66,7 @@ import Typography from '@mui/material/Typography';
 
 interface IWidget {
   label: string
+  required?: boolean
 }
 
 export interface APIWidgetData extends IWidget {
@@ -91,7 +92,7 @@ interface IDirectorySelect extends APIWidgetData {
   onReady?: () => void
 }
 
-export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
+export const SelectOption: FC<APIWidgetData> = ({label, parameters, required}) => {
   const id = useId();
   if (!parameters) {
     return (
@@ -111,12 +112,12 @@ export const SelectOption: FC<APIWidgetData> = ({label, parameters}) => {
   );
 
   return (
-      <FormControl fullWidth sx={{m: 1, minWidth: 120}}>
+      <FormControl required={required} fullWidth sx={{m: 1, minWidth: 120}}>
         <InputLabel
             id={id}>{label}</InputLabel>
         <Select
             labelId={id}
-            name={label} label={label} defaultValue='z'>{options}</Select>
+            name={label} label={label}>{options}</Select>
       </FormControl>
   )
 }
@@ -718,7 +719,7 @@ const useDirectory = (
 }
 export const DirectorySelect = forwardRef(
     (
-        {label, onRejected, getDataHook, onAccepted, onReady}: IDirectorySelect,
+        {label, onRejected, getDataHook, onAccepted, onReady, required}: IDirectorySelect,
         ref: Ref<SelectionRef>) => {
       const dialogBoxRef = useRef<DirectorySelectDialogRef>(null);
       const textBoxRef = useRef<TextFieldProps>(null);
@@ -749,6 +750,7 @@ export const DirectorySelect = forwardRef(
                 onClose={() => setOpenDialogBox(false)}
             />
             <TextField
+                required={required}
                 inputRef={textBoxRef}
                 label={label}
                 onChange={(event) => {
@@ -773,7 +775,7 @@ export const DirectorySelect = forwardRef(
     });
 DirectorySelect.displayName = 'DirectorySelect';
 
-export const FileSelect: FC<APIWidgetData> = ({label}) => {
+export const FileSelect: FC<APIWidgetData> = ({label, required}) => {
   const [openDialogBox, setOpenDialogBox] = useState(false)
   const handleClose = () => {
     setOpenDialogBox(false)
@@ -798,6 +800,7 @@ export const FileSelect: FC<APIWidgetData> = ({label}) => {
           </DialogActions>
         </Dialog>
         <TextField
+            required={required}
             label={label}
             InputProps={{
               readOnly: true,

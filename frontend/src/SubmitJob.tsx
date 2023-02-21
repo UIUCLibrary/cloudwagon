@@ -23,6 +23,7 @@ import InputLabel from '@mui/material/InputLabel';
 export interface WidgetApi{
     widget_type: string
     label: string
+    required?: boolean
     selections?: string[]
 }
 interface WorkflowDetails {
@@ -61,6 +62,7 @@ const APISelectDir = ({widgetParameter}: { widgetParameter: WidgetApi})=>{
     }
     return (
         <DirectorySelect
+            required={widgetParameter.required}
             getDataHook={useAPI}
             label={widgetParameter.label}
             parameters={widgetParameter}/>
@@ -72,17 +74,17 @@ export const GetWidget: FC<WidgetApi> = (parameter)=>{
     }
     if(parameter.widget_type === 'FileSelect'){
         return (
-            <FileSelect label={parameter.label} parameters={parameter}/>
+            <FileSelect required={parameter.required} label={parameter.label} parameters={parameter}/>
         )
     }
     if(parameter.widget_type === 'BooleanSelect'){
         return (
-            <CheckBoxOption label={parameter.label} parameters={parameter}/>
+            <CheckBoxOption required={parameter.required} label={parameter.label} parameters={parameter}/>
         )
     }
     if(parameter.widget_type === 'ChoiceSelection'){
         return (
-            <SelectOption label={parameter.label} parameters={parameter}/>
+            <SelectOption required={parameter.required} label={parameter.label} parameters={parameter}/>
         )
     }
     return <></>

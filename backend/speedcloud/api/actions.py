@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import List
 from dataclasses import dataclass
 
 import speedwagon
@@ -30,14 +30,18 @@ def get_workflow_by_id(workflow_id: int):
 
 def get_workflow_by_name(name):
     workflows = speedwagon.available_workflows()
-    result: Optional[Type[speedwagon.Workflow]] = workflows.get(name)
-    print(result)
-    if result:
+    if result := workflows.get(name):
         workflow = result()
         user_options = workflow.get_user_options()
+        parameters = [o.serialize() for o in user_options]
+        # TODO: remove this when get_user_options actually supposed required
+        for parameter in parameters:
+            if 'required' not in parameter:
+                parameter['required'] = True
         return {
             "name": workflow.name,
             "description": workflow.description,
-            "parameters": [o.serialize() for o in user_options]
+            "parameters": parameters,
+
         }
     raise ValueError(f"Unknown workflow {name}")

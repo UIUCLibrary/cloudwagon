@@ -17,9 +17,9 @@ jest.mock('axios');
 describe('SelectOption', ()=>{
   it('Label is written', function () {
     render(
-        <SelectOption label="tester" parameters={{'selections': []}}/>
+        <SelectOption required={true} label="tester" parameters={{'selections': []}}/>
     )
-    expect(screen.getByLabelText('tester')).toBeInTheDocument()
+    expect(screen.getByLabelText('tester *')).toBeInTheDocument()
   });
 })
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -53,6 +53,7 @@ describe('DirectorySelect', ()=>{
     ] as IFile[]
   }
   const element = <DirectorySelect
+        required={true}
         getDataHook={
           ()=>{
             return {data: directoryContents, error:'', loaded:true, update: ()=>{}}
@@ -152,7 +153,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
@@ -169,7 +170,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
@@ -188,7 +189,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
