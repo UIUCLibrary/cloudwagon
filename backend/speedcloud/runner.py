@@ -3,12 +3,12 @@ import logging
 import typing
 from dataclasses import dataclass
 from logging import LogRecord
-import speedwagon
 from collections import deque
+from collections.abc import AsyncIterable
 from typing import Optional, Callable, Iterator, Dict, Any
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from collections.abc import AsyncIterable
+import speedwagon
 
 
 @dataclass
@@ -65,18 +65,17 @@ class TaskRunner:
 
         # self._task.parent_task_log_q = self.logger.info
         self._task.parent_task_log_q = NotifyingDeque(logger=self.logger)
-        cv = threading.Condition()
+        condition = threading.Condition()
 
         def work() -> None:
-            with cv:
-                # self._task.parent_task_log_q.notify_callback = cv.notify
+            with condition:
                 self._task.exec()
         with ThreadPoolExecutor(max_workers=1) as pool:
             pool.submit(work)
             yield StatusUpdate()
             while not self.task_done():
-                with cv:
-                    cv.wait_for(self.needs_updating)
+                with condition:
+                    condition.wait_for(self.needs_updating)
                     while len(self._task.parent_task_log_q) > 0:
                         yield StatusUpdate(
                             log=self._task.parent_task_log_q.pop()
