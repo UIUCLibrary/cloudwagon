@@ -267,7 +267,7 @@ pipeline {
                     }
                     steps{
                         cache(maxCacheSize: 1000, caches: [
-                            arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
+                            arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
                         ]) {
                             sh 'npm install'
                         }
