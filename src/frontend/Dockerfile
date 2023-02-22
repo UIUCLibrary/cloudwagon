@@ -16,4 +16,4 @@ RUN npm run build
 FROM caddy:alpine
 EXPOSE 80
 EXPOSE 443
-COPY --from=build-step /app/dist /usr/share/caddy
+COPY --from=build-step /app/dist/frontend /usr/share/caddy
