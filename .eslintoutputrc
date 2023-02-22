@@ -1,6 +1,6 @@
 
 {
-  "files": ["src/*.tsx"],
+  "files": ["src/frontend/src/*.tsx"],
   "formats": [
     {
       "name": "stylish",
