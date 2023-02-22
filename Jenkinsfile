@@ -31,12 +31,12 @@ pipeline {
                             }
                             steps{
                                 cache(maxCacheSize: 1000, caches: [
-                                    arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                                    arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
                                 ]) {
-                                    sh 'npm --prefix frontend install'
+                                    sh 'npm install'
                                 }
                                 sh 'mkdir -p logs'
-                                sh 'mkdir -p main && ln -s $PWD/frontend/src main/src'
+                                sh 'mkdir -p main && ln -s $PWD/src/frontend/src main/src'
                             }
                         }
                         stage('Perform Tests'){
@@ -58,7 +58,7 @@ pipeline {
                                 stage('Flake8') {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                            sh script: 'flake8 backend/speedcloud --tee --output-file=logs/flake8.log'
+                                            sh script: 'flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log'
                                         }
                                     }
                                     post {
@@ -77,7 +77,7 @@ pipeline {
                                                         script: '''mypy --version
                                                                    mkdir -p reports/mypy/html
                                                                    mkdir -p logs
-                                                                   mypy backend/speedcloud --html-report reports/mypy/html
+                                                                   mypy -p speedcloud --html-report reports/mypy/html
                                                                    '''
                                                         )
                                                 }
@@ -100,7 +100,7 @@ pipeline {
                                             tee('reports/pydocstyle-report.txt'){
                                                 sh(
                                                     label: 'Run pydocstyle',
-                                                    script: 'pydocstyle backend/speedcloud'
+                                                    script: 'pydocstyle src/backend/speedcloud'
                                                 )
                                             }
                                         }
@@ -119,13 +119,13 @@ pipeline {
                                                 tee('reports/pylint_issues.txt'){
                                                     sh(
                                                         label: 'Running pylint',
-                                                        script: 'pylint backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                        script: 'pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
                                                     )
                                                 }
                                             }
                                             sh(
                                                 label: 'Running pylint for sonarqube',
-                                                script: 'pylint backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                                script: 'pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
                                                 returnStatus: true
                                             )
                                         }
@@ -138,7 +138,7 @@ pipeline {
                                 }
                                 stage('Task Scanner'){
                                     steps{
-                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'backend/**/*.py,frontend/**/*.tsx', normalTags: 'TODO')])
+                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/backend/**/*.py,src/frontend/**/*.tsx', normalTags: 'TODO')])
                                     }
                                 }
                                 stage('Hadolint'){
@@ -162,7 +162,7 @@ pipeline {
                                         npm_config_cache = '/tmp/npm-cache'
                                     }
                                     steps{
-                                        sh 'npm --prefix frontend run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
+                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
                                     }
                                     post{
                                         always{
@@ -176,14 +176,14 @@ pipeline {
                                             catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
                                                 sh(
                                                     label:  "Running ESlint",
-                                                    script: 'npm --prefix frontend run eslint-output'
+                                                    script: 'npm run eslint-output'
                                                 )
                                             }
                                         }
                                     }
                                     post{
                                         always{
-                                            recordIssues(tools: [esLint(pattern: 'frontend/reports/eslint_report.xml')])
+                                            recordIssues(tools: [esLint(pattern: 'reports/eslint_report.xml')])
                                         }
                                     }
                                 }
@@ -269,12 +269,12 @@ pipeline {
                         cache(maxCacheSize: 1000, caches: [
                             arbitraryFileCache(path: 'frontend/node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'frontend/package-lock.json')
                         ]) {
-                            sh 'npm --prefix frontend install'
+                            sh 'npm install'
                         }
 //                        todo: make this into a webpack package
-                        sh 'cd frontend && npx --yes browserslist@latest --update-db'
+                        sh 'npx --yes browserslist@latest --update-db'
                         catchError(buildResult: 'SUCCESS', message: 'There are issues with building production build', stageResult: 'UNSTABLE') {
-                            sh(label: 'Creating production build', script: 'npm --prefix frontend  run build')
+                            sh(label: 'Creating production build', script: 'npm run build')
                         }
                     }
                 }
