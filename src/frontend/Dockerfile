@@ -2,12 +2,14 @@
 FROM node:lts-alpine as build-step
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
-COPY frontend/package.json  ./
-COPY frontend/package-lock.json  ./
+COPY package.json  ./
+COPY package-lock.json  ./
 RUN npm install
-COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts ./
-COPY ./frontend/src ./src
-COPY ./frontend/public ./public
+COPY src/frontend/tsconfig.json vite.config.ts ./
+
+COPY src/frontend/index.html  ./src/frontend/index.html
+COPY ./src/frontend/src ./src/frontend/src
+COPY ./src/frontend/public ./src/frontend/public
 RUN npm run build
 
 # Build step #2: build an Caddy container
