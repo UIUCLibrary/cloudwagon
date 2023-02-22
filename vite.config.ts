@@ -6,6 +6,15 @@ import svgrPlugin from 'vite-plugin-svgr';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), viteTsconfigPaths(), svgrPlugin()],
+  root: "./src/frontend",
+  build: {
+    rollupOptions:{
+      input: {
+        app: "./src/frontend/index.html"
+      }
+    },
+    outDir: "../../dist/frontend",
+  },
   server: {
     proxy: {
       '/api': {

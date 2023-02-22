@@ -11,7 +11,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip wheel --no-cache-dir -r /tmp/requirements.txt -w /wheels
 
-COPY backend/speedcloud /tmp/project/backend/speedcloud/
+COPY src/backend/speedcloud /tmp/project/src/backend/speedcloud/
 COPY pyproject.toml /tmp/project
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip install --no-cache-dir build && \
@@ -31,7 +31,7 @@ RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret
 
 WORKDIR /opt/speedcloud
 RUN mkdir -p /opt/speedcloud/data/
-COPY backend/extra/docker/docker_config.toml /etc/speedcloud/config.toml
-COPY backend/extra/docker/log_info.yaml /etc/speedcloud/log_config.yaml
+COPY src/backend/extra/docker/docker_config.toml /etc/speedcloud/config.toml
+COPY src/backend/extra/docker/log_info.yaml /etc/speedcloud/log_config.yaml
 EXPOSE 8000
 CMD ["uvicorn", "speedcloud:app", "--host", "0.0.0.0", "--port", "80", "--log-config", "/etc/speedcloud/log_config.yaml"]
