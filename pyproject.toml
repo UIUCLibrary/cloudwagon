@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "speedcloud"
 version = "0.0.1"
+requires-python = ">=3.8"
 authors = [{name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"}]
 description = "Speedwagon in the Cloud!!!"
 dependencies =[
@@ -37,7 +38,7 @@ markers=[
 match="((?!test).*)(^(?!.*(ui)).*)\\.py"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 ignore_missing_imports = true
 mypy_path = "backend"
 namespace_packages = false

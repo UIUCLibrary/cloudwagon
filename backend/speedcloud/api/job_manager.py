@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Any
+from collections.abc import AsyncIterable
 
 import speedwagon
 from .. import runner
@@ -9,7 +10,7 @@ from . import actions
 jobs: Dict[int, Any] = {}
 
 
-async def fake_data_streamer():
+async def fake_data_streamer() -> AsyncIterable[Dict[str, Any]]:
     workflows = speedwagon.available_workflows()
     workflow = workflows['Verify HathiTrust Package Completeness']
     options = {
@@ -32,7 +33,7 @@ async def fake_data_streamer():
         if packet.task:
             a['packet'] = packet.task
         if packet.progress:
-            a['progress'] = packet.progress
+            a['progress'] = str(packet.progress)
         if packet.log:
             a['log'] = packet.log
         yield {
@@ -46,7 +47,7 @@ async def fake_data_streamer():
         # job_runner.abort = True
 
 
-def _fixup_props(props, workflow):
+def _fixup_props(props, workflow: actions.WorkflowValues):
     parameters = workflow['parameters']
     new_props = props.copy()
     for p in parameters:
@@ -67,7 +68,7 @@ def _fixup_props(props, workflow):
     return new_props
 
 
-def create_job(workflow_id, props, netloc):
+def create_job(workflow_id: int, props, netloc: str):
     job_id = len(jobs)
     job = {
         "status": fake_data_streamer,
@@ -84,5 +85,5 @@ def create_job(workflow_id, props, netloc):
                 f"http://{netloc}/stream?job_id={job_id}",
         }
     }
-    jobs[job['metadata']['id']] = job
+    jobs[job_id] = job
     return job['metadata']

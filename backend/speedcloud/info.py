@@ -1,7 +1,7 @@
 import pkg_resources
 
 
-def get_version():
+def get_version() -> str:
     try:
         version = pkg_resources.get_distribution(__package__).version
         return version

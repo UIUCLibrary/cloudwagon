@@ -3,11 +3,12 @@ import logging
 import typing
 from dataclasses import dataclass
 from logging import LogRecord
-import speedwagon
 from collections import deque
-from typing import Optional, Callable, Iterator
+from collections.abc import AsyncIterable
+from typing import Optional, Callable, Iterator, Dict, Any
 import threading
 from concurrent.futures import ThreadPoolExecutor
+import speedwagon
 
 
 @dataclass
@@ -39,12 +40,12 @@ class TaskRunner:
         self._task = task
         self.logger = logger
 
-    def task_done(self):
+    def task_done(self) -> bool:
         return self._task.status not in [
             speedwagon.tasks.tasks.TaskStatus.WORKING
         ]
 
-    def needs_updating(self):
+    def needs_updating(self) -> bool:
         if self.task_done():
             return True
         if len(self._task.parent_task_log_q) > 0:
@@ -64,18 +65,17 @@ class TaskRunner:
 
         # self._task.parent_task_log_q = self.logger.info
         self._task.parent_task_log_q = NotifyingDeque(logger=self.logger)
-        cv = threading.Condition()
+        condition = threading.Condition()
 
-        def work():
-            with cv:
-                # self._task.parent_task_log_q.notify_callback = cv.notify
+        def work() -> None:
+            with condition:
                 self._task.exec()
         with ThreadPoolExecutor(max_workers=1) as pool:
             pool.submit(work)
             yield StatusUpdate()
             while not self.task_done():
-                with cv:
-                    cv.wait_for(self.needs_updating)
+                with condition:
+                    condition.wait_for(self.needs_updating)
                     while len(self._task.parent_task_log_q) > 0:
                         yield StatusUpdate(
                             log=self._task.parent_task_log_q.pop()
@@ -98,7 +98,7 @@ class LogGen(collections.abc.Iterable):
             raise StopIteration
         return self.values.pop(0)
 
-    def __aiter__(self):
+    def __aiter__(self) -> "LogGen":
         return self
 
 
@@ -106,7 +106,7 @@ class BufferedHandler(logging.Handler):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.values = deque()
+        self.values: typing.Deque[str] = deque()
 
     def emit(self, record: LogRecord) -> None:
         self.values.append(self.format(record))
@@ -118,7 +118,7 @@ class BufferedHandler(logging.Handler):
                 log=log_message
             )
 
-    def clear(self):
+    def clear(self) -> None:
         self.values.clear()
 
 
@@ -126,7 +126,9 @@ class JobFinished(Exception):
     pass
 
 
-async def flush_messages(output_handler: BufferedHandler):
+async def flush_messages(
+        output_handler: BufferedHandler
+) -> AsyncIterable[Dict[str, str]]:
     output_handler.flush()
     for log_message in output_handler.values:
         yield {"log": log_message}
@@ -134,12 +136,13 @@ async def flush_messages(output_handler: BufferedHandler):
 
 
 class JobRunner:
-    def __init__(self):
+    def __init__(self) -> None:
         self.abort = None
 
     async def iter_job(
             self,
-            workflow: speedwagon.Workflow, workflow_options
+            workflow: speedwagon.Workflow,
+            workflow_options: Dict[str, Any]
     ) -> typing.AsyncIterator[StatusUpdate]:
         job_logger = logging.getLogger(__name__)
         job_logger.setLevel(logging.INFO)
@@ -189,7 +192,9 @@ class JobRunner:
             job_logger.removeHandler(output_handler)
 
 
-async def calc_progress(task_scheduler):
+async def calc_progress(
+        task_scheduler: speedwagon.runner_strategies.TaskScheduler
+):
     if task_scheduler.total_tasks is not None and \
             task_scheduler.current_task_progress is not None:
         current = task_scheduler.current_task_progress

@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import List, TypedDict
 from dataclasses import dataclass
 
 import speedwagon
@@ -21,23 +21,39 @@ def get_workflows() -> List[WorkflowData]:
     return _workflows
 
 
-def get_workflow_by_id(workflow_id: int):
+class WorkflowParam(TypedDict):
+    widget_type: str
+    label: str
+    required: bool
+
+
+class WorkflowValues(TypedDict):
+    name: str
+    description: str
+    parameters: List[WorkflowParam]
+
+
+def get_workflow_by_id(workflow_id: int) -> WorkflowValues:
     for workflow in get_workflows():
         if workflow.id == workflow_id:
             return get_workflow_by_name(workflow.name)
     raise ValueError(f"Unknown workflow id {workflow_id}")
 
 
-def get_workflow_by_name(name):
+def get_workflow_by_name(name: str) -> WorkflowValues:
     workflows = speedwagon.available_workflows()
-    result: Optional[Type[speedwagon.Workflow]] = workflows.get(name)
-    print(result)
-    if result:
+    if result := workflows.get(name):
         workflow = result()
         user_options = workflow.get_user_options()
+        parameters = [o.serialize() for o in user_options]
+        # TODO: remove this when get_user_options actually supposed required
+        for parameter in parameters:
+            if 'required' not in parameter:
+                parameter['required'] = True
         return {
             "name": workflow.name,
             "description": workflow.description,
-            "parameters": [o.serialize() for o in user_options]
+            "parameters": parameters,
         }
+
     raise ValueError(f"Unknown workflow {name}")

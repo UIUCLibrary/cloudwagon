@@ -8,7 +8,7 @@ import {
   SelectOption,
   DirectorySelect,
   CheckBoxOption,
-  IFile, IAPIDirectoryContents,
+  IFile, NewDirectoryDialog,
 } from '../Widgets'
 import {FormEvent} from 'react';
 import axios from 'axios';
@@ -17,9 +17,9 @@ jest.mock('axios');
 describe('SelectOption', ()=>{
   it('Label is written', function () {
     render(
-        <SelectOption label="tester" parameters={{'selections': []}}/>
+        <SelectOption required={true} label="tester" parameters={{'selections': []}}/>
     )
-    expect(screen.getByLabelText('tester')).toBeInTheDocument()
+    expect(screen.getByLabelText('tester *')).toBeInTheDocument()
   });
 })
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -52,13 +52,11 @@ describe('DirectorySelect', ()=>{
       {name: "t2", path: "/t2", type: "Directory", size: null}
     ] as IFile[]
   }
-  const element = <>
-    <DirectorySelect
+  const element = <DirectorySelect
+        required={true}
         getDataHook={
-          ():Promise<IAPIDirectoryContents> =>{
-            return new Promise((resolve, reject) => {
-              resolve(directoryContents);
-            })
+          ()=>{
+            return {data: directoryContents, error:'', loaded:true, update: ()=>{}}
           }
         }
         onReady={onLoaded}
@@ -67,7 +65,6 @@ describe('DirectorySelect', ()=>{
         label="tester"
         parameters={{'selections': []}}
     />
-  </>
   test('browse Button opens dialog', async ()=>{
     render(element)
     await waitFor(()=>expect(onLoaded).toBeCalled());
@@ -156,7 +153,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
@@ -173,7 +170,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
@@ -192,7 +189,7 @@ describe('CheckBoxOption', ()=>{
     render(
         <>
           <form onSubmit={onSubmit}>
-            <CheckBoxOption label={'foo'}/>
+            <CheckBoxOption required={true} label={'foo'}/>
             <button type='submit'>Submit</button>
           </form>
         </>
@@ -200,5 +197,27 @@ describe('CheckBoxOption', ()=>{
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByLabelText('foo'));
     fireEvent.click(screen.getByText('Submit'))
+  })
+})
+
+describe('NewDirectory', ()=>{
+  test.each([
+      ['s', 1],
+      ['dummy', 1],
+      ['', 0],
+  ])("clicking okay with '%s' calls makeRequest %d times", (directoryName, calledNumber)=>{
+    const makeRequest = jest.fn()
+    makeRequest.mockImplementation((name: string)=>{
+      return Promise.resolve()
+    })
+    render(
+        <NewDirectoryDialog open={true} onCreate={makeRequest} path={'/'}/>
+    )
+    fireEvent.change(screen.getByLabelText('Name'), {target: {value: directoryName}})
+    fireEvent.click(screen.getByText('Ok'));
+    expect(makeRequest).toBeCalledTimes(calledNumber)
+  })
+  test('hook', ()=> {
+
   })
 })

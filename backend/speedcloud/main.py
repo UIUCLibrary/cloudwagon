@@ -1,9 +1,10 @@
 import argparse
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-
+from .exceptions import CloudWagonException
 
 from .api import api
 
@@ -28,6 +29,16 @@ app.add_middleware(
 
 app.include_router(api)
 # app.mount("/", WSGIMiddleware(site))
+
+
+def handel_cloudwagon_exceptions(request: Request, ext: CloudWagonException):
+    return JSONResponse(status_code=400, content={})
+
+
+app.add_exception_handler(
+    CloudWagonException,
+    handler=handel_cloudwagon_exceptions
+)
 
 
 def _get_arg_parser() -> argparse.ArgumentParser:
