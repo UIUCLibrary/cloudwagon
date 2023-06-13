@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-ARG BASE_IMAGE=python:3.10
+ARG BASE_IMAGE=python:3.11
 FROM ${BASE_IMAGE} as builder
 #COPY ../Speedwagon ./Speedwagon/
 ARG PIP_EXTRA_INDEX_URL

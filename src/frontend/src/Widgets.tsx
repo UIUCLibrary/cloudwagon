@@ -1,4 +1,4 @@
-import React, {
+import {
   FC,
   useState,
   useEffect,
@@ -602,11 +602,14 @@ const DirectorySelectDialog = forwardRef((
                       return filesOnRowClick(params, loading, setSelectedPath);
                     }}
                     onRowDoubleClick={
-                      (params: GridRowParams<IFile>) => fileOnDoubleClick(
-                          params,
-                          loading,
-                          setPwd
-                      )
+                      (params: GridRowParams<IFile>) => {
+                        fileOnDoubleClick(
+                            params,
+                            loading,
+                            setPwd
+                        )
+                        handleRefreshPath();
+                      }
                     }
                     isRowSelectable={
                       (params: GridRowParams<GridValidRowModel>): boolean => {

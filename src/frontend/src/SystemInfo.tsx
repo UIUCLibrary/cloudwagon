@@ -9,7 +9,7 @@ import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell'
 
-import React, {useEffect, useState, FC} from 'react';
+import {useEffect, useState, FC} from 'react';
 import {LinearProgress} from '@mui/material';
 const InfoItem: FC<({metadataKey: string, children: any})> = (props) =>{
  return (

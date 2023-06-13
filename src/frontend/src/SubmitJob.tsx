@@ -4,7 +4,7 @@ import FormControl from "@mui/material/FormControl";
 import Select, {SelectChangeEvent} from  "@mui/material/Select"
 import FormGroup from "@mui/material/FormGroup"
 import MenuItem from "@mui/material/MenuItem"
-import React, {
+import  {
   FC,
   SyntheticEvent,
   useEffect,
@@ -176,8 +176,8 @@ interface ISubmitJob{
 }
 export default function SubmitJob({workflowName, onWorkflowChanged}: ISubmitJob){
     const workflowList = useWorkflowList()  // this causes reloading
-    const [currentWorkflow, setCurrentWorkflow] = React.useState<Workflow | null>(null);
-    const [workflowData, setWorkflowData] = React.useState<WorkflowDetails | null>(null);
+    const [currentWorkflow, setCurrentWorkflow] = useState<Workflow | null>(null);
+    const [workflowData, setWorkflowData] = useState<WorkflowDetails | null>(null);
     // const [streamUrlSSE, setStreamUrlSSE] = useState<string|null>(null)
     const [streamUrlWS, setStreamUrlWS] = useState<string|null>(null)
     const [showDialog, setShowDialog] = useState(false)

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState, SyntheticEvent} from 'react';
 import {Box, Container, Paper, LinearProgress, Alert} from "@mui/material";
 import SubmitJob from './SubmitJob'
 import Tab from '@mui/material/Tab'
@@ -68,9 +68,9 @@ interface ISpeedwagonApp{
 export function SpeedwagonApp({tab}: ISpeedwagonApp) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [currentTabIndex, setCurrentTabIndex] = React.useState(0);
+  const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (event: SyntheticEvent, newValue: number) => {
     navigate(`/${tabs[newValue]}`)
     setCurrentTabIndex(newValue);
   };

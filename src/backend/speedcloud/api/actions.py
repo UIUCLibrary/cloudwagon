@@ -44,9 +44,8 @@ def get_workflow_by_name(name: str) -> WorkflowValues:
     workflows = speedwagon.available_workflows()
     if result := workflows.get(name):
         workflow = result()
-        user_options = workflow.get_user_options()
+        user_options = workflow.job_options()
         parameters = [o.serialize() for o in user_options]
-        # TODO: remove this when get_user_options actually supposed required
         for parameter in parameters:
             if 'required' not in parameter:
                 parameter['required'] = True
