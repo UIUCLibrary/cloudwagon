@@ -5,7 +5,7 @@ ENV PATH /app/node_modules/.bin:$PATH
 COPY package.json  ./
 COPY package-lock.json  ./
 RUN npm install
-COPY src/frontend/tsconfig.json vite.config.ts ./
+COPY tsconfig.json vite.config.ts ./
 
 COPY src/frontend/index.html  ./src/frontend/index.html
 COPY ./src/frontend/src ./src/frontend/src
