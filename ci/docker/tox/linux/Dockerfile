@@ -3,7 +3,7 @@ ARG PIP_CACHE_DIR=/.cache/pip
 FROM ubuntu:20.04 as base
 COPY ci/docker/tox/linux/apt-packages.txt /tmp/
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends software-properties-common=0.99.9.10 && \
+    apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     < /tmp/apt-packages.txt xargs apt-get install -y && \
