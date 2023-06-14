@@ -16,24 +16,16 @@ import Toolbar from '@mui/material/Toolbar';
 import MenuItem from '@mui/material/MenuItem';
 import AppBar from '@mui/material/AppBar';
 import {Link, useNavigate, useSearchParams} from 'react-router-dom';
-import {AddFilesDialog, ConfirmRemovalFiles} from './FilesDialog'
+import {AddFilesDialog, ConfirmRemovalFiles} from '../dialogs';
 import axios from "axios";
-interface IFileNode{
-    name: string
-    path: string
-    type: string
-    size: number | null
-}
 
-interface IAPIRequest{
-    // files: IFile[]
-    contents: IFileNode[]
-}
+import {
+    IFileNode,
+    IAPIRequest,
+    IRoute
+} from './FileManagment.types';
 
-export interface IRoute{
-  display: string
-  path: string
-}
+
 export const splitRoutes = (pwd: string | null): IRoute[] =>{
     if (!pwd){
         return [];

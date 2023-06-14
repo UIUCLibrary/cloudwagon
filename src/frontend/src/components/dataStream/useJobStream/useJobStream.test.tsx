@@ -1,4 +1,4 @@
-import {asyncIterableFromStream} from '../JobProgressDialog'
+import {asyncIterableFromStream} from './useJobStream'
 import {waitFor} from '@testing-library/react';
 describe('asyncIterableFromStream', ()=>{
   const mockedStream = {
