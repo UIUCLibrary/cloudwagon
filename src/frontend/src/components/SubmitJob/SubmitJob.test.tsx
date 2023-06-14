@@ -6,7 +6,9 @@ import {
   waitFor,
   waitForElementToBeRemoved
 } from '@testing-library/react';
-import SubmitJob, {WidgetApi, GetWidget} from '../SubmitJob';
+import SubmitJob from '../SubmitJob';
+import {GetWidget} from './GetWidget';
+import {WidgetApi} from './SubmitJob.types'
 import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;

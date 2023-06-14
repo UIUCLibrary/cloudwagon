@@ -1,5 +1,5 @@
 import {render} from '@testing-library/react';
-import FileManagement, {splitRoutes} from '../FileManagement';
+import FileManagement, {splitRoutes} from './FileManagement';
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import * as React from 'react';
 test('placeholder', ()=>{

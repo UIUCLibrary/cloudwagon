@@ -71,11 +71,14 @@ async def list_data(
     ):
         raise HTTPException(404)
     storage_path = os.path.join(settings.storage, search_path)
-    contents = \
-        storage.get_path_contents(
-            storage_path,
-            starting=settings.storage
-        )
+    try:
+        contents = \
+            storage.get_path_contents(
+                storage_path,
+                starting=settings.storage
+            )
+    except FileNotFoundError as missing_path_error:
+        raise HTTPException(400) from missing_path_error
 
     return {
         "path": path,

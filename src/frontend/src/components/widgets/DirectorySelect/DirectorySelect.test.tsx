@@ -1,27 +1,9 @@
 import '@testing-library/jest-dom'
-import {
-  fireEvent,
-  render,
-  screen, waitFor,
-} from '@testing-library/react';
-import {
-  SelectOption,
-  DirectorySelect,
-  CheckBoxOption,
-  IFile, NewDirectoryDialog,
-} from '../Widgets'
-import {FormEvent} from 'react';
 import axios from 'axios';
+import {IFile} from '../Widgets.types.tsx';
+import {DirectorySelect} from './DirectorySelect.tsx';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 jest.mock('axios');
-
-describe('SelectOption', ()=>{
-  it('Label is written', function () {
-    render(
-        <SelectOption required={true} label="tester" parameters={{'selections': []}}/>
-    )
-    expect(screen.getByLabelText('tester *')).toBeInTheDocument()
-  });
-})
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('DirectorySelect', ()=>{
   beforeEach(()=>{
@@ -31,7 +13,7 @@ describe('DirectorySelect', ()=>{
             {
               data:
                   {
-                   exists: true
+                    exists: true
                   }
             });
       }
@@ -53,18 +35,18 @@ describe('DirectorySelect', ()=>{
     ] as IFile[]
   }
   const element = <DirectorySelect
-        required={true}
-        getDataHook={
-          ()=>{
-            return {data: directoryContents, error:'', loaded:true, update: ()=>{}}
-          }
+      required={true}
+      getDataHook={
+        ()=>{
+          return {data: directoryContents, error:'', loaded:true, update: ()=>{}}
         }
-        onReady={onLoaded}
-        onRejected={onRejected}
-        onAccepted={onAccepted}
-        label="tester"
-        parameters={{'selections': []}}
-    />
+      }
+      onReady={onLoaded}
+      onRejected={onRejected}
+      onAccepted={onAccepted}
+      label="tester"
+      parameters={{'selections': []}}
+  />
   test('browse Button opens dialog', async ()=>{
     render(element)
     await waitFor(()=>expect(onLoaded).toBeCalled());
@@ -140,84 +122,5 @@ describe('DirectorySelect', ()=>{
       fireEvent.click(browseButton);
       expect(workingPathDisplay).toHaveTextContent("/")
     })
-  })
-})
-describe('CheckBoxOption', ()=>{
-  test('default', ()=>{
-    const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
-      event.preventDefault()
-      const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
-      expect(formProps).toStrictEqual({foo: 'false'});
-    }
-    render(
-        <>
-          <form onSubmit={onSubmit}>
-            <CheckBoxOption required={true} label={'foo'}/>
-            <button type='submit'>Submit</button>
-          </form>
-        </>
-    )
-    fireEvent.click(screen.getByText('Submit'))
-  })
-  test('true', ()=>{
-    const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
-      event.preventDefault()
-      const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
-      expect(formProps).toStrictEqual({foo: 'true'});
-    }
-    render(
-        <>
-          <form onSubmit={onSubmit}>
-            <CheckBoxOption required={true} label={'foo'}/>
-            <button type='submit'>Submit</button>
-          </form>
-        </>
-    )
-    fireEvent.click(screen.getByLabelText('foo'));
-
-    fireEvent.click(screen.getByText('Submit'))
-  })
-  test('false', ()=>{
-    const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
-      event.preventDefault()
-      const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
-      expect(formProps).toStrictEqual({foo: 'false'});
-    }
-    render(
-        <>
-          <form onSubmit={onSubmit}>
-            <CheckBoxOption required={true} label={'foo'}/>
-            <button type='submit'>Submit</button>
-          </form>
-        </>
-    )
-    fireEvent.click(screen.getByLabelText('foo'));
-    fireEvent.click(screen.getByLabelText('foo'));
-    fireEvent.click(screen.getByText('Submit'))
-  })
-})
-
-describe('NewDirectory', ()=>{
-  test.each([
-      ['s', 1],
-      ['dummy', 1],
-      ['', 0],
-  ])("clicking okay with '%s' calls makeRequest %d times", (directoryName, calledNumber)=>{
-    const makeRequest = jest.fn()
-    makeRequest.mockImplementation((name: string)=>{
-      return Promise.resolve()
-    })
-    render(
-        <NewDirectoryDialog open={true} onCreate={makeRequest} path={'/'}/>
-    )
-    fireEvent.change(screen.getByLabelText('Name'), {target: {value: directoryName}})
-    fireEvent.click(screen.getByText('Ok'));
-    expect(makeRequest).toBeCalledTimes(calledNumber)
-  })
-  test('hook', ()=> {
-
   })
 })

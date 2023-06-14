@@ -1,10 +1,8 @@
 import {useEffect, useState, SyntheticEvent} from 'react';
 import {Box, Container, Paper, LinearProgress, Alert} from "@mui/material";
-import SubmitJob from './SubmitJob'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import FileManagement from './FileManagement';
-import SystemInfo from './SystemInfo';
+import {SubmitJob, SystemInfo, FileManagement} from './components'
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
 import {styled} from '@mui/system';
 import axios from 'axios';
