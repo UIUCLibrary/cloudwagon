@@ -1,0 +1,11 @@
+repos:
+  -   repo: https://github.com/charliermarsh/ruff-pre-commit
+      rev: 'v0.0.272'
+      hooks:
+        - id: ruff
+  -   repo: https://github.com/pre-commit/mirrors-eslint
+      rev: 'v8.42.0'  # Use the sha / tag you want to point at
+      hooks:
+        - id: eslint
+          files: \.[jt]sx?$  # *.js, *.jsx, *.ts and *.tsx
+          types: [ file ]
