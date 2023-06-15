@@ -162,7 +162,7 @@ pipeline {
                                         npm_config_cache = '/tmp/npm-cache'
                                     }
                                     steps{
-                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura'
+                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura --detectOpenHandles'
                                     }
                                     post{
                                         always{
