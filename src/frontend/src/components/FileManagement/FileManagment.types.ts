@@ -8,7 +8,3 @@ export interface IAPIRequest{
   // files: IFile[]
   contents: IFileNode[]
 }
-export interface IRoute{
-  display: string
-  path: string
-}

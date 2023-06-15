@@ -22,9 +22,8 @@ import axios from "axios";
 import {
     IFileNode,
     IAPIRequest,
-    IRoute
 } from './FileManagment.types';
-
+import {IRoute} from '../widgets'
 
 export const splitRoutes = (pwd: string | null): IRoute[] =>{
     if (!pwd){
