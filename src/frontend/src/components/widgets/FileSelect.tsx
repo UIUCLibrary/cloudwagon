@@ -1,13 +1,15 @@
 import {FC, useState} from 'react';
 import {APIWidgetData} from './Widgets.types';
 import FormControl from '@mui/material/FormControl';
-import {
-  Button,
-  Dialog, DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle, IconButton, InputAdornment, TextField
-} from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Dialog from '@mui/material/Dialog';
+import Button from '@mui/material/Button';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 
 export const FileSelect: FC<APIWidgetData> = ({label, required}) => {

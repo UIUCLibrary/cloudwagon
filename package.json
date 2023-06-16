@@ -72,6 +72,7 @@
     "eslint-output": "^3.0.1",
     "jest-environment-jsdom": "^29.0.3",
     "jest-junit": "^14.0.0",
+    "@playwright/test": "^1.35.1",
     "react-test-renderer": "^18.2.0",
     "ts-jest": "^29.0.1",
     "typescript": "^5.1.3",

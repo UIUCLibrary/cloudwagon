@@ -1,6 +1,7 @@
 import {FC, useState} from 'react';
 import {APIWidgetData} from '../Widgets.types.tsx';
-import {Checkbox, FormControlLabel} from '@mui/material';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 
 export const CheckBoxOption: FC<APIWidgetData> = ({label}) => {

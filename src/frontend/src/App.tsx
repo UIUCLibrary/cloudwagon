@@ -1,10 +1,14 @@
 import {useEffect, useState, SyntheticEvent} from 'react';
-import {Box, Container, Paper, LinearProgress, Alert} from "@mui/material";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import LinearProgress from "@mui/material/LinearProgress";
+import Paper from "@mui/material/Paper";
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import {SubmitJob, SystemInfo, FileManagement} from './components'
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
-import {styled} from '@mui/system';
+import styled from '@mui/system/styled';
 import axios from 'axios';
 
 interface TabPanelProps {

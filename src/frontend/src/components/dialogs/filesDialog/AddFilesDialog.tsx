@@ -3,7 +3,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import {Input} from '@mui/material';
+import Input from '@mui/material/Input';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import {IDialog} from './fileDialog.types';
@@ -33,7 +33,7 @@ export default function AddFilesDialog(props: IDialog){
           </DialogContent>
           <DialogActions>
             <Button onClick={()=>{handleClose(false)}}>Cancel</Button>
-            <Button onClick={()=>{handleClose(true)}}>Add</Button>
+            <Button onClick={()=>{handleClose(true)}}>Upload</Button>
           </DialogActions>
         </form>
       </Dialog>

@@ -1,11 +1,9 @@
-import {Button, Box} from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import FormLabel from "@mui/material/FormLabel"
 import FormControl from "@mui/material/FormControl";
-import Select, {SelectChangeEvent} from  "@mui/material/Select"
 import FormGroup from "@mui/material/FormGroup"
-import MenuItem from "@mui/material/MenuItem"
 import  {
-  FC,
   SyntheticEvent,
   useEffect,
   useState

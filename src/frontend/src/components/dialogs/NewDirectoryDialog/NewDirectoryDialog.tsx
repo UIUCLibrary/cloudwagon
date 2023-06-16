@@ -2,13 +2,18 @@ import {NewDirectoryDialogProps} from './NewDirectoryDialog.types';
 import {KeyboardEventHandler, useRef, useState} from 'react';
 import {TextFieldProps} from '@mui/material/TextField/TextField';
 import Zoom from '@mui/material/Zoom';
-import {
-  Alert,
-  AlertTitle, Backdrop, Button, CircularProgress,
-  Dialog, DialogActions, DialogContent, DialogContentText,
-  DialogTitle,
-  IconButton, TextField
-} from '@mui/material';
+import DialogTitle from '@mui/material/DialogTitle';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
+import Backdrop from '@mui/material/Backdrop';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
 import CloseIcon from '@mui/icons-material/Close';
 
 export const NewDirectoryDialog = (props: NewDirectoryDialogProps) => {

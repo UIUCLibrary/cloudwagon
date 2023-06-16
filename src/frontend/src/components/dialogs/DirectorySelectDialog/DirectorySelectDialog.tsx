@@ -7,14 +7,16 @@ import {
   GridValidRowModel
 } from '@mui/x-data-grid';
 import axios from 'axios';
-import {
-  Box, Button,
-  Dialog, DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Paper
-} from '@mui/material';
+
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+
 import CloseIcon from '@mui/icons-material/Close';
 import {NewDirectoryDialog} from '../NewDirectoryDialog';
 import AppBar from '@mui/material/AppBar';

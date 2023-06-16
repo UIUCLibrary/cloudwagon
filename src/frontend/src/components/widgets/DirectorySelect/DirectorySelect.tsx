@@ -1,11 +1,12 @@
 import {forwardRef, Ref, useRef, useState} from 'react';
-import {IDirectorySelect} from '../Widgets.types.tsx';
 import {TextFieldProps} from '@mui/material/TextField/TextField';
 import FormControl from '@mui/material/FormControl';
 import {DirectorySelectDialog, DirectorySelectDialogRef} from '../../dialogs/DirectorySelectDialog';
-import {IconButton, InputAdornment, TextField} from '@mui/material';
+import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
+import TextField from '@mui/material/TextField'
 import FolderIcon from '@mui/icons-material/Folder';
-import {SelectionRef} from '../Widgets.types';
+import {SelectionRef, IDirectorySelect} from '../Widgets.types';
 
 export const DirectorySelect = forwardRef(
     (

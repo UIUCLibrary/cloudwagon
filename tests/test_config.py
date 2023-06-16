@@ -1,5 +1,5 @@
 import os.path
-from unittest.mock import Mock, patch, mock_open, call
+from unittest.mock import Mock, patch, mock_open
 
 import speedcloud.config
 
@@ -30,4 +30,6 @@ def test_generate_default_config(monkeypatch):
 def test_generate_default_toml_config_has_main():
     def no_op(prompt, required=False):
         return ''
-    assert "[main]" in speedcloud.config.generate_default_toml_config(prompt_for_input=no_op)
+    assert "[main]" in speedcloud.config.generate_default_toml_config(
+        prompt_for_input=no_op
+    )
