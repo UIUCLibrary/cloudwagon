@@ -1,7 +1,7 @@
 import {FC} from 'react';
 import {splitRoutes} from '../FileManagement';
 import Link from '@mui/material/Link';
-import {Box} from '@mui/material';
+import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import {IToolbar, IRoute} from './Widgets.types';

@@ -5,9 +5,10 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Skeleton from '@mui/material/Skeleton';
 import Breadcrumbs from '@mui/material/Breadcrumbs'
-import {Alert, AlertTitle} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import {Folder} from '@mui/icons-material';
+import Folder from '@mui/icons-material/Folder';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton  from '@mui/material/IconButton';
 import Collapse from '@mui/material/Collapse';

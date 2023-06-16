@@ -62,7 +62,6 @@ describe('DirectorySelect', ()=>{
   describe('callbacks', ()=>{
     test('Accept button calls onAccepted', async ()=>{
       render(element)
-
       const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
       await waitFor(()=>{
@@ -79,6 +78,7 @@ describe('DirectorySelect', ()=>{
 
       const browseButton = screen.getByRole('button', {name: /browse/})
       fireEvent.click(browseButton);
+      // ddfsasdf
       await waitFor(()=>{
         expect(screen.getByText('t2')).toBeInTheDocument()
       })
