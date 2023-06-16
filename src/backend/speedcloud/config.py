@@ -3,12 +3,13 @@ import os
 from typing import List, Dict, Any, Optional, Callable
 from typing_extensions import Protocol
 import logging
-
+import tempfile
 from pydantic import BaseSettings
 import tomlkit
 
-logger = logging.getLogger(__name__)
+ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE = 'SPEEDCLOUD_STORAGE'
 
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     storage: str
@@ -32,7 +33,18 @@ def read_settings(config_file: str) -> Settings:
 
 @lru_cache()
 def get_settings() -> Settings:
-    config_file = find_config_file(search_paths=search_locations)
+    try:
+        config_file = find_config_file(search_paths=search_locations)
+    except FileNotFoundError:
+        if ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE in os.environ:
+            storage_path = os.environ[ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE]
+        else:
+            temp_root = tempfile.gettempdir()
+            temp_storage = os.path.join(temp_root, "speedcloud")
+            if not os.path.exists(temp_storage):
+                os.makedirs(temp_storage)
+            storage_path = temp_root
+        return Settings(storage=storage_path)
     return read_settings(config_file)
 
 
