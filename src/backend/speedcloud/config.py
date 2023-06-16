@@ -41,9 +41,9 @@ def get_settings() -> Settings:
         else:
             temp_root = tempfile.gettempdir()
             temp_storage = os.path.join(temp_root, "speedcloud")
-            if not os.path.exists(temp_storage):
-                os.makedirs(temp_storage)
-            storage_path = temp_root
+            storage_path = temp_storage
+        if not os.path.exists(storage_path):
+            os.makedirs(storage_path)
         return Settings(storage=storage_path)
     return read_settings(config_file)
 

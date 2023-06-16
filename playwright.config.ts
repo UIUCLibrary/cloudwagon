@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 const os = require('os');
 const path = require('path');
+const speedcloud_storage_path = path.join(os.tmpdir(), 'speedcloud')
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -73,13 +74,13 @@ export default defineConfig({
       {
         command: 'npm run start',
         url: 'http://localhost:5173',
-        timeout: 120 * 10,
+        timeout: 120 * 100,
         reuseExistingServer: !process.env.CI,
       },
       {
-        command: `cd src/backend && SPEEDCLOUD_STORAGE=${path.join(os.tmpdir(), 'speedcloud')}/ python -m uvicorn speedcloud.main:app --reload `,
+        command: `cd src/backend && SPEEDCLOUD_STORAGE=${speedcloud_storage_path}/ python -m uvicorn speedcloud.main:app --reload `,
         url: 'http://127.0.0.1:8000',
-        timeout: 120 * 10,
+        timeout: 120 * 100,
         reuseExistingServer: !process.env.CI,
       }
   ]
