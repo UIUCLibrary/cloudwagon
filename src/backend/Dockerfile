@@ -1,12 +1,8 @@
-# syntax = docker/dockerfile:1.2
-
 ARG BASE_IMAGE=python:3.11
 FROM ${BASE_IMAGE} as builder
-#COPY ../Speedwagon ./Speedwagon/
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt /tmp/requirements.txt
-#COPY Speedwagon/requirements.txt Speedwagon/requirements.txt
 
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip wheel --no-cache-dir -r /tmp/requirements.txt -w /wheels
