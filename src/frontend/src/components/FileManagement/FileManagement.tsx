@@ -18,6 +18,7 @@ import MenuItem from '@mui/material/MenuItem';
 import AppBar from '@mui/material/AppBar';
 import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {AddFilesDialog, ConfirmRemovalFiles} from '../dialogs';
+import {useDirectoryContents, useUploadFiles} from '../apiHooks';
 import axios from "axios";
 
 import {
@@ -48,47 +49,48 @@ export const splitRoutes = (pwd: string | null): IRoute[] =>{
     }
     return components;
 }
-
+const removeAllFiles = ()=>{
+    return axios.delete('/api/files')
+}
 export default function FileManagement(){
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [files, setFiles] = useState<IFileNode[]|null>(null);
     const [data, setData] = useState<IAPIRequest|null>(null);
-    const [dataIsValid, setDataIsValid] = useState<boolean>(false)
     const [addFilesDialogOpen, setAddFilesDialogOpen] = useState<boolean>(false);
     const [removeFilesDialogOpen, setRemoveFilesDialogOpen] = useState<boolean>(false);
     const [breadCrumbRoutes, setBreadCrumbRoutes] = useState<IRoute[]>([
         {display: 'Root', path:'/'}
     ])
-
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [pwd, setPwd] = useState(searchParams.get('path') ? searchParams.get('path'): '/')
+    const directoryContentsHook = useDirectoryContents(pwd);
+    const uploadFilesHook = useUploadFiles(pwd);
+    useEffect(()=>{
+        console.log(directoryContentsHook.contents);
+        setFiles(directoryContentsHook.contents)
+    }, [directoryContentsHook])
     useEffect(()=>{
         const newUrl = `./?path=${pwd}`
-        console.log(`changing url to ${newUrl}`)
         navigate(newUrl)
-
     }, [navigate, pwd])
     const handleAddNewFiles = (accept: boolean, files?: FileList|null) =>{
         setAddFilesDialogOpen(false)
             if(files) {
-                const formData = new FormData();
-                for (const file of Array.from(files)) {
-                    formData.append("files", file, file.name);
-                }
-                axios.post(`/api/files?path=${pwd}`, formData).then(()=>{setDataIsValid(false)});
+                uploadFilesHook.upload(Array.from(files))
+                    .finally(()=> {
+                        directoryContentsHook.refresh()
+                    });
             }
-        setDataIsValid(false);
     }
     const handleRemoveFiles = (accept: boolean) =>{
-        console.log(accept)
         setRemoveFilesDialogOpen(false)
         if(accept){
-            axios.delete('/api/files').then((result) => {
-                console.log(result.data);
+            removeAllFiles().then((result) => {
                 setData(result.data)
-                setDataIsValid(false)
+            }).finally(()=> {
+                directoryContentsHook.refresh()
             })
         }
     }
@@ -100,34 +102,15 @@ export default function FileManagement(){
 
     })
     useEffect(()=>{
-        if(!dataIsValid){
-            const path = pwd ? pwd: '/';
-            setLoading(true)
-            axios.get(`/api/files/contents?path=${encodeURI(path)}`)
-                .then((result) => {
-                    setData(result.data)
-                    setError(null);
-                    setDataIsValid(true)
-                    const newPath = result.data.path;
-                    setBreadCrumbRoutes(splitRoutes(newPath))
-                    setPwd(newPath)
-                })
-                .catch((e)=>{
-                    setError(e.toString());
-                    setBreadCrumbRoutes(splitRoutes('/'))
-                    setPwd(pwd)
-                    console.error(e);
-                })
-                .finally(()=>{
-                  setLoading(false);
-                })
-        }
-    }, [pwd, dataIsValid])
-    useEffect(()=>{
-        if(!data){
+        if(data === null){
             setFiles(null)
         } else {
-            setFiles([...data.contents].sort(sortByType));
+            try {
+                setFiles([...data.contents].sort(sortByType));
+
+            } catch (e) {
+                setError('failed')
+            }
         }
     },[data])
     const getNodeIcon = (file: IFileNode)=>{
@@ -147,10 +130,7 @@ export default function FileManagement(){
             const linkUrl = `./?path=${encodeURI(fullpath)}`
             return (
                 <Link
-                    onClick={()=> {
-                        setPwd(file.path);
-                        setDataIsValid(false);
-                    }}
+                    onClick={()=> {setPwd(file.path);}}
                     to={linkUrl}
                     style={{textDecoration: 'none',}}
                 >
@@ -180,12 +160,10 @@ export default function FileManagement(){
                 key={value.path}
                 to={linkUrl}
                 style={{textDecoration: 'none'}}
-                onClick={()=> {
-                    setPwd(value.path)
-                    setDataIsValid(false)}}
+                onClick={()=> {setPwd(value.path)}}
             >{value.display}</Link>
         )
-    });
+    })
 
     const errorBlock = (
         <Collapse in={!!error}>
