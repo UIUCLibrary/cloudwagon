@@ -1,10 +1,15 @@
 import {useEffect, useState} from "react";
 import {IFile} from "../../widgets";
 import axios from "axios";
-
+export interface useDirectoryContentsHookResponse{
+    contents: IFile[]
+    error: string | null
+    loaded: boolean
+    refresh: ()=>void
+}
 export const useDirectoryContents = (
     path: string | null
-) => {
+): useDirectoryContentsHookResponse => {
     const [contents, setContents] = useState<null | IFile[]>(null)
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false)

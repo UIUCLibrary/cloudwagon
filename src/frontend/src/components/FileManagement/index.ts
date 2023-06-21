@@ -1,2 +1,2 @@
-export {default } from './FileManagement'
-export * from './FileManagement'
+export {default } from './FileManagementPage.tsx'
+export * from './FileManagementPage.tsx'

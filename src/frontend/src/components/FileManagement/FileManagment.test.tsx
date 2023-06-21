@@ -1,62 +1,48 @@
-import {render} from '@testing-library/react';
-import FileManagement, {splitRoutes} from './FileManagement';
+import '@testing-library/jest-dom';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import FileManagementPage from './FileManagementPage';
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import * as React from 'react';
-test('placeholder', ()=>{
-  render(
-      <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<FileManagement/>}/>
-        </Routes>
-      </BrowserRouter>
-  )
-})
-
-describe('splitRoutes', ()=>{
-  it.each([
-    [
-      '/',
-      [
+import {IAPIRequest} from '../widgets/FileManager';
+describe('FileManagementPage', ()=>{
+  const dataGetter = async (path: string): Promise<IAPIRequest> =>{
+    return Promise.resolve({
+      "path":"/",
+      "contents": [
         {
-          display:'/',
-          path:'/'
-        }
-      ]
-    ],
-    [
-      '/sample',
-      [
-        {
-          display:'/',
-          path: '/'
+          "name": ".",
+          "path":"/",
+          "type": "Directory",
+          "size": null
         },
-        {
-          display: 'sample',
-          path: '/sample'
-        }
       ]
-    ],
-    [
-      '/multiple/directories',
-      [
-        {
-          display:'/',
-          path: '/'
-        },
-        {
-          display: 'multiple',
-          path: '/multiple'
-        },
-        {
-          display: 'directories',
-          path: '/multiple/directories'
-        }
-      ]
-    ],
-  ])('%p == %o', (
-      inputString: string,
-      expected: {   display: string, path: string }[]
-  ) =>{
-    expect(splitRoutes(inputString)).toStrictEqual(expected)
+    })
+  }
+  test('placeholder', async ()=>{
+    render(
+        <BrowserRouter>
+          <Routes>
+            <Route path='/' element={<FileManagementPage contentGetter={dataGetter}/>}/>
+          </Routes>
+        </BrowserRouter>
+    )
   })
+
+  test('open add file dialog box', async ()=>{
+
+    render(
+        <BrowserRouter>
+          <Routes>
+            <Route path='/' element={<FileManagementPage contentGetter={dataGetter}/>}/>
+          </Routes>
+        </BrowserRouter>
+    )
+    expect(screen.queryByRole('dialog', {name: 'Add Files'})).toBeNull()
+    fireEvent.click(screen.getByRole('menuitem', {name: "Add Files"}));
+    await waitFor(()=> {
+      expect(screen.getByRole('dialog', {name: 'Add Files'})).toBeInTheDocument()
+    });
+
+  })
+
 })

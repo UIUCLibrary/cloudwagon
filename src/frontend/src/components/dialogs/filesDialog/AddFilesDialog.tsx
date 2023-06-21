@@ -2,7 +2,6 @@ import {useEffect, useRef, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import Input from '@mui/material/Input';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
@@ -27,9 +26,7 @@ export default function AddFilesDialog(props: IDialog){
         <DialogTitle>Add Files</DialogTitle>
         <form>
           <DialogContent>
-            <DialogContentText>
-              <Input inputRef={form} type="file" inputProps={{ multiple: true }}/>
-            </DialogContentText>
+            <Input inputRef={form} type="file" inputProps={{ multiple: true }}/>
           </DialogContent>
           <DialogActions>
             <Button onClick={()=>{handleClose(false)}}>Cancel</Button>
