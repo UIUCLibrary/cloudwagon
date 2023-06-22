@@ -7,7 +7,6 @@ from speedcloud import app
 import speedcloud.config
 import speedcloud.api.storage
 import speedcloud.api.routes
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
