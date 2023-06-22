@@ -64,12 +64,17 @@ describe('FileManager', ()=>{
             "type": "Directory",
             "size": null
           },
+          {
+            "name": "more",
+            "path": "/more",
+            "type": "Directory",
+            "size": null
+          },
         ]
       })
     }
-    await waitFor(()=>{
-      render(<FileManager path='/' resourceGetter={dataGetter}/>)
-    })
+    render(<FileManager path='/' resourceGetter={dataGetter}/>)
+    await waitFor(()=>expect(screen.getByRole('link', {name: 'more/'})).toBeInTheDocument())
     expect(screen.getByRole('menuitem', {name: "Add Files"})).toBeInTheDocument()
   })
   test('data gathers', async ()=>{

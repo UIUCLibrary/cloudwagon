@@ -15,6 +15,12 @@ describe('FileManagementPage', ()=>{
           "type": "Directory",
           "size": null
         },
+        {
+          "name": "more",
+          "path": "/more",
+          "type": "Directory",
+          "size": null
+        },
       ]
     })
   }
@@ -26,6 +32,7 @@ describe('FileManagementPage', ()=>{
           </Routes>
         </BrowserRouter>
     )
+    await waitFor(()=>expect(screen.getByRole('link', {name: 'more/'})).toBeInTheDocument())
   })
 
   test('open add file dialog box', async ()=>{
@@ -37,6 +44,7 @@ describe('FileManagementPage', ()=>{
           </Routes>
         </BrowserRouter>
     )
+    await waitFor(()=>expect(screen.getByRole('link', {name: 'more/'})).toBeInTheDocument())
     expect(screen.queryByRole('dialog', {name: 'Add Files'})).toBeNull()
     fireEvent.click(screen.getByRole('menuitem', {name: "Add Files"}));
     await waitFor(()=> {
