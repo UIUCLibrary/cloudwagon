@@ -12,4 +12,17 @@ describe('SelectOption', ()=>{
     )
     expect(screen.getByLabelText('tester *')).toBeInTheDocument()
   });
+
+  it('default value', function () {
+    render(
+        <SelectOption required={true} label="tester" parameters={{'defaultValue':'one', 'selections': ['one', 'two']}}/>
+    )
+    expect(screen.getByLabelText('tester *')).toHaveTextContent('one')
+  });
+  it('selections with no default value', function () {
+    render(
+        <SelectOption required={true} label="tester" parameters={{'selections': ['one']}}/>
+    )
+    expect(screen.getByLabelText('tester *')).not.toHaveTextContent('one')
+  });
 })

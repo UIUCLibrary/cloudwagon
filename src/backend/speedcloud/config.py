@@ -11,6 +11,7 @@ ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE = 'SPEEDCLOUD_STORAGE'
 
 logger = logging.getLogger(__name__)
 
+
 class Settings(BaseSettings):
     storage: str
 

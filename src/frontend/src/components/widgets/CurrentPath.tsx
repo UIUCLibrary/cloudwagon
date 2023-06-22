@@ -1,5 +1,5 @@
 import {FC} from 'react';
-import {splitRoutes} from '../FileManagement';
+import {splitRoutes} from './FileManager';
 import Link from '@mui/material/Link';
 import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
@@ -16,7 +16,7 @@ export const CurrentPath: FC<IToolbar> = ({selected, setPwd}) => {
         onClick={() => {
           setPwd(route.path)
         }}>{route.display}</Link>
-  }) : <></>
+  }) : []
   return (
       <Box sx={{pb: 1, borderColor: 'text.disabled'}}>
         <Box aria-label={'working path'}

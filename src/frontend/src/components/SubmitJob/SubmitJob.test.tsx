@@ -117,7 +117,7 @@ describe('WorkflowParams', () => {
   ])('testing label matches %p', async (name: string, metadata: WidgetApi) => {
     mockedAxios.get.mockImplementation((url) => {
       if (url.startsWith('/api/files')) {
-        const promise =  Promise.resolve(
+        return  Promise.resolve(
             {
               data:
                   {
@@ -125,7 +125,6 @@ describe('WorkflowParams', () => {
                     path: '/'
                   }
             });
-        return promise;
       }
       return Promise.resolve();
     });
