@@ -176,7 +176,7 @@ pipeline {
                                             catchError(buildResult: 'SUCCESS', message: 'ESlint found issues', stageResult: 'UNSTABLE') {
                                                 sh(
                                                     label:  "Running ESlint",
-                                                    script: 'npm run eslint-output'
+                                                    script: 'npm run lint -- src/frontend/src --format=checkstyle -o reports/eslint_report.xml'
                                                 )
                                             }
                                         }
