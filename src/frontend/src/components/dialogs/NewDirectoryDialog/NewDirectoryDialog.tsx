@@ -103,7 +103,6 @@ export const NewDirectoryDialog = (props: NewDirectoryDialogProps) => {
               variant={'standard'}
           />
           <DialogContentText>
-
             {errorElement}
           </DialogContentText>
           <Backdrop open={isLoading}>

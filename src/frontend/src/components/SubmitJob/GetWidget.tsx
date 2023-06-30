@@ -1,7 +1,7 @@
 import {FC} from 'react';
 import {WidgetApi} from './SubmitJob.types.tsx';
-import {APISelectDir} from './APISelectDir.tsx';
-import {CheckBoxOption, FileSelect, SelectOption} from '../widgets';
+import {APISelectDir, APISelectFile} from './APISelectDir';
+import {CheckBoxOption, SelectOption} from '../widgets';
 
 export const GetWidget: FC<WidgetApi> = (parameter)=>{
   if(parameter.widget_type === 'DirectorySelect'){
@@ -9,7 +9,7 @@ export const GetWidget: FC<WidgetApi> = (parameter)=>{
   }
   if(parameter.widget_type === 'FileSelect'){
     return (
-        <FileSelect required={parameter.required} label={parameter.label} parameters={parameter}/>
+        <APISelectFile widgetParameter={parameter}/>
     )
   }
   if(parameter.widget_type === 'BooleanSelect'){

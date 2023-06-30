@@ -54,7 +54,7 @@ describe('splitRoutes', ()=>{
 })
 describe('FileManager', ()=>{
   test('renders', async ()=>{
-    const dataGetter = async (path: string): Promise<IAPIRequest> =>{
+    const dataGetter = async (): Promise<IAPIRequest> =>{
       return Promise.resolve({
         "path":"/",
         "contents": [
@@ -78,7 +78,7 @@ describe('FileManager', ()=>{
     expect(screen.getByRole('menuitem', {name: "Add Files"})).toBeInTheDocument()
   })
   test('data gathers', async ()=>{
-    const dataGetter = async (path: string): Promise<IAPIRequest> =>{
+    const dataGetter = async (): Promise<IAPIRequest> =>{
       return Promise.resolve({
         "path":"/",
         "contents": [

@@ -1,12 +1,11 @@
-import {FC} from 'react';
 import {splitRoutes} from './FileManager';
 import Link from '@mui/material/Link';
 import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import {IToolbar, IRoute} from './Widgets.types';
+import {IRoute} from './Widgets.types';
 
-export const CurrentPath: FC<IToolbar> = ({selected, setPwd}) => {
+export default function CurrentPath({selected, onGotoParent}){
   const breadcrumbs = selected ? splitRoutes(selected).map((route: IRoute, index) => {
     return <Link
         key={index}
@@ -14,7 +13,7 @@ export const CurrentPath: FC<IToolbar> = ({selected, setPwd}) => {
         color="inherit"
         href={"#"}
         onClick={() => {
-          setPwd(route.path)
+          onGotoParent(route.path)
         }}>{route.display}</Link>
   }) : []
   return (

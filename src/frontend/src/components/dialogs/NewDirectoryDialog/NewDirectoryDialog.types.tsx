@@ -5,4 +5,5 @@ export interface NewDirectoryDialogProps {
   path: string
   onClose?: (props: {serverDataChanged: boolean}) => void;
   onCreate?: (name: string, location: string) => Promise<AxiosResponse>;
+  // onCreate?: (name: string, location: string) => Promise<AxiosResponse>;
 }

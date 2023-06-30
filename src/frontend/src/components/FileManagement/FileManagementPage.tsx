@@ -1,4 +1,4 @@
-import {ReactElement, useEffect, useReducer, useState} from "react";
+import {ReactElement, useEffect, useState} from "react";
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -12,44 +12,6 @@ import {
     IFileNode,
     IAPIRequest,
 } from './FileManagment.types';
-
-enum ACTIONS {
-    REMOVE_ALL_FILES,
-    ADD_FILES
-}
-type ActionPayload = {
-    path?: string,
-    files?: FileList
-}
-type Action = {
-    type: ACTIONS,
-    payload?: ActionPayload
-}
-
-type State = {
-    promise?: Promise<any>
-}
-function reducer(promise: State, action: Action): State{
-    switch (action.type){
-        case ACTIONS.REMOVE_ALL_FILES:
-            console.log(action.payload.path)
-            return {promise: axios.delete('/api/files')}
-        case ACTIONS.ADD_FILES:
-            console.log(action.payload.files)
-            if(action.payload.files) {
-                const formData = new FormData();
-                for (const file of action.payload.files) {
-                    formData.append("files", file, file.name);
-                }
-                const path = action.payload.path
-                return {promise: axios.post(`/api/files?path=${path}`, formData)}
-            }
-    }
-    return {
-        promise: Promise.resolve()
-    }
-}
-
 
 
 function BreadCrumbRouteLink({path, display, onClick}: BreadCrumbComponentProps) {

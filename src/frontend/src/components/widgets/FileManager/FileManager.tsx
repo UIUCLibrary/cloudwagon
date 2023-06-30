@@ -7,7 +7,7 @@ import Toolbar from '@mui/material/Toolbar';
 import MenuItem from '@mui/material/MenuItem';
 import List from '@mui/material/List';
 import axios from 'axios';
-import {Link} from '@mui/material';
+import Link from '@mui/material/Link';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
@@ -225,10 +225,11 @@ export function FileManager({path, DirectoryItem, BreadCrumbComponent, resourceG
 
   const handleAddNewFiles = (accept: boolean, files?: FileList|null) =>{
     setAddFilesDialogOpen(false)
-    // dispatch({type: ACTIONS.ADD_FILES, payload: {path: pwd, files: files}});
     if(files) {
+        setLoading(true)
       uploadFilesHook.upload(Array.from(files))
           .finally(()=> {
+              setLoading(false)
             directoryContentsHook.refresh()
           });
     }
@@ -236,11 +237,9 @@ export function FileManager({path, DirectoryItem, BreadCrumbComponent, resourceG
   const handleRemoveFiles = (accept: boolean) =>{
     setRemoveFilesDialogOpen(false)
     if(accept){
-      //     dispatch({type: ACTIONS.REMOVE_ALL_FILES, payload: {path: pwd}});
       removeAllFiles()
-          .then((result) => {
+          .then(() => {
             console.log('success removed')
-            // setData(result.data)
           }).finally(()=> {
         console.log('refreshing data')
         directoryContentsHook.refresh()
