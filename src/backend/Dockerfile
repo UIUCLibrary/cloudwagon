@@ -1,5 +1,6 @@
-ARG BASE_IMAGE=python:3.11
-FROM ${BASE_IMAGE} as builder
+FROM python:3.11 as baseimage
+
+FROM baseimage as builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt /tmp/requirements.txt
@@ -14,7 +15,7 @@ RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret
     python -m build /tmp/project --outdir /wheels/
 
 
-FROM ${BASE_IMAGE}
+FROM baseimage
 COPY requirements.txt /tmp/requirements.txt
 
 ARG PIP_EXTRA_INDEX_URL
