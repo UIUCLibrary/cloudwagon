@@ -7,7 +7,8 @@ import Select, {SelectChangeEvent} from '@mui/material/Select';
 
 export const SelectOption: FC<APIWidgetData> = ({label, parameters, required}) => {
   const [value, setValue] = useState(
-      parameters.hasOwnProperty('defaultValue') ? parameters['defaultValue'] : ''
+      Object.prototype.hasOwnProperty.call(parameters, 'defaultValue') ? parameters['defaultValue'] : ''
+      // parameters.hasOwnProperty('defaultValue') ? parameters['defaultValue'] : ''
   );
   const id = useId();
   if (!parameters) {
@@ -17,7 +18,12 @@ export const SelectOption: FC<APIWidgetData> = ({label, parameters, required}) =
     )
   }
   const params = parameters as IChoiceSelection;
-  const selections = params.hasOwnProperty('selections') ? params.selections : []
+  const selections = Object.prototype.hasOwnProperty.call(parameters, 'selections') ? params.selections : []
+  //   ^
+  //   |  This became this
+  //   |
+  //   ^
+  // const selections = params.hasOwnProperty('selections') ? params.selections : []
   const options = selections.map(
       (option, index) => {
         return (

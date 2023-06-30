@@ -7,7 +7,7 @@ describe('CheckBoxOption', ()=>{
     const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
       event.preventDefault()
       const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
+      const formProps = Object.fromEntries(formData);
       expect(formProps).toStrictEqual({foo: 'false'});
     }
     render(
@@ -24,7 +24,7 @@ describe('CheckBoxOption', ()=>{
     const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
       event.preventDefault()
       const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
+      const formProps = Object.fromEntries(formData);
       expect(formProps).toStrictEqual({foo: 'true'});
     }
     render(
@@ -43,7 +43,7 @@ describe('CheckBoxOption', ()=>{
     const onSubmit = (event: FormEvent<HTMLFormElement>)=>{
       event.preventDefault()
       const formData = new FormData(event.target as HTMLFormElement);
-      let formProps = Object.fromEntries(formData);
+      const formProps = Object.fromEntries(formData);
       expect(formProps).toStrictEqual({foo: 'false'});
     }
     render(

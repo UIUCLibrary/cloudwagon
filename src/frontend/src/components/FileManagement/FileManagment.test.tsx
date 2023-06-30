@@ -7,11 +7,11 @@ import {IAPIRequest} from '../widgets/FileManager';
 describe('FileManagementPage', ()=>{
   const dataGetter = async (path: string): Promise<IAPIRequest> =>{
     return Promise.resolve({
-      "path":"/",
+      "path": path,
       "contents": [
         {
           "name": ".",
-          "path":"/",
+          "path": path,
           "type": "Directory",
           "size": null
         },

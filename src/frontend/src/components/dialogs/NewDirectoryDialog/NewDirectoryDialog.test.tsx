@@ -15,7 +15,7 @@ describe('NewDirectory', ()=>{
     ['', 0],
   ])("clicking okay with '%s' calls makeRequest %d times", async (directoryName, calledNumber)=>{
     const makeRequest = jest.fn()
-    makeRequest.mockImplementation((name: string)=>{
+    makeRequest.mockImplementation(()=>{
       return Promise.resolve()
     })
     render(

@@ -18,8 +18,7 @@ export interface IAPIDirectoryContents {
   contents: IFile[]
 }
 export interface IDirectorySelect extends APIWidgetData {
-  getDataHook: (path: string | null) => { data: IAPIDirectoryContents | null, error: string, loaded: boolean, update: () => void }
-  onReady?: () => void
+  fetchingFunction?: (path: string) => Promise<IAPIDirectoryContents>
 }
 
 export interface SelectionRef {
@@ -37,7 +36,7 @@ export interface IToolbar {
 }
 
 export interface IFile {
-  id: number
+  id?: number
   size: number | null
   name: string
   type: string

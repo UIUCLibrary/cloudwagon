@@ -1,7 +1,12 @@
 import {IAPIDirectoryContents} from '../../widgets';
-
+export interface IDataHook {
+  data: IAPIDirectoryContents | null,
+  error: string,
+  loaded: boolean,
+  update: ()=>void
+}
 export interface IDirectorySelectDialog {
-  getDataHook: (path: string | null) => { data: IAPIDirectoryContents | null, error: string, loaded: boolean, update: ()=>void }
+  getDataHook?: (path: string | null) => IDataHook
   startingPath?: string | null,
   defaultValue?: string,
   show: boolean
@@ -11,5 +16,6 @@ export interface IDirectorySelectDialog {
   onRejected?: () => void
 }
 export interface DirectorySelectDialogRef {
-  selectedPath: string | null
+  selectedPath: string | null,
+  currentPath: string | null,
 }
