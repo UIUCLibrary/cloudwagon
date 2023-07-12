@@ -17,7 +17,8 @@ def storage_path():
 
 @pytest.fixture
 def client(monkeypatch, storage_path):
-    settings = Mock(spec=speedcloud.config.Settings, storage=storage_path)
+    settings = speedcloud.config.Settings
+    settings.storage = storage_path
     monkeypatch.setattr(speedcloud.config, 'find_config_file',
                         lambda *args, **kwargs: "file.toml")
     monkeypatch.setattr(speedcloud.config, 'read_settings',
