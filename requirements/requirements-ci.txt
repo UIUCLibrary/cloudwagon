@@ -1,0 +1,9 @@
+coverage
+flake8
+mypy
+types-setuptools
+types-aiofiles
+pylint
+pytest
+requests
+pydocstyle

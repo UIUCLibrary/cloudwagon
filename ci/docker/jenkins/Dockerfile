@@ -21,5 +21,6 @@ ARG PIP_INDEX_URL
 COPY --from=hadolint_installer /bin/hadolint /bin/hadolint
 RUN chmod +x /bin/hadolint &&  \
     hadolint --version
-COPY requirements.txt requirements-ci.txt /tmp/requirements/
-RUN python3 -m pip install --no-cache-dir -r /tmp/requirements/requirements-ci.txt
+COPY requirements-ci.txt /tmp/python_requirements/requirements-ci.txt
+COPY requirements/ /tmp/python_requirements/requirements/
+RUN python3 -m pip install --no-cache-dir -r /tmp/python_requirements/requirements-ci.txt

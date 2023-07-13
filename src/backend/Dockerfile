@@ -3,10 +3,11 @@ FROM python:3.11 as baseimage
 FROM baseimage as builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements.txt /tmp/python_requirements/requirements.txt
+COPY requirements/ /tmp/python_requirements/requirements/
 
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip wheel --no-cache-dir -r /tmp/requirements.txt -w /wheels
+    pip wheel --no-cache-dir -r /tmp/python_requirements/requirements.txt -w /wheels
 
 COPY src/backend/speedcloud /tmp/project/src/backend/speedcloud/
 COPY pyproject.toml /tmp/project
@@ -16,14 +17,14 @@ RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret
 
 
 FROM baseimage
-COPY requirements.txt /tmp/requirements.txt
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
+COPY --from=builder /tmp/python_requirements /tmp/python_requirements
 COPY --from=builder /wheels/*.whl /wheels/
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install --no-cache-dir -r /tmp/requirements.txt -v --find-links=/wheels && \
+    pip install --no-cache-dir -r tmp/python_requirements/requirements.txt -v --find-links=/wheels && \
     pip install --no-cache-dir --find-links=/wheels speedcloud
 
 WORKDIR /opt/speedcloud
