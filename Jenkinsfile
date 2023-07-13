@@ -1,8 +1,82 @@
+def startup(){
+
+    parallel(
+    [
+        failFast: true,
+        'Loading Reference Build Information': {
+            node(){
+                checkout scm
+                discoverGitReferenceBuild(latestBuildIfNotFound: true)
+            }
+        },
+        'Enable Git Forensics': {
+            node(){
+                checkout scm
+                mineRepository()
+            }
+        },
+        'Getting Distribution Info': {
+            node('linux && docker') {
+                timeout(2){
+                    ws{
+                        checkout scm
+                        try{
+                            docker.image('python').inside {
+                                withEnv(['PIP_NO_CACHE_DIR=off']) {
+                                    sh(
+                                       label: 'Running setup.py with dist_info',
+                                       script: 'python setup.py dist_info'
+                                    )
+                                }
+                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                                archiveArtifacts artifacts: '*.dist-info/**'
+                            }
+                        } finally{
+                            deleteDir()
+                        }
+                    }
+                }
+            }
+        }
+    ]
+    )
+
+}
+
+//def get_props(){
+//    stage('Reading Package Metadata'){
+//        node() {
+//            try{
+//                unstash 'DIST-INFO'
+//                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
+//                def package_metadata = readProperties interpolate: true, file: metadataFile.path
+//                echo """Metadata:
+//
+//    Name      ${package_metadata.Name}
+//    Version   ${package_metadata.Version}
+//    """
+//                return package_metadata
+//            } finally {
+//                cleanWs(
+//                    patterns: [
+//                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
+//                        ],
+//                    notFailBuild: true,
+//                    deleteDirs: true
+//                )
+//            }
+//        }
+//    }
+//}
+//startup()
+//props = get_props()
 pipeline {
     agent none
     parameters {
         string defaultValue: 'speedcloud', name: 'DOCKER_IMAGE_NAME'
         booleanParam defaultValue: true, description: 'Run checks', name: 'RUN_CHECKS'
+        booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        credentials(name: 'SONARCLOUD_TOKEN', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'sonarcloud_token', required: false)
         booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
         booleanParam defaultValue: false, description: 'Package', name: 'PACKAGE'
@@ -21,7 +95,8 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/jenkins/Dockerfile'
                             label 'linux && docker && x86'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg SONAR_INSTALL_PATH=/opt/sonar'
+                            args '--mount source=sonar-cache-cloud,target=/opt/sonar/.sonar/cache'
                           }
                     }
                     stages{
@@ -162,7 +237,7 @@ pipeline {
                                         npm_config_cache = '/tmp/npm-cache'
                                     }
                                     steps{
-                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../reports/ --coverageReporters=cobertura --detectOpenHandles'
+                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../../reports/ --coverageReporters=cobertura --detectOpenHandles'
                                     }
                                     post{
                                         always{
@@ -179,6 +254,11 @@ pipeline {
                                                     script: 'npm run lint -- src/frontend/src --format=checkstyle -o reports/eslint_report.xml'
                                                 )
                                             }
+                                            sh(
+                                                label:  "Running ESlint for sonar",
+                                                script: 'npm run lint -- src/frontend/src --format=json -o reports/eslint_report.json',
+                                                returnStatus: true
+                                            )
                                         }
                                     }
                                     post{
@@ -207,18 +287,80 @@ pipeline {
                                    )
                                    archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
                                 }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'main/', type: 'INCLUDE'],
-                                            [pattern: 'coverage/', type: 'INCLUDE'],
-                                            [pattern: 'reports/', type: 'INCLUDE'],
-                                            [pattern: '**/node_modules/', type: 'INCLUDE'],
-                                        ]
-                                    )
+                            }
+                        }
+                        stage('Run Sonarqube Analysis'){
+                            options{
+                                lock('cloudwagon-sonarscanner')
+                            }
+                            when{
+                                allOf{
+                                    equals expected: true, actual: params.USE_SONARQUBE
+                                    expression{
+                                        try{
+                                            withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
+                                                echo 'Found credentials for sonarqube'
+                                            }
+                                        } catch(e){
+                                            return false
+                                        }
+                                        return true
+                                    }
                                 }
                             }
+                            steps{
+                                script{
+                                    def sonarqube = load('ci/jenkins/scripts/sonarqube.groovy')
+                                    def sonarqubeConfig = [
+                                                installationName: 'sonarcloud',
+                                                credentialsId: params.SONARCLOUD_TOKEN,
+                                            ]
+                                    def packageName = sh(script: 'grep "^name = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
+                                    def packageVersion = sh(script: 'grep "^version = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
+                                    milestone label: 'sonarcloud'
+                                    if (env.CHANGE_ID){
+                                        sonarqube.submitToSonarcloud(
+                                            artifactStash: 'sonarqube artifacts',
+                                            sonarqube: sonarqubeConfig,
+                                            pullRequest: [
+                                                source: env.CHANGE_ID,
+                                                destination: env.BRANCH_NAME,
+                                            ],
+                                            package: [
+                                                version: packageVersion,
+                                                name: packageName,
+                                            ],
+                                        )
+                                    } else {
+                                        sonarqube.submitToSonarcloud(
+                                            artifactStash: 'sonarqube artifacts',
+                                            sonarqube: sonarqubeConfig,
+                                            package: [
+                                                version: packageVersion,
+                                                name: packageName
+                                            ]
+                                        )
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                }
+                            }
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'main/', type: 'INCLUDE'],
+                                    [pattern: 'coverage/', type: 'INCLUDE'],
+                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                    [pattern: '**/node_modules/', type: 'INCLUDE'],
+                                ]
+                            )
                         }
                     }
                 }
