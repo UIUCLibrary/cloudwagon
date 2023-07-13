@@ -19,6 +19,6 @@ jobs:
       - name: Install backend dependencies
         run: python3 -m pip install -r requirements.txt
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps ${{matrix.project}}
       - name: Run Playwright tests
         run: npx playwright test --project=${{matrix.project}} --reporter github
