@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Callable
 from typing_extensions import Protocol
 import logging
 import tempfile
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 import tomlkit
 
 ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE = 'SPEEDCLOUD_STORAGE'
