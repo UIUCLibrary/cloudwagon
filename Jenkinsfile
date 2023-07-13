@@ -106,7 +106,13 @@ pipeline {
                             }
                             steps{
                                 cache(maxCacheSize: 1000, caches: [
-                                    arbitraryFileCache(path: 'node_modules', includes: '**/*', cacheName: 'npm', cacheValidityDecidingFile: 'package-lock.json')
+                                    arbitraryFileCache(
+                                        path: 'node_modules',
+                                        includes: '**/*',
+                                        cacheName: 'npm',
+                                        cacheValidityDecidingFile: 'package-lock.json',
+                                        compressionMethod: 'TARGZ'
+                                        )
                                 ]) {
                                     sh 'npm install'
                                 }
@@ -219,12 +225,12 @@ pipeline {
                                 stage('Hadolint'){
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
-                                            sh 'hadolint --format json src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.log'
+                                            sh 'hadolint --format json src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.json'
                                         }
                                     }
                                     post{
                                         always{
-                                            recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
+                                            recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.json')])
                                         }
                                     }
                                 }
@@ -237,7 +243,7 @@ pipeline {
                                         npm_config_cache = '/tmp/npm-cache'
                                     }
                                     steps{
-                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../../reports/ --coverageReporters=cobertura --detectOpenHandles'
+                                        sh 'npm run test -- --reporters=default --reporters=jest-junit --collectCoverage --watchAll=false  --collectCoverageFrom="src/*.tsx" --coverageDirectory=../../reports/ --coverageReporters=cobertura --coverageReporters=lcov --detectOpenHandles'
                                     }
                                     post{
                                         always{
@@ -275,13 +281,12 @@ pipeline {
                                 always{
                                     sh(label: 'combining coverage data',
                                        script: '''coverage combine
-                                                  coverage xml -o ./reports/coverage-python.xml
+                                                  coverage xml -o ./reports/python-coverage.xml
                                                   '''
                                     )
-                                    stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                     publishCoverage(
                                         adapters: [
-                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage*.xml')
+                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage.xml')
                                             ],
                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                    )
