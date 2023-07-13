@@ -11,13 +11,17 @@ jobs:
         project: ["chromium", "firefox", "webkit"]
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      - name: Install backend dependencies
+        run: python3 -m pip install -r requirements.txt
       - uses: actions/setup-node@v3
         with:
           node-version: 18
       - name: Install dependencies
         run: npm ci
-      - name: Install backend dependencies
-        run: python3 -m pip install -r requirements.txt
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps ${{matrix.project}}
       - name: Run Playwright tests
