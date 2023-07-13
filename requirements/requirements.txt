@@ -1,0 +1,12 @@
+aiofiles
+fastapi
+Flask
+httpx
+pydantic>=2.0
+pydantic-settings
+python-multipart
+tomlkit
+uvicorn
+sse_starlette
+websockets
+speedwagon>=0.3.0b4
