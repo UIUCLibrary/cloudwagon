@@ -199,8 +199,8 @@ pipeline {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
                                             sh 'hadolint --format json src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.log'
-                                            sh 'hadolint --format sonarqube src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.json'
                                         }
+                                        sh(script: 'hadolint --format sonarqube src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.json', returnStatus: true)
                                     }
                                     post{
                                         always{
