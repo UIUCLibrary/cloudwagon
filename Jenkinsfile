@@ -131,7 +131,7 @@ pipeline {
                                                         script: '''mypy --version
                                                                    mkdir -p reports/mypy/html
                                                                    mkdir -p logs
-                                                                   mypy -p speedcloud --html-report reports/mypy/html
+                                                                   mypy -p speedcloud --html-report reports/mypy/html --linecoverage-report reports/mypy/linecoverage
                                                                    '''
                                                         )
                                                 }
