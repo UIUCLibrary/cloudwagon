@@ -1,6 +1,6 @@
-FROM python:3.11 as baseimage
+FROM python:3.11 AS baseimage
 
-FROM baseimage as builder
+FROM baseimage AS builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt /tmp/python_requirements/requirements.txt
@@ -11,6 +11,8 @@ RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret
 
 COPY src/backend/speedcloud /tmp/project/src/backend/speedcloud/
 COPY pyproject.toml /tmp/project
+
+# hadolint ignore=DL3013
 RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
     pip install --no-cache-dir build && \
     python -m build /tmp/project --outdir /wheels/

@@ -1,5 +1,5 @@
 # Build step #1: build the React front end
-FROM node:lts-alpine as build-step
+FROM node:lts-alpine AS build-step
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY package.json  ./
