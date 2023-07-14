@@ -1,0 +1,10 @@
+[run]
+relative_files = True
+branch = True
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+    @overload
