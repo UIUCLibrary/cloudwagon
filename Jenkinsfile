@@ -43,33 +43,6 @@ def startup(){
 
 }
 
-//def get_props(){
-//    stage('Reading Package Metadata'){
-//        node() {
-//            try{
-//                unstash 'DIST-INFO'
-//                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
-//                def package_metadata = readProperties interpolate: true, file: metadataFile.path
-//                echo """Metadata:
-//
-//    Name      ${package_metadata.Name}
-//    Version   ${package_metadata.Version}
-//    """
-//                return package_metadata
-//            } finally {
-//                cleanWs(
-//                    patterns: [
-//                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
-//                        ],
-//                    notFailBuild: true,
-//                    deleteDirs: true
-//                )
-//            }
-//        }
-//    }
-//}
-//startup()
-//props = get_props()
 pipeline {
     agent none
     parameters {
@@ -225,12 +198,13 @@ pipeline {
                                 stage('Hadolint'){
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'hadolint found issues', stageResult: "UNSTABLE") {
-                                            sh 'hadolint --format json src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.json'
+                                            sh 'hadolint --format json src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.log'
+                                            sh 'hadolint --format sonarqube src/backend/Dockerfile src/frontend/Dockerfile > logs/hadolint.json'
                                         }
                                     }
                                     post{
                                         always{
-                                            recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.json')])
+                                            recordIssues(tools: [hadoLint(pattern: 'logs/hadolint.log')])
                                         }
                                     }
                                 }
@@ -432,7 +406,6 @@ pipeline {
                             label 'linux && docker'
                         }
                     }
-
                     steps{
                         sh '''python -m venv venv
                               venv/bin/python -m pip install pip --upgrade

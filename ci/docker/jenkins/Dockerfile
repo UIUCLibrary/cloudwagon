@@ -12,7 +12,6 @@ RUN npm cache clean -f && \
     n stable
 
 
-
 FROM base as hadolint_installer
 RUN apt-get update && apt-get install --no-install-recommends -y wget && \
     rm -rf  /root/.cache
