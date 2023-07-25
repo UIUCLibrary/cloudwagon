@@ -28,16 +28,16 @@ async def fake_data_streamer() -> AsyncIterable[Dict[str, Any]]:
     total_packets += 1
     job_runner = runner.JobRunner()
     async for packet in job_runner.iter_job(workflow(), options):
-        a = {}
+        data = {}
         print(packet)
         if packet.task:
-            a['packet'] = packet.task
+            data['packet'] = packet.task
         if packet.progress:
-            a['progress'] = str(packet.progress)
+            data['progress'] = str(packet.progress)
         if packet.log:
-            a['log'] = packet.log
+            data['log'] = packet.log
         yield {
-            **a,
+            **data,
             # **packet,
             **{
                 "order": total_packets

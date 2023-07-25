@@ -23,7 +23,6 @@ from . import actions
 from . import storage
 from . import job_manager
 api = APIRouter(
-    # prefix="/api",
     responses={404: {"description": "Not found"}},
 )
 
@@ -176,8 +175,8 @@ async def remove_directory(
         storage.remove_path_from_storage(
             os.path.join(settings.storage, backend_path)
         )
-    except FileNotFoundError as e:
-        raise CloudWagonException from e
+    except FileNotFoundError as error:
+        raise CloudWagonException from error
     return {
         "path": item.path,
         "response": "success"
@@ -256,13 +255,14 @@ async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
             asyncio.create_task(websocket.receive()),
             asyncio.create_task(websocket.send_json(json.dumps(payload)))
         )
+        print(task)
         if task_name := payload.get('task'):
             if task_name == "Aborted":
                 await websocket.close()
                 print("ABORTED")
                 break
-        if x := response.get('text'):
-            if x == "abort":
+        if value := response.get('text'):
+            if value == "abort":
                 await websocket.send_json(
                     json.dumps({
                         "log": "aborted",
@@ -273,9 +273,6 @@ async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
                 break
 
     print("all done")
-    # await websocket.close()
-    # print("Closed")
-    # await websocket.send_text('done')
 
 
 async def stream_job(request: fastapi.Request) -> AsyncIterable[str]:
