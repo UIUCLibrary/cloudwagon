@@ -1,7 +1,7 @@
 import {forwardRef, Ref, useEffect, useImperativeHandle, useState} from 'react';
 import {IFile} from '../../widgets';
 import {
-  DataGrid,
+  DataGrid, GridCellParams,
   GridColDef, GridRowClassNameParams,
   GridRowParams,
   GridValidRowModel
@@ -88,6 +88,59 @@ interface FileSystemContentProps {
   onClick?: (item: IFile)=> void
   onDoubleClick?: (item: IFile)=> void
 }
+
+const directoryAreOnlyEnabled = (params:  GridCellParams<IFile, GridValidRowModel>, filter: (IFile)=>boolean): string=>{
+  if (params.field === 'name') {
+    if (params.row.type !== "Directory"){
+      if (!filter(params.row as IFile)) {
+        return 'theme-disabled'
+      }
+    }
+  }
+  return ''
+}
+
+export const itemIsSelectable = (item: IFile, itemSelectionFilter?: (IFile)=> boolean): boolean => {
+  if (["..", '.'].includes(item.name)){
+    return true
+  }
+  if(itemSelectionFilter){
+    return itemSelectionFilter(item)
+  }
+  return true
+}
+/**
+ * Check if a selection is a valid one. Returns true if is a valid selection and false if not.
+ * @param selection
+ * @param itemFilter - Optional filter function callback that checks if the content of the selection
+ *
+ */
+const isValidSelection = (selection: IFile, itemFilter?: (item: IFile) => boolean): boolean =>{
+  if(itemFilter) {
+    return itemFilter(selection)
+  }
+  return true
+}
+
+const handleBrowserRowDoubleClick = (row: IFile, onDoubleClick?: (item: IFile)=> void, onItemAccepted?: (item: IFile) => void)=>{
+  if (onDoubleClick) {
+    onDoubleClick(row)
+  }
+  if (onItemAccepted) {
+    onItemAccepted(row)
+  }
+}
+
+export const handleBrowserInvalidSelection = (row: IFile, onInvalidSelection?: (item: IFile) => void) =>{
+  if (onInvalidSelection) {
+    onInvalidSelection(row)
+  }
+}
+const handleBrowserRowClick = (row: IFile, onClick?: (item: IFile)=> void) =>{
+  if(onClick){
+    onClick(row)
+  }
+}
 export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSelectionFilter, onItemAccepted, onItemSelected, onInvalidSelection, onClick, onDoubleClick}: FileSystemContentProps, ref: Ref<FileSystemContentRef>) =>{
   const [selected, setSelected] = useState<IFile|null>(null)
   const actualFolderContent = folderContent ? folderContent : []
@@ -130,7 +183,14 @@ export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSel
       editable: false,
     }
   ];
-
+  const handleRowClick = (row: IFile): void =>  {
+    if (isValidSelection(row, itemSelectionFilter)){
+      setSelected(row);
+    } else {
+      handleBrowserInvalidSelection(row, onInvalidSelection)
+    }
+    handleBrowserRowClick(row, onClick)
+  }
   return(
         <StyledDataGrid
             sx={{
@@ -148,15 +208,8 @@ export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSel
                 color: "text.primary",
               },
             }}
-            getCellClassName={(params)=>{
-              if (params.field === 'name') {
-                if (params.row.type !== "Directory"){
-                  if (!itemSelectionFilter(params.row as IFile)) {
-                    return 'theme-disabled'
-                  }
-                }
-              }
-              return ''
+            getCellClassName={(params:  GridCellParams<IFile, GridValidRowModel>): string=>{
+              return directoryAreOnlyEnabled(params, itemSelectionFilter)
             }}
             getRowClassName={fileRowClass}
             columnVisibilityModel={{
@@ -177,47 +230,22 @@ export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSel
             onRowClick={
               (params: GridRowParams<IFile>): void => {
                 if (!loading) {
-                  if(itemSelectionFilter){
-                    if (itemSelectionFilter(params.row)) {
-                      setSelected(params.row);
-                    } else {
-                      if( onInvalidSelection){
-                        onInvalidSelection(params.row)
-                      }
-                    }
-                  } else {
-                    setSelected(params.row);
-                  }
-                  if(onClick){
-                    onClick(params.row)
-                  }
+                  handleRowClick(params.row)
                 }
             }}
             onRowDoubleClick={
               (params: GridRowParams<IFile>): void => {
                 if (!loading) {
-                  if (onDoubleClick) {
-                    onDoubleClick(params.row)
-                  }
-                  if (onItemAccepted) {
-                    onItemAccepted(params.row)
-                  }
+                  handleBrowserRowDoubleClick(params.row, onDoubleClick, onItemAccepted)
                 }
               }
             }
-            isRowSelectable={
-              (params: GridRowParams<GridValidRowModel>): boolean => {
-                if (loading) {
-                  return false;
-                }
-                if (["..", '.'].includes(params.row.name)){
-                  return true
-                }
-                if(itemSelectionFilter){
-                  return itemSelectionFilter(params.row as IFile)
-                }
-                return true
-              }}
+            isRowSelectable={(params: GridRowParams<GridValidRowModel>): boolean => {
+              if (loading) {
+                return false;
+              }
+              return itemIsSelectable(params.row as IFile, itemSelectionFilter)
+            }}
             rows={loading ? [] : actualFolderContent}
             columns={columns}
             disableColumnMenu={true}
