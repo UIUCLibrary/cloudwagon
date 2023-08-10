@@ -1,6 +1,8 @@
+"""Api routes."""
+
+from __future__ import annotations
 import asyncio
-import typing
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from collections.abc import AsyncIterable
 import json
 import os
@@ -12,16 +14,22 @@ from fastapi.responses import StreamingResponse
 from fastapi import WebSocket, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
-from pydantic import BaseModel
-
 import aiofiles
 
+import speedcloud
+import speedcloud.job_manager
+
+from . import schema
 from ..config import Settings, get_settings
 from ..info import get_version
 from ..exceptions import CloudWagonException
 from . import actions
 from . import storage
-from . import job_manager
+if TYPE_CHECKING:
+    from speedcloud.job_manager import JobManager
+
+__all__ = ['api']
+
 api = APIRouter(
     responses={404: {"description": "Not found"}},
 )
@@ -131,14 +139,9 @@ async def upload_file(
     }
 
 
-class NewDirectory(BaseModel):
-    path: str
-    name: str
-
-
 @api.post("/files/directory")
 async def new_directory(
-        item: NewDirectory,
+        item: schema.NewDirectory,
         settings: Settings = Depends(get_settings)
 ):
     if item.path.startswith(os.sep):
@@ -158,13 +161,9 @@ async def new_directory(
     }
 
 
-class RemoveDirectory(BaseModel):
-    path: str
-
-
 @api.delete("/files/directory")
 async def remove_directory(
-        item: RemoveDirectory,
+        item: schema.RemoveDirectory,
         settings: Settings = Depends(get_settings)
 ):
     if item.path.startswith(os.sep):
@@ -185,6 +184,7 @@ async def remove_directory(
 
 @api.delete("/files")
 async def clear_files(settings: Settings = Depends(get_settings)):
+    """Clear files."""
     files_removed = storage.clear_files(settings.storage)
     return {
         "files_removed": files_removed,
@@ -209,18 +209,25 @@ async def get_workflow(name: Optional[str] = None) -> Dict[str, Any]:
     return {}
 
 
-class Job(BaseModel):
-    details: typing.Dict[str, typing.Any]
-    workflow_id: int
-
-
 @api.post('/submitJob')
-async def submit_job(job: Job, request: Request):
-    return job_manager.create_job(
-        job.workflow_id,
-        job.details,
-        netloc=request.url.netloc
-    )
+async def submit_job(job: schema.Job, request: Request):
+    manager: JobManager = request.state.job_manager
+    new_job_item = await manager.add_job(job)
+    netloc = request.url.netloc
+    # This is a dummy data and will be removed.
+    job_id = new_job_item.job_id
+    return {
+        "status": new_job_item.state,
+        "metadata": {
+            "id": job_id,
+            "workflow_id": new_job_item.job.workflow_id,
+            "properties": job.details,
+            'consoleStreamWS':
+                f"ws://{netloc}/stream?job_id={job_id}",
+            'consoleStreamSSE':
+                f"http://{netloc}/stream?job_id={job_id}",  # NOSONAR
+        }
+    }
 
 
 class StreamBuilder:
@@ -234,7 +241,7 @@ class StreamBuilder:
     def build(self) -> StreamingResponse:
         if self.job_id is None:
             raise ValueError("job_id not set")
-        job = job_manager.jobs[self.job_id]
+        job = speedcloud.job_manager.jobs[self.job_id]
         return StreamingResponse(job['status']())
 
 
@@ -248,7 +255,7 @@ async def get_console_stream(job_id: int) -> StreamingResponse:
 async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
     print(job_id)
     await websocket.accept()
-    async for payload in job_manager.fake_data_streamer():
+    async for payload in speedcloud.job_manager.fake_data_streamer():
         print(payload)
 
         response, task = await asyncio.gather(
@@ -276,7 +283,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
 
 
 async def stream_job(request: fastapi.Request) -> AsyncIterable[str]:
-    async for payload in job_manager.fake_data_streamer():
+    async for payload in speedcloud.job_manager.fake_data_streamer():
         if await request.is_disconnected():
             print("client disconnected!!!")
         yield json.dumps(payload)
@@ -301,3 +308,9 @@ async def info() -> Dict[str, Any]:
         "speedwagon_version": speedwagon_version,
         "workflows": actions.get_workflows()
     }
+
+
+@api.get('/jobs')
+async def jobs(request: Request) -> List[schema.JobQueueItem]:
+    job_manager: JobManager = request.state.job_manager
+    return list(job_manager.job_queue())

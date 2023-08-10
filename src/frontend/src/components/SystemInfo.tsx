@@ -73,13 +73,6 @@ const useServerData = (): [(SystemInfoData| null), boolean]=>{
 }
 export default function SystemInfo(){
   const [serverData, loading] = useServerData();
-  // if (loading){
-  //   return (
-  //       <>
-  //         loading
-  //       </>
-  //   )
-  // }
   const loadingWidget = <>
     <TableRow>
       <TableCell colSpan={2} style={{borderBottom:"none"}}>

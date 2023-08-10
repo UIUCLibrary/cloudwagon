@@ -1,18 +1,28 @@
+"""Config."""
+
 from functools import lru_cache
 import os
 from typing import List, Dict, Any, Optional, Callable
-from typing_extensions import Protocol
 import logging
 import tempfile
+from typing_extensions import Protocol
 from pydantic_settings import BaseSettings
 import tomlkit
 
-ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE = 'SPEEDCLOUD_STORAGE'
+__all__ = [
+    "Settings",
+    "get_settings",
+    "generate_default_toml_config",
+    "write_default_config_file",
+]
+
+ENVIRONMENT_NAME_SPEEDCLOUD_STORAGE = "SPEEDCLOUD_STORAGE"
 
 logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
+    """Application settings."""
     storage: str
 
 
@@ -24,7 +34,7 @@ search_locations: List[str] = [
 
 
 def read_settings(config_file: str) -> Settings:
-    logger.debug(f'Using config file "{config_file}".')
+    logger.debug('Using config file "%s".', config_file)
 
     with open(config_file, "r") as handel:
         data: Dict[str, Any] = tomlkit.parse(handel.read())
@@ -34,6 +44,7 @@ def read_settings(config_file: str) -> Settings:
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get application settings."""
     try:
         config_file = find_config_file(search_paths=search_locations)
     except FileNotFoundError:
@@ -76,6 +87,14 @@ def input_prompt(prompt: str, required: bool = False) -> str:
 def generate_default_toml_config(
     prompt_for_input: InputPrompt = input_prompt,
 ) -> str:
+    """Generate the text of a default toml config file.
+
+    Args:
+        prompt_for_input: user prompt for getting a response from the user.
+
+    Returns: Returns string containing the config file contents.
+
+    """
     main = tomlkit.table()
     doc = tomlkit.document()
     doc["main"] = main
@@ -93,6 +112,13 @@ def generate_default_toml_config(
 def write_default_config_file(
     file_name, config_file_strategy: Callable[[], str]
 ) -> None:
+    """Write a default config file to the file system.
+
+    Args:
+        file_name: file name on file system
+        config_file_strategy: config file generator function that builds
+         the file contents as a string.
+    """
     text = config_file_strategy()
     with open(file_name, "w", encoding="utf-8") as file_handel:
         file_handel.write(text)

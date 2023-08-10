@@ -1,2 +1,5 @@
+"""Custom exceptions."""
+
+
 class CloudWagonException(Exception):
-    pass
+    """CloudWagon base Exception."""

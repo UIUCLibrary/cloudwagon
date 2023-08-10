@@ -1,3 +1,5 @@
+"""Runner."""
+
 import collections.abc
 import logging
 import typing
@@ -9,6 +11,8 @@ from typing import Optional, Callable, Iterator, Dict, Any
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import speedwagon
+
+__all__: list[str] = []
 
 
 @dataclass
@@ -56,14 +60,6 @@ class TaskRunner:
             self,
     ) -> typing.AsyncIterator[StatusUpdate]:
 
-        # if self.logger:
-        #     self._task.parent_task_log_q = type('reporter', (object,), {
-        #         "append": self.logger.info
-        #     })
-        #     self.logger.info(f'here with {self._task.task_description()}')
-        # yield {"task": self._task.task_description()}
-
-        # self._task.parent_task_log_q = self.logger.info
         self._task.parent_task_log_q = NotifyingDeque(logger=self.logger)
         condition = threading.Condition()
 
@@ -184,10 +180,6 @@ class JobRunner:
                 progress=1.0,
                 task="Done"
             )
-            # yield {
-            #     "progress": 1,
-            #     "task": "Done",
-            # }
         finally:
             job_logger.removeHandler(output_handler)
 

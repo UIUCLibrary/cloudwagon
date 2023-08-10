@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from speedcloud import app
+from speedcloud.app import app
 import speedcloud.config
 import speedcloud.api.storage
 import speedcloud.api.routes
@@ -23,7 +23,8 @@ def client(monkeypatch, storage_path):
                         lambda *args, **kwargs: "file.toml")
     monkeypatch.setattr(speedcloud.config, 'read_settings',
                         lambda *args: settings)
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 def test_api_root():
     client = TestClient(app)
@@ -154,3 +155,19 @@ class TestDeleteDirectoryRoute:
             "/files/directory", json={"path": "/myPath"}
         )
         remove_path_from_storage.assert_called_with('/dummy/myPath')
+
+def test_empty_jobs_route(client):
+    response = client.request('get', '/jobs')
+    assert response.status_code == 200
+    assert response.json() == []
+
+def test_jobs_added(client):
+    client.request(
+        'post',
+        '/submitJob',
+        json={"details": {}, "workflow_id": 0}
+    )
+    get_response = client.get('/jobs')
+    data = get_response.json()
+    assert len(data) == 1
+    assert data[0]['order'] == 0
