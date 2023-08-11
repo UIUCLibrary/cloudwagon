@@ -22,7 +22,9 @@ logger.setLevel(logging.INFO)
 jobs: Dict[int, Any] = {}
 
 
-async def fake_data_streamer() -> AsyncIterable[Dict[str, Any]]: # pragma: no cover
+async def fake_data_streamer() -> AsyncIterable[
+    Dict[str, Any]
+]:  # pragma: no cover
 
     workflows = speedwagon.available_workflows()
     workflow = workflows['Verify HathiTrust Package Completeness']
@@ -57,15 +59,14 @@ async def fake_data_streamer() -> AsyncIterable[Dict[str, Any]]: # pragma: no co
             }
         }
         total_packets += 1
-        # job_runner.abort = True
 
 
 def _fixup_props(props, workflow: actions.WorkflowValues):
     parameters = workflow['parameters']
     new_props = props.copy()
-    for p in parameters:
-        if p['widget_type'] == 'BooleanSelect':
-            property_key = p['label']
+    for param in parameters:
+        if param['widget_type'] == 'BooleanSelect':
+            property_key = param['label']
             og_value = props[property_key]
 
             new_value = \
