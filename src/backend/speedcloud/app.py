@@ -52,9 +52,15 @@ async def lifespan(_: FastAPI):
 app = FastAPI(docs_url="/", lifespan=lifespan)
 
 
-def handle_cloudwagon_exceptions(request: Request, ext: CloudWagonException):
+def handle_cloudwagon_exceptions(_: Request, ext: CloudWagonException):
     """Handle cloudwagon exceptions with a 400 error."""
-    return JSONResponse(status_code=400, content={})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "message":
+                f"Hit an exception: {str(ext.__class__.__name__)}: {str(ext)}"
+        }
+    )
 
 
 app.add_middleware(
