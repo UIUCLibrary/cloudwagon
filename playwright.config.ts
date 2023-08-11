@@ -78,7 +78,7 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
       },
       {
-        command: `cd src/backend && SPEEDCLOUD_STORAGE=${speedcloud_storage_path}/ python -m uvicorn speedcloud.main:app --reload `,
+        command: `cd src/backend && SPEEDCLOUD_STORAGE=${speedcloud_storage_path}/ python -m uvicorn speedcloud.main:app --reload --log-level=debug`,
         url: 'http://127.0.0.1:8000',
         timeout: 120 * 100,
         reuseExistingServer: !process.env.CI,

@@ -1,4 +1,4 @@
-import {useEffect, useState, SyntheticEvent} from 'react';
+import {ReactElement, SyntheticEvent, useEffect, useState} from 'react';
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -6,10 +6,15 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import {SubmitJob, SystemInfo, FileManagement} from './components'
+import {FileManagement, SystemInfo} from './components/pages'
+import {SystemInfoData} from './components/pages/SystemInfo/SystemInfo.tsx'
+import {useWorkflowMetadata, useWorkflowList, SubmitJob} from './components/pages/SubmitJob';
+import {ManageJobs, JobStatus, useSingleJobStatus} from './components/pages/ManageJobs'
 import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
 import styled from '@mui/system/styled';
 import axios from 'axios';
+import {useSSE} from "./components/apiHooks/useSSE";
+import {useAxios} from './components/apiHooks'
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,6 +55,7 @@ function App() {
             <Routes>
               <Route path="/" element={<SpeedwagonApp tab="job"/>}/>
               <Route path="/job" element={<SpeedwagonApp tab="job"/>}/>
+              <Route path="/manageJobs" element={<SpeedwagonApp tab="manageJobs"/>}/>
               <Route path="/job:workflow" element={<SpeedwagonApp tab="job"/>}/>
               {/*</Route>*/}
               <Route path="/manageFiles" element={<SpeedwagonApp tab="manageFiles"/>}/>
@@ -67,69 +73,114 @@ function App() {
 interface ISpeedwagonApp{
   tab: string
 }
+
+interface SpeedcloudAppTab{
+  label: string
+  navigation: string
+  pageWidget: ReactElement
+}
+
+const useServerDataHook = ()=>{
+  return useAxios<SystemInfoData>('/api/info')
+}
 export function SpeedwagonApp({tab}: ISpeedwagonApp) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
   const handleChange = (event: SyntheticEvent, newValue: number) => {
-    navigate(`/${tabs[newValue]}`)
+    navigate(tabs[newValue].navigation)
     setCurrentTabIndex(newValue);
   };
-  const tabs: {[key: number]: string} = {
-    0: "job",
-    1: "manageFiles",
-    2: "info",
-  }
-  let tabIndex: number | null = null;
-  for(const i in Object.keys(tabs)){
-    if (tabs[i] === tab){
-      tabIndex = parseInt(i);
-      break
-    }
-  }
-  if(tabIndex !== null && currentTabIndex !== tabIndex){
-    setCurrentTabIndex(tabIndex);
-  }
-  const workflowName = searchParams.get('workflow')
   const handleWorkflowChange = (workflow_name: string) =>{
     const encodeName = encodeURI(workflow_name)
     navigate(`/job?workflow=${encodeName}`)
   }
+
+  const useJobsStatus = ()=>{
+    const hook = useSSE<JobStatus[]>('/api/jobsSSE');
+    return {...hook, ...{data: hook.data ? hook.data : []}}
+  }
+
+  const tabs: SpeedcloudAppTab[] = [
+    {
+      label: 'New Job',
+      navigation: '/job',
+      pageWidget: (
+          <SubmitJob
+              workflowName={searchParams.get('workflow')}
+              onWorkflowChanged={handleWorkflowChange}
+              onJobSubmitted={(data)=>{
+                navigate(`/manageJobs?jobId=${data['metadata']['id']}`)
+              }}
+              useWorkflowsListHook={useWorkflowList}
+              useWorkflowMetadataHook={useWorkflowMetadata}
+          />
+      )
+    },
+    {
+      label: 'Manage Jobs',
+      navigation: '/manageJobs',
+      pageWidget: <>
+        <ManageJobs
+            jobId={searchParams.get('jobId')}
+            useAllJobsStatusHook={useJobsStatus}
+            useSingleJobStatusHook={useSingleJobStatus}
+        />
+      </>
+    },
+    {
+      label: 'Manage Files',
+      navigation: '/manageFiles',
+      pageWidget: <FileManagement/>
+    },
+    {
+      label: 'Info',
+      navigation: '/info',
+      pageWidget: <SystemInfo useServerDataHook={useServerDataHook}/>
+    }
+  ]
+  for(const i in Object.keys(tabs)){
+    if (tabs[i].navigation === `/${tab}`){
+      const index = parseInt(i)
+      if(currentTabIndex !== index){
+        setCurrentTabIndex(index);
+      }
+      break
+    }
+  }
+  const tabItems = tabs.map((tab, index)=>{
+      return {
+        index: index,
+        labelWidget: <Tab key={index} label={tab.label}/>,
+        pageWidget: tab.pageWidget
+      }
+  })
   return (
       <div className="App">
         <Box p={2}>
-          <Container maxWidth={"md"}>
+          <Container maxWidth={"lg"}>
             <StyledPaper elevation={10}>
-            {/*<Paper elevation={10} style={{minHeight: '50vw', borderRadius: 20}}>*/}
               <Box p={2}>
                 <h1 style={{"textAlign": "center"}}>Speedwagon in the Cloud</h1>
                 <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-                  <Tabs value={currentTabIndex} onChange={handleChange}
-                        aria-label="basic tabs example" centered>
-                    <Tab label="Job"/>
-                    <Tab label="Manage Files"/>
-                    <Tab label="Info"/>
+                  <Tabs value={currentTabIndex} onChange={handleChange} aria-label="basic tabs example" centered>
+                    {
+                      tabItems.map((tab) => {
+                        return tab.labelWidget
+                      })
+                    }
                   </Tabs>
                 </Box>
-                <TabPanel value={currentTabIndex} index={0}>
-                  <Container>
-                    <SubmitJob
-                        workflowName={workflowName}
-                        onWorkflowChanged={handleWorkflowChange}
-                    />
-                  </Container>
-                </TabPanel>
-                <TabPanel value={currentTabIndex} index={1}>
-                  <Container>
-                    <FileManagement/>
-                  </Container>
-                </TabPanel>
-                <TabPanel value={currentTabIndex} index={2}>
-                  <Container>
-                    <SystemInfo/>
-                  </Container>
-                </TabPanel>
+                {tabItems.map((tab) => {
+                  return (
+                      <TabPanel value={currentTabIndex} index={tab.index} key={tab.index}>
+                        <Container>
+                          {tab.pageWidget}
+                        </Container>
+                      </TabPanel>
+                  )
+                })}
               </Box>
             </StyledPaper>
           </Container>

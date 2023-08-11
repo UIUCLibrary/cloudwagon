@@ -2,13 +2,20 @@
 
 Contains common data structures used throughout the application.
 """
+import json
 import typing
 import enum
-
 from pydantic import BaseModel
 
+try:
+    from typing_extensions import TypedDict
+except ImportError:  # pragma: no cover
+    from typing import TypedDict
+
+from speedwagon.workflow import UserDataType
+
 __all__ = [
-    "JobQueueItem",
+    "APIJobQueueItem",
     "JobState",
     "RemoveDirectory",
     "Job",
@@ -26,7 +33,7 @@ class NewDirectory(BaseModel):
 
 class Job(BaseModel):
     """Job."""
-    details: typing.Dict[str, typing.Any]
+    details: typing.Dict[str, UserDataType]
     workflow_id: int
 
 
@@ -43,9 +50,47 @@ class JobState(str, enum.Enum):
     FAILED = "failed"
 
 
-class JobQueueItem(BaseModel):
+class JobWorkflow(TypedDict):
+    id: int
+    name: str
+
+
+class JobQueueJobDetails(TypedDict):
+    details: typing.Dict[str, typing.Any]
+    workflow: JobWorkflow
+
+
+class APIJobQueueItem(BaseModel):
     """Job queue item."""
-    job: Job
+    job: JobQueueJobDetails
     state: JobState
     order: int
     job_id: str
+    progress: typing.Optional[float]
+    time_submitted: str
+
+    def as_dict(self):
+        return {
+            "job": dict(self.job),
+            "state": self.state,
+            "order": self.order,
+            "job_id": self.job_id,
+            "progress": self.progress,
+            "time_submitted": str(self.time_submitted)
+        }
+
+    def serialize(self) -> str:
+        return json.dumps(self.as_dict())
+
+
+class LogData(BaseModel):
+    msg: str
+    time: float
+
+
+class JobInfo(BaseModel):
+    job_id: str
+    job_parameters: typing.Dict[str, typing.Any]
+    workflow: JobWorkflow
+    start_time: str
+    job_status: str

@@ -10,14 +10,14 @@ from speedcloud.app import app
 logger = logging.getLogger(__name__)
 
 
-def create_default_config_file(args):
+def create_default_config_file(_) -> None:
     """Generate default config file."""
     config.write_default_config_file(
         "config.toml", config_file_strategy=config.generate_default_toml_config
     )
 
 
-def run_debug(args):
+def run_debug(args) -> None:
     """Run debug webserver."""
     import uvicorn  # pylint: disable=import-outside-toplevel
 

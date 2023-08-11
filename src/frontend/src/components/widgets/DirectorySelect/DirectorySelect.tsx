@@ -58,6 +58,7 @@ export const DirectorySelect = forwardRef(
                     required={required}
                     inputRef={textBoxRef}
                     label={label}
+                    name={label}
                     onChange={(event) => {
                         setValue(event.target.value)
                     }}
