@@ -5,5 +5,7 @@ types-setuptools
 types-aiofiles
 pylint
 pytest
+pytest-asyncio
+pytest-timeout
 requests
 pydocstyle

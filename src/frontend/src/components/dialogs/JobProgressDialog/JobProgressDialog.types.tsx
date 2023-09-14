@@ -1,7 +1,8 @@
 export interface IJobProgressDialog {
   title: string,
-  // streamUrlSSE: string
-  streamUrlWS?: string
+  logs?: string
+  currentTaskDescription?: string
   show: boolean
+  progress: number
   onClose?: () => void
 }

@@ -1,53 +1,24 @@
+"""Main."""
+
 import argparse
 import logging
+import sys
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from speedcloud.exceptions import CloudWagonException
-
-from speedcloud.api import api
 from speedcloud import config
-
-origins = [
-    "*"
-    # "http://localhost:3000",
-    # "localhost:3000"
-]
+from speedcloud.app import app
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(docs_url="/")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-app.include_router(api)
-# app.mount("/", WSGIMiddleware(site))
-
-
-def handel_cloudwagon_exceptions(request: Request, ext: CloudWagonException):
-    return JSONResponse(status_code=400, content={})
-
-
-app.add_exception_handler(
-    CloudWagonException, handler=handel_cloudwagon_exceptions
-)
-
-
-def create_default_config_file(args):
+def create_default_config_file(_) -> None:
+    """Generate default config file."""
     config.write_default_config_file(
         "config.toml", config_file_strategy=config.generate_default_toml_config
     )
 
 
-def run_debug(args):
+def run_debug(args) -> None:
+    """Run debug webserver."""
     import uvicorn  # pylint: disable=import-outside-toplevel
 
     logger.warning(
@@ -58,6 +29,7 @@ def run_debug(args):
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
+    """Get cli args parser."""
     parser = argparse.ArgumentParser()
     parser.set_defaults(func=run_debug)
     subparsers = parser.add_subparsers(help="commands")
@@ -72,10 +44,14 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Run Speedcloud builtin webserver.
+
+    This is for development or testing.  It is not intended for production.
+    """
     parser = get_arg_parser()
     args = parser.parse_args()
     args.func(args)
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

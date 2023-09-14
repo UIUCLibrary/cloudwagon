@@ -47,6 +47,7 @@ export const FileSelect = forwardRef(
                 />
                 <TextField
                     required={required}
+                    name={label}
                     inputRef={textBoxRef}
                     label={label}
                     value={value}

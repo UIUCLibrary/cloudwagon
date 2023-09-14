@@ -1,33 +1,39 @@
-import asyncio
-import typing
-from typing import List, Optional, Dict, Any
-from collections.abc import AsyncIterable
+"""Api routes."""
+
+from __future__ import annotations
+
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 import json
 import os
-
-import fastapi
 import pkg_resources
 from fastapi import APIRouter, UploadFile, Depends, Request
-from fastapi.responses import StreamingResponse
-from fastapi import WebSocket, HTTPException
+from fastapi import HTTPException
 from sse_starlette.sse import EventSourceResponse
-
-from pydantic import BaseModel
 
 import aiofiles
 
-from ..config import Settings, get_settings
-from ..info import get_version
-from ..exceptions import CloudWagonException
-from . import actions
+import speedcloud.job_manager
+from speedcloud.workflow_manager import WorkflowData
+from speedcloud.exceptions import SpeedCloudException
+from speedcloud.config import Settings, get_settings
+from speedcloud.info import get_version
+
+from . import schema
 from . import storage
-from . import job_manager
+from . import stream
+
+if TYPE_CHECKING:
+    from speedcloud.job_manager import JobManager, JobRunner
+    from speedcloud.workflow_manager import AbsWorkflowManager
+
+__all__ = ['api']
+
 api = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
 
-class InvalidNamingException(CloudWagonException):
+class InvalidNamingException(SpeedCloudException):
     pass
 
 
@@ -131,14 +137,9 @@ async def upload_file(
     }
 
 
-class NewDirectory(BaseModel):
-    path: str
-    name: str
-
-
 @api.post("/files/directory")
 async def new_directory(
-        item: NewDirectory,
+        item: schema.NewDirectory,
         settings: Settings = Depends(get_settings)
 ):
     if item.path.startswith(os.sep):
@@ -158,13 +159,9 @@ async def new_directory(
     }
 
 
-class RemoveDirectory(BaseModel):
-    path: str
-
-
 @api.delete("/files/directory")
 async def remove_directory(
-        item: RemoveDirectory,
+        item: schema.RemoveDirectory,
         settings: Settings = Depends(get_settings)
 ):
     if item.path.startswith(os.sep):
@@ -176,7 +173,7 @@ async def remove_directory(
             os.path.join(settings.storage, backend_path)
         )
     except FileNotFoundError as error:
-        raise CloudWagonException from error
+        raise SpeedCloudException from error
     return {
         "path": item.path,
         "response": "success"
@@ -185,6 +182,7 @@ async def remove_directory(
 
 @api.delete("/files")
 async def clear_files(settings: Settings = Depends(get_settings)):
+    """Clear files."""
     files_removed = storage.clear_files(settings.storage)
     return {
         "files_removed": files_removed,
@@ -193,111 +191,142 @@ async def clear_files(settings: Settings = Depends(get_settings)):
 
 
 @api.get("/list_workflows")
-async def speedwagon_workflows() -> Dict[str, List[actions.WorkflowData]]:
+async def speedwagon_workflows(
+        request: Request
+) -> Dict[str, List[speedcloud.workflow_manager.WorkflowData]]:
+    workflow_manager: AbsWorkflowManager = request.state.workflow_manager
     return {
-        "workflows": actions.get_workflows()
+        "workflows": [
+            WorkflowData(
+                id=key,
+                name=value.name if value.name is not None else value.__name__
+            )
+            for key, value in workflow_manager.get_workflows().items()
+        ]
     }
 
 
 @api.get("/workflow")
-async def get_workflow(name: Optional[str] = None) -> Dict[str, Any]:
-    print(name)
+async def get_workflow(
+        request: Request,
+        name: Optional[str] = None
+) -> Dict[str, Any]:
+    workflow_manager: AbsWorkflowManager = request.state.workflow_manager
     if name:
         return {
-            "workflow": actions.get_workflow_by_name(name)
+            "workflow": workflow_manager.get_workflow_info_by_name(name)
         }
     return {}
 
 
-class Job(BaseModel):
-    details: typing.Dict[str, typing.Any]
-    workflow_id: int
-
-
 @api.post('/submitJob')
-async def submit_job(job: Job, request: Request):
-    return job_manager.create_job(
-        job.workflow_id,
-        job.details,
-        netloc=request.url.netloc
+async def submit_job(job: schema.Job, request: Request):
+    job_manager: JobManager = request.state.job_manager
+    workflow_manager: AbsWorkflowManager = request.state.workflow_manager
+    workflow_values = workflow_manager.get_workflow_info_by_id(job.workflow_id)
+    new_job_item = await job_manager.add_job(
+        WorkflowData(job.workflow_id, workflow_values['name']),
+        job.details
     )
-
-
-class StreamBuilder:
-    def __init__(self) -> None:
-        self.job_id: Optional[int] = None
-        self._job = None
-
-    def set_job_id(self, job_id: int) -> None:
-        self.job_id = job_id
-
-    def build(self) -> StreamingResponse:
-        if self.job_id is None:
-            raise ValueError("job_id not set")
-        job = job_manager.jobs[self.job_id]
-        return StreamingResponse(job['status']())
-
-
-async def get_console_stream(job_id: int) -> StreamingResponse:
-    builder = StreamBuilder()
-    builder.set_job_id(job_id)
-    return builder.build()
-
-
-@api.websocket("/stream")
-async def websocket_endpoint(websocket: WebSocket, job_id: int) -> None:
-    print(job_id)
-    await websocket.accept()
-    async for payload in job_manager.fake_data_streamer():
-        print(payload)
-
-        response, task = await asyncio.gather(
-            asyncio.create_task(websocket.receive()),
-            asyncio.create_task(websocket.send_json(json.dumps(payload)))
-        )
-        print(task)
-        if task_name := payload.get('task'):
-            if task_name == "Aborted":
-                await websocket.close()
-                print("ABORTED")
-                break
-        if value := response.get('text'):
-            if value == "abort":
-                await websocket.send_json(
-                    json.dumps({
-                        "log": "aborted",
-                        "progress": 0.0,
-                    })
-                )
-                await websocket.close()
-                break
-
-    print("all done")
-
-
-async def stream_job(request: fastapi.Request) -> AsyncIterable[str]:
-    async for payload in job_manager.fake_data_streamer():
-        if await request.is_disconnected():
-            print("client disconnected!!!")
-        yield json.dumps(payload)
-    yield "done"
-    await request.close()
-
-
-@api.get("/stream")
-async def system_event_endpoint(
-        request: Request,
-        job_id: int
-) -> EventSourceResponse:
-    return EventSourceResponse(stream_job(request))
+    job_id = new_job_item.job_id
+    return {
+        "status": new_job_item.state,
+        "metadata": {
+            "id": job_id,
+            "workflow_id": job.workflow_id,
+            "properties": job.details,
+        }
+    }
 
 
 @api.get('/info')
-async def info() -> Dict[str, Any]:
+async def info(request: Request) -> Dict[str, Any]:
     """Get info."""
     speedwagon_version = pkg_resources.get_distribution('speedwagon').version
+    workflow_manager: AbsWorkflowManager = request.state.workflow_manager
     return {
         "web_version": get_version(),
         "speedwagon_version": speedwagon_version,
-        "workflows": actions.get_workflows()
+        "workflows": [
+            {'name': workflow.name, "id": workflow_id}
+            for workflow_id, workflow in
+            workflow_manager.get_workflows().items()
+        ]
     }
+
+
+@api.get('/jobInfo', description="Get the status of a single job")
+def get_job_status(request: Request, job_id: str) -> schema.JobInfo:
+    job_manager: JobManager = request.state.job_manager
+    job = job_manager.get_job_queue_item(job_id)
+
+    return schema.JobInfo(
+        job_id=job.job_id,
+        job_parameters=job.job['details'],
+        workflow=job.job['workflow'],
+        start_time=str(job.status.start_time),
+        job_status=job.state.value,
+    )
+
+
+@api.get('/jobLogs', description="Get the logs of a single job")
+def get_job_logs(request: Request, job_id: str) -> List[schema.LogData]:
+    job_manager: JobManager = request.state.job_manager
+    job = job_manager.get_job_queue_item(job_id)
+
+    return [
+        schema.LogData(**log_entry.as_dict())
+        for log_entry in job.status.logs
+    ]
+
+
+@api.get('/followJobStatus')
+async def follow_job_sse(request: Request, job_id: str) -> EventSourceResponse:
+
+    @stream.only_new_data
+    async def generator_event():
+        job_manager: JobManager = request.state.job_manager
+        job_queue_item = job_manager.get_job_queue_item(job_id)
+        job_runner: JobRunner = request.state.job_runner
+        async for packet in stream.job_progress_packet_generator(
+                job_queue_item,
+                job_runner
+        ):
+            yield packet
+    return EventSourceResponse(generator_event())
+
+
+@api.get('/jobsSSE')
+async def jobs_sse(request: Request) -> EventSourceResponse:
+
+    @stream.only_new_data
+    async def generator_event():
+
+        job_runner: JobRunner = request.state.job_runner
+        job_manager: JobManager = request.state.job_manager
+
+        async for packet in stream.stream_jobs(job_manager, job_runner):
+            yield json.dumps(packet)
+
+    return EventSourceResponse(generator_event())
+
+
+@api.get('/jobs')
+async def jobs(request: Request) -> List[schema.APIJobQueueItem]:
+    job_manager: JobManager = request.state.job_manager
+    res = []
+    for item in job_manager.job_queue():
+        res.append(
+            schema.APIJobQueueItem(
+                job=item.job,
+                state=item.state,
+                order=item.order,
+                job_id=item.job_id,
+                progress=item.status.progress,
+                time_submitted=str(item.time_submitted),
+
+
+
+            )
+        )
+    return res

@@ -1,2 +1,5 @@
-class CloudWagonException(Exception):
-    pass
+"""Custom exceptions."""
+
+
+class SpeedCloudException(Exception):
+    """CloudWagon base Exception."""

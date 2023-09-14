@@ -59,6 +59,19 @@ exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:"
 ]
+[tool.ruff]
+select = ["E", "F", "W", "D", "B"]
+exclude = [
+    "windows_build",
+    "tests",
+]
+line-length = 79
+
+[tool.ruff.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
 
 [tool.black]
 line-length = 79

@@ -1,7 +1,7 @@
 name: Playwright Tests
 on: [push, pull_request]
 env:
-  PIP_EXTRA_INDEX_URL: https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/simple
+  PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
 jobs:
   playwright:
     timeout-minutes: 60

@@ -2,7 +2,6 @@ import '@testing-library/jest-dom';
 import {FileManager, splitRoutes} from './FileManager';
 import {IAPIRequest} from './FileManager.types';
 import {render, screen, waitFor} from '@testing-library/react';
-import * as React from 'react';
 
 describe('splitRoutes', ()=>{
   it.each([
