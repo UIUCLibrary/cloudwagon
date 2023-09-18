@@ -7,7 +7,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell'
-
+import {PageProps} from '../Page.types.tsx'
 import {PropsWithChildren} from 'react';
 import LinearProgress from '@mui/material/LinearProgress';
 const InfoItem = (props: PropsWithChildren<{metadataKey: string}>) =>{
@@ -57,7 +57,7 @@ const buildInfoItems = (data: SystemInfoData | null)=>{
   )
 }
 
-export interface SystemInfoProps {
+export interface SystemInfoProps extends PageProps{
     useServerDataHook: ()=>{loading: boolean, data: SystemInfoData, error: unknown}
 }
 export default function SystemInfo({useServerDataHook}: SystemInfoProps){

@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from speedcloud.config import get_settings, initialize_app_from_settings
 from speedcloud.api import api
-from speedcloud.exceptions import SpeedCloudException
+from speedcloud.exceptions import SpeedCloudException, JobAlreadyAborted
 from speedcloud.job_manager import JobRunner, JobManager, JobQueueItem
 from speedcloud.workflow_manager import (
     WorkflowManagerIdBaseOnSize,
@@ -27,6 +27,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def start_workflow_manager(settings) -> AbsWorkflowManager:
+    """Start workflow manager."""
     manager = WorkflowManagerIdBaseOnSize()
     white_listed_workflows = settings.whitelisted_workflows
     for workflow in speedwagon.available_workflows().values():
@@ -80,6 +81,20 @@ async def lifespan(_: FastAPI):
 app = FastAPI(docs_url="/", lifespan=lifespan)
 
 
+def handle_already_aborted_exception(
+        _: Request,
+        ext: JobAlreadyAborted
+) -> Response:
+    """Handle for JobAlreadyAborted exceptions."""
+    return JSONResponse(
+        status_code=400,
+        content={
+            "message":
+                f"Job already aborted: {ext.job_id}"
+        }
+    )
+
+
 def handle_cloudwagon_exceptions(
         _: Request,
         ext: SpeedCloudException
@@ -107,5 +122,9 @@ app.include_router(api)
 
 
 app.add_exception_handler(
-    SpeedCloudException, handler=handle_cloudwagon_exceptions
+    SpeedCloudException, handler=handle_cloudwagon_exceptions,
+)
+
+app.add_exception_handler(
+    JobAlreadyAborted, handler=handle_already_aborted_exception
 )

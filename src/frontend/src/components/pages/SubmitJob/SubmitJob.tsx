@@ -98,7 +98,7 @@ const JobSubmitContents = (workflowMetadata: IUseWorkflowMetadataHookData)=>{
 }
 
 
-export default function SubmitJob({workflowName, onWorkflowChanged, onJobSubmitted, useWorkflowMetadataHook, useWorkflowsListHook}: SubmitJobProps){
+export default function SubmitJob({workflowName, onWorkflowChanged, onJobSubmitted, useWorkflowMetadataHook, useWorkflowsListHook, onStatusMessage}: SubmitJobProps){
     const workflowList = useWorkflowsListHook()  // this causes reloading
     const [currentWorkflow, setCurrentWorkflow] = useState<Workflow | null>(null);
     const workflowMetadata = useWorkflowMetadataHook(currentWorkflow)
@@ -115,6 +115,9 @@ export default function SubmitJob({workflowName, onWorkflowChanged, onJobSubmitt
     const handleNewJobSubmitted = (data: IData) =>{
         if (onJobSubmitted){
             onJobSubmitted(data)
+        }
+        if (onStatusMessage){
+            onStatusMessage(`Created new job`)
         }
     }
     if (workflowName){

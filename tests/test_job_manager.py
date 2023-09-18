@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from typing import List, Any, Dict
-from unittest.mock import Mock, AsyncMock, MagicMock
+from typing import List, Any, Dict, Optional
+from unittest.mock import Mock, AsyncMock, MagicMock, ANY, call
 
 import speedwagon
-from speedwagon.tasks import TaskBuilder
+from speedwagon.tasks import TaskBuilder, Result
 
 import speedcloud.job_manager
 from speedcloud.api import schema
@@ -84,11 +84,13 @@ class TestJobRunner:
         return asyncio.Queue()
 
     @pytest.fixture()
-    def job_runner(self, queue):
+    def job_runner(self, queue, monkeypatch):
         runner = speedcloud.job_manager.JobRunner(queue, storage_root='.')
-        async def execute_job(workflow_klass, workflow_options, job):
-            job.state = schema.JobState.SUCCESS
-        runner.executor.execute_job = execute_job
+
+        async def execute_job():
+            return schema.JobState.SUCCESS
+
+        monkeypatch.setattr(runner.executor, "execute_job", execute_job)
         return runner
 
     @pytest.mark.asyncio
@@ -98,6 +100,7 @@ class TestJobRunner:
             spec=speedcloud.job_manager.JobQueueItem,
             job_id="1",
             status=speedcloud.job_manager.JobStatus(),
+            state=schema.JobState.QUEUED,
             job=schema.JobQueueJobDetails(
                 details=MagicMock(),
                 workflow=schema.JobWorkflow(id=1, name='foo')
@@ -136,31 +139,21 @@ async def test_notify_lifts_the_lock_wait_for_update():
     await waiter
 
 
-class TestEmitToAsyncQueuedHandler:
-    def test_logging_adds_to_queue(self):
-        q = asyncio.Queue()
-        handler = speedcloud.job_manager.EmitToAsyncQueuedHandler(q)
-        my_logger = logging.Logger("tester")
-        my_logger.addHandler(handler)
-        assert q.qsize() == 0
-        my_logger.info('spam')
-        assert q.qsize() == 1
-
-
+class TestEmitToAsyncCallback:
     @pytest.mark.asyncio
     async def test_notifies_watcher(self):
         watcher = AsyncMock()
-        handler = speedcloud.job_manager.EmitToAsyncQueuedHandler(asyncio.Queue())
+        handler = speedcloud.job_manager.EmitToAsyncCallback()
         handler.add_async_watcher(watcher)
         my_logger = logging.Logger("tester")
         my_logger.addHandler(handler)
         my_logger.info('spam')
         await handler.notify_async_watchers()
-        watcher.assert_called()
+        watcher.assert_awaited_once_with([{'msg': 'spam', 'time': ANY}])
 
     def test_remove_watcher(self):
         watcher = AsyncMock()
-        handler = speedcloud.job_manager.EmitToAsyncQueuedHandler(asyncio.Queue())
+        handler = speedcloud.job_manager.EmitToAsyncCallback()
         handler.add_async_watcher(watcher)
         handler.remove_async_watcher(watcher)
         my_logger = logging.Logger("tester")
@@ -183,12 +176,17 @@ class TestAsyncJobExecutor:
             task_builder.add_subtask(TestAsyncJobExecutor.SampleTask())
             super().create_new_task(task_builder, **job_args)
 
+        @classmethod
+        def generate_report(cls, results: List[Result], **user_args) -> Optional[str]:
+            return f"I got {results}"
+
         def discover_task_metadata(self, initial_results: List[Any], additional_data: Dict[str, Any],
                                    **user_args) -> List[dict]:
             return [
                 {"dummy": True},
                 {"dummy2": True},
             ]
+
     class MyWorkflowThatFails(speedwagon.Workflow):
 
         def create_new_task(self, task_builder: TaskBuilder, **job_args) -> None:
@@ -212,37 +210,62 @@ class TestAsyncJobExecutor:
         watcher = AsyncMock()
         job_executor.add_watcher(watcher)
         await job_executor.notify_of_update()
-        assert watcher.called is True
+        watcher.assert_awaited()
 
     @pytest.mark.asyncio
     async def test_execute_job_success(self, job_executor):
         job_params = {
             "Source": "something"
         }
-        job_items = Mock(
-            spec=speedcloud.job_manager.JobQueueItem,
-            status=speedcloud.job_manager.JobStatus(),
-            state=schema.JobState.QUEUED,
-        )
-        await job_executor.execute_job(self.MyWorkflow, job_params, job_items)
-        assert job_items.state == schema.JobState.SUCCESS
+        job_executor.load_job(self.MyWorkflow, job_params)
+        result_change = Mock()
+        job_executor.add_on_state_change_callback(result_change)
+        await job_executor.execute_job()
+        result_change.assert_has_calls([call(schema.JobState.RUNNING), call(schema.JobState.SUCCESS)], any_order=False)
 
     @pytest.mark.asyncio
     async def test_execute_job_fails_on_exception(self, job_executor):
+        result_change = Mock()
+        job_executor.load_job(Mock, {})
+        job_executor.add_on_state_change_callback(result_change)
+        with pytest.raises(Exception) as exc:
+            await job_executor.execute_job()
+            assert str(exc.value) == "boom"
+        result_change.assert_called_with(schema.JobState.FAILED)
+
+    def test_abort(self, job_executor):
         job_params = {
             "Source": "something"
         }
-        job_items = Mock(
-            spec=speedcloud.job_manager.JobQueueItem,
-            status=speedcloud.job_manager.JobStatus(),
-            state=schema.JobState.QUEUED,
-        )
-        with pytest.raises(Exception) as exc:
-            await job_executor.execute_job(self.MyWorkflowThatFails, job_params, job_items)
-            assert str(exc.value) == "boom"
+        callback_change = Mock()
+        job_executor.add_on_state_change_callback(callback_change)
 
-        assert job_items.state == schema.JobState.FAILED
+        job_executor.load_job(self.MyWorkflow, job_params)
+        job_executor.execute_next_task()
+        job_executor.abort_current_job()
+        callback_change.assert_called_with(schema.JobState.ABORTED)
 
+    def test_executing_an_aborted_job_raises(self, job_executor):
+        job_params = {
+            "Source": "something"
+        }
+        callback_change = Mock()
+        job_executor.add_on_state_change_callback(callback_change)
+
+        job_executor.load_job(self.MyWorkflow, job_params)
+        job_executor.execute_next_task()
+        job_executor.abort_current_job()
+        with pytest.raises(StopIteration):
+            job_executor.execute_next_task()
+
+
+    def test_execute_next_task_raises_without_loading_job(self, job_executor):
+        with pytest.raises(ValueError):
+            job_executor.execute_next_task()
+    @pytest.mark.asyncio
+    async def test_no_workflow_raises(self, job_executor):
+        with pytest.raises(ValueError):
+            await job_executor.execute_job()
 
 class TestJobContainer:
 
@@ -301,3 +324,22 @@ def test_ensure_boolean_strings_have_warnings(in_value, expected_result):
 def test_invalid_ensure_boolean():
     with pytest.raises(ValueError):
         speedcloud.job_manager.ensure_boolean("dummy", None)
+
+
+class TestTaskExecutor:
+    def test_default_exec_calls_subtask_exec(self):
+        task = Mock(spec=speedwagon.tasks.Subtask)
+        executor = speedcloud.job_manager.TaskExecutor(task)
+        executor.exec()
+        task.exec.assert_called()
+
+    def test_task_description(self):
+        task = Mock(spec=speedwagon.tasks.Subtask, task_description=Mock(return_value="dummy"))
+        executor = speedcloud.job_manager.TaskExecutor(task)
+        assert executor.task_description() == "dummy"
+
+    def test_task_results(self):
+        sample_results = [Mock(name="sample result")]
+        task = Mock(spec=speedwagon.tasks.Subtask, results=sample_results)
+        executor = speedcloud.job_manager.TaskExecutor(task)
+        assert executor.task_results() == sample_results

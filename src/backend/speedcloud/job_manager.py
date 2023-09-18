@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import abc
+import time
 import asyncio
+import collections.abc
 import dataclasses
 import datetime
 import logging
@@ -21,10 +24,18 @@ from typing import (
     TYPE_CHECKING,
     TypedDict,
 )
+try:
+    from typing import Unpack
+except ImportError:  # pragma: no cover
+    from typing_extensions import Unpack
+
+
 import uuid
 import speedwagon
 from speedcloud.workflow_manager import WorkflowManagerAllWorkflows
+from speedcloud.exceptions import JobAlreadyAborted
 from .api import schema
+
 if TYPE_CHECKING:
     from speedcloud.workflow_manager import (
         WorkflowData,
@@ -40,47 +51,53 @@ module_logger.setLevel(logging.INFO)
 
 
 class AsyncEventNotifier:
+    """Notify of event."""
+
     def __init__(self) -> None:
+        """Create a new AsyncEventNotifier object."""
         self._condition = asyncio.Event()
 
     async def notify(self) -> None:
+        """Notify of an event."""
         self._condition.set()
 
     async def wait_for_update(self) -> None:
+        """Wait for a notification."""
         await self._condition.wait()
         self._condition.clear()
 
 
-@dataclasses.dataclass
-class JobLog:
+class JobLog(TypedDict):
     msg: str
     time: float
 
-    class JobLogDict(TypedDict):
-        msg: str
-        time: float
 
-    def as_dict(self) -> JobLogDict:
-        return {"msg": self.msg, "time": self.time}
-
-
-@dataclasses.dataclass
-class JobStatus:
-    progress: Optional[float] = None
-    start_time: Optional[datetime.datetime] = None
-    logs: List[JobLog] = dataclasses.field(default_factory=list)
-    current_task: Optional[str] = None
-    report: Optional[str] = None
+class JobStatus(typing.TypedDict, total=False):
+    progress: Optional[float]
+    start_time: Optional[datetime.datetime]
+    logs: List[JobLog]
+    current_task: Optional[str]
+    report: Optional[str]
 
 
 @dataclasses.dataclass
 class JobQueueItem:
+    """Job queue item."""
+
     job: schema.JobQueueJobDetails
     state: schema.JobState
     order: int
     job_id: str
     time_submitted: datetime.datetime
-    status: JobStatus = dataclasses.field(default_factory=JobStatus)
+    status: JobStatus = dataclasses.field(
+        default_factory=lambda: JobStatus(
+            progress=None,
+            start_time=None,
+            logs=[],
+            report=None,
+            current_task=None,
+        )
+    )
 
 
 @dataclasses.dataclass
@@ -121,8 +138,7 @@ class JobManager:
     """
 
     def __init__(
-            self,
-            queue: asyncio.Queue[JobQueueItem] = asyncio.Queue()
+        self, queue: Optional[asyncio.Queue[JobQueueItem]] = None
     ) -> None:
         """Create a job manager.
 
@@ -132,32 +148,31 @@ class JobManager:
         self.stop = asyncio.Event()
         self._new_item_added = asyncio.Event()
         self._container = JobContainer()
-        self._job_queue = queue
+        self._job_queue = queue or asyncio.Queue()
         self._notification_manager = NotificationManager()
 
     async def _wait_for_next_event(self) -> None:
         tasks = [
             asyncio.create_task(
-                self._new_item_added.wait(),
-                name="wait_for_new_item"
+                self._new_item_added.wait(), name="wait_for_new_item"
             ),
             asyncio.create_task(asyncio.sleep(10), name="timeout"),
             asyncio.create_task(self.stop.wait(), name="stop_called"),
         ]
         await asyncio.gather(
             asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED),
-            self._notification_manager.notify_async()
+            self._notification_manager.notify_async(),
         )
         for task in tasks:
             if not task.done():
                 task.cancel()
-
+        tasks.clear()
         self._new_item_added.clear()
 
     async def produce(self) -> None:
         """Add jobs into a queue to be picked up by the workers."""
         while True:
-            module_logger.info("Checking job queue")
+            module_logger.debug("Checking job queue")
             try:
                 await self._job_queue.put(next(self._container.pop_next()))
             except StopIteration:
@@ -196,10 +211,11 @@ class JobManager:
         return any(i.state == schema.JobState.QUEUED for i in self.job_queue())
 
     async def add_job(
-            self,
-            workflow_data: WorkflowData,
-            details: typing.Dict[str, UserDataType]
+        self,
+        workflow_data: WorkflowData,
+        details: typing.Dict[str, UserDataType],
     ) -> JobQueueItem:
+        """Add job to manager."""
         new_queued_item = JobQueueItem(
             job={
                 "details": details,
@@ -225,6 +241,7 @@ class JobManager:
         item.state = state
 
     def add_async_watcher(self, watcher: AsyncEventNotifier) -> None:
+        """Add a watcher to be notified."""
         self._notification_manager.add_async_watcher(watcher)
 
 
@@ -241,32 +258,38 @@ class NotificationManager:
         self._async_watchers.append(watcher)
 
 
-class EmitToAsyncQueuedHandler(logging.Handler):
+class EmitToAsyncCallback(logging.Handler):
     def __init__(
-            self,
-            queue: asyncio.Queue[JobLog],
-            level: int = logging.NOTSET
+        self,
+        level: int = logging.NOTSET,
+        queue: Optional[asyncio.Queue[JobLog]] = None,
     ) -> None:
         super().__init__(level)
-        self._queue = queue
-        self._async_watchers: List[Callable[[], Awaitable[None]]] = []
+        self._queue: asyncio.Queue[JobLog] = queue or asyncio.Queue()
+        self._async_watchers: List[
+            Callable[[List[JobLog]], Awaitable[None]]
+        ] = []
 
     def add_async_watcher(
-            self,
-            watcher: Callable[[], Awaitable[None]]
+        self, watcher: Callable[[List[JobLog]], Awaitable[None]]
     ) -> None:
         self._async_watchers.append(watcher)
 
     def remove_async_watcher(
-            self,
-            watcher: Callable[[], Awaitable[None]]
+        self, watcher: Callable[[List[JobLog]], Awaitable[None]]
     ) -> None:
         self._async_watchers.remove(watcher)
 
     async def notify_async_watchers(self) -> None:
-        await asyncio.gather(
-            *[watcher() for watcher in self._async_watchers]
-        )
+        messages = []
+        while not self._queue.empty():
+            message = await self._queue.get()
+            messages.append(message)
+            self._queue.task_done()
+        if messages:
+            await asyncio.gather(
+                *[watcher(messages) for watcher in self._async_watchers]
+            )
 
     def _notify(self) -> None:
         try:
@@ -286,129 +309,346 @@ class EmitToAsyncQueuedHandler(logging.Handler):
 
 @contextmanager
 def manager_job_log_handler(
-        logger: logging.Logger,
-        handler: logging.Handler
+    logger: logging.Logger, handler: logging.Handler
 ) -> typing.Generator[None, None, None]:
     logger.addHandler(handler)
     yield
     logger.removeHandler(handler)
 
 
-class AsyncJobExecutor:
-    def __init__(self, working_path: str) -> None:
-        self._watchers: List[Callable[[], Awaitable[None]]] = []
-        self.working_path = working_path
+class TaskExecutor:
+    def __init__(
+        self,
+        task: speedwagon.tasks.Subtask,
+        task_running_strategy: Optional[
+            Callable[[speedwagon.tasks.Subtask], None]
+        ] = None,
+    ):
+        def default_running_strategy(_task: speedwagon.tasks.Subtask) -> None:
+            _task.exec()
 
-    def add_watcher(self, func: Callable[[], Awaitable[None]]) -> None:
-        self._watchers.append(func)
+        self.task_running_strategy: Callable[
+            [speedwagon.tasks.Subtask], None
+        ] = (task_running_strategy or default_running_strategy)
 
-    async def notify_of_update(self) -> None:
-        await asyncio.gather(
-            *[watcher() for watcher in self._watchers]
+        self._task = task
+
+    def exec(self) -> None:
+        self.task_running_strategy(self._task)
+
+    def task_description(self) -> Optional[str]:
+        return self._task.task_description()
+
+    def task_results(self) -> List[speedwagon.tasks.Result]:
+        return self._task.results
+
+
+class TaskGenerator(collections.abc.Iterator):
+    def __init__(
+        self,
+        workflow: speedwagon.Workflow,
+        workflow_options,
+        log_level=logging.INFO,
+    ):
+        self._task_scheduler = speedwagon.runner_strategies.TaskScheduler(".")
+        self.workflow = workflow
+        self.workflow_options = workflow_options
+        self._job_logger = logging.getLogger(__name__)
+        self._job_logger.setLevel(log_level)
+        self._task_scheduler.logger = self._job_logger
+        self._generator: collections.abc.Generator[
+            speedwagon.tasks.Subtask, None, None
+        ] = self._task_scheduler.iter_tasks(
+            self.workflow, self.workflow_options
         )
 
-    async def execute_job(
-            self,
-            workflow_klass: typing.Type[speedwagon.Workflow],
-            workflow_options: typing.Dict[str, typing.Any],
-            job: JobQueueItem,
+        self.log_message_queue_handler = EmitToAsyncCallback()
+        self._async_log_handlers: List[
+            Callable[[List[JobLog]], Awaitable[None]]
+        ] = []
+        self.log_message_queue_handler.add_async_watcher(self.logs_updated)
 
+    def results(self) -> List[speedwagon.tasks.Result]:
+        return self._task_scheduler.task_generator_strategy.results()
+
+    async def logs_updated(self, logs: List[JobLog]) -> None:
+        await asyncio.gather(
+            *[watcher(logs) for watcher in self._async_log_handlers]
+        )
+
+    def remove_async_log_handler(
+        self, callback: Callable[[List[JobLog]], Awaitable[None]]
     ) -> None:
-        """Execute job."""
-        job.state = schema.JobState.RUNNING
-        job.status.start_time = datetime.datetime.now()
+        self._async_log_handlers.remove(callback)
 
-        try:
-            await self._run(
-                workflow_klass,
-                workflow_options,
-                job.status,
-                self.notify_of_update
+    def add_async_log_handler(
+        self, callback: Callable[[List[JobLog]], Awaitable[None]]
+    ) -> None:
+        self._async_log_handlers.append(callback)
+
+    def __next__(self) -> TaskExecutor:
+        def monkeypatch_log(message: str) -> None:
+            self._job_logger.info(message)
+
+        def call_with_log_handler(task: speedwagon.tasks.Subtask) -> None:
+            with manager_job_log_handler(
+                self._task_scheduler.logger, self.log_message_queue_handler
+            ):
+                setattr(task, "log", monkeypatch_log)
+                task.exec()
+
+        return TaskExecutor(
+            next(self._generator), task_running_strategy=call_with_log_handler
+        )
+
+    def generate_report(self) -> Optional[str]:
+        return self._task_scheduler.task_generator_strategy.generate_report(
+            self.workflow,
+            self.workflow_options,
+            self._task_scheduler.task_generator_strategy.results(),
+        )
+
+    def percent_completed(self) -> Optional[float]:
+        completed = self._task_scheduler.current_task_progress
+        total = self._task_scheduler.total_tasks
+        return (
+            None
+            if completed is None or total is None
+            else (completed / total) * 100
+        )
+
+
+T = typing.TypeVar("T")
+CallbackType = typing.TypeVar(  # pylint: disable=invalid-name
+    "CallbackType",
+    bound=Callable
+)
+
+
+class AbsCallbackManager(abc.ABC, typing.Generic[CallbackType]):
+    def __init__(self) -> None:
+        self.callbacks: typing.DefaultDict[
+            str,
+            List[CallbackType]
+        ] = collections.defaultdict(list)
+
+    def add_callback(
+            self,
+            event_name: str,
+            callback: CallbackType
+    ) -> None:
+        self.callbacks[event_name].append(callback)
+
+    def remove_callback(
+            self,
+            event_name: str,
+            callback: CallbackType
+    ) -> None:
+        self.callbacks[event_name].remove(callback)
+
+
+class UpdateCallbackManager(AbsCallbackManager[Callable[[typing.Any], None]]):
+    def notify(self, event_name: str, item: T) -> None:
+        for callback in self.callbacks[event_name]:
+            callback(item)
+
+
+class AsyncUpdateNotifyManager(
+    AbsCallbackManager[Callable[[], Awaitable[None]]]
+):
+    async def notify(self, event_name: str) -> None:
+        await asyncio.gather(*[
+            watcher() for watcher in self.callbacks[event_name]
+        ])
+
+
+class AsyncJobExecutor:
+    def __init__(self, working_path: str) -> None:
+        self.working_path = working_path
+        self._abort = asyncio.Event()
+        self._workflow_klass: Optional[Type[speedwagon.Workflow]] = None
+        self._workflow_options: Optional[typing.Dict[str, typing.Any]] = None
+        self._task_generator: Optional[TaskGenerator] = None
+        self._notification_manager = UpdateCallbackManager()
+        self._async_notification_manager = AsyncUpdateNotifyManager()
+
+    def add_on_job_status_change_callback(
+        self,
+        callback: Callable[[JobStatus], None]
+    ) -> None:
+        self._notification_manager.add_callback("on_status_changed", callback)
+
+    def remove_on_job_status_change_callback(
+        self,
+        callback: Callable[[JobStatus], None]
+    ) -> None:
+        self._notification_manager.remove_callback(
+            "on_status_changed",
+            callback
+        )
+
+    def add_on_state_change_callback(
+        self,
+        callback: Callable[[schema.JobState], None]
+    ) -> None:
+        self._notification_manager.add_callback("on_state", callback)
+
+    def remove_on_state_change_callback(
+        self,
+        callback: Callable[[schema.JobState], None]
+    ) -> None:
+        self._notification_manager.remove_callback("on_state", callback)
+
+    def abort_current_job(self) -> None:
+        self._abort.set()
+        if self._task_generator is not None:
+            self._task_generator.remove_async_log_handler(
+                self._update_log_messages
             )
+            self._task_generator = None
+        self.update_job_state(schema.JobState.ABORTED)
 
-            job.state = schema.JobState.SUCCESS
+    def add_watcher(self, func: Callable[[], Awaitable[None]]) -> None:
+        self._async_notification_manager.add_callback("watcher", func)
+
+    async def notify_of_update(self) -> None:
+        await self._async_notification_manager.notify('watcher')
+
+    def load_job(
+        self,
+        workflow_klass: typing.Type[speedwagon.Workflow],
+        workflow_options: typing.Dict[str, typing.Any],
+    ) -> None:
+        self._workflow_klass = workflow_klass
+        self._workflow_options = workflow_options
+
+    async def execute_job(self) -> schema.JobState:
+        """Execute job."""
+        if self._workflow_klass is None or self._workflow_options is None:
+            raise ValueError("workflow and options need to be set first.")
+
+        self.update_job_state(schema.JobState.RUNNING)
+        try:
+            result = await self._run(
+                self._workflow_klass,
+                self._workflow_options
+            )
+            self.update_job_state(result)
+            return result
         except Exception as exc:
-            job.state = schema.JobState.FAILED
+            self.update_job_state(schema.JobState.FAILED)
             traceback.print_exception(exc)
             raise exc
+        finally:
+            self._workflow_klass = None
+            self._workflow_options = None
+            await self.notify_of_update()
+
+    async def _update_log_messages(self, logs: List[JobLog]) -> None:
+        self.update_status(logs=logs)
         await self.notify_of_update()
 
-    @staticmethod
-    def _update_progress(task_scheduler, status) -> None:
-        if task_scheduler.current_task_progress:
-            current = task_scheduler.current_task_progress
-            total = task_scheduler.total_tasks
-            if current is not None and total is not None:
-                status.progress = round((current / total) * 100, 2)
+    def _execute_task(
+            self,
+            task: TaskExecutor,
+            task_generator: TaskGenerator
+    ) -> None:
+        if progress := task_generator.percent_completed():
+            progress = round(progress, 2)
 
-    @staticmethod
-    async def _flush_log_queue(log_q, job_status: JobStatus) -> None:
-        while not log_q.empty():
-            message = await log_q.get()
-            job_status.logs.append(message)
-            log_q.task_done()
+        status: JobStatus = {"progress": progress}
+        if current_task := task.task_description():
+            status["current_task"] = current_task
+
+        self.update_status(**status)
+        task.exec()
 
     async def _run(
         self,
         workflow_klass: Type[speedwagon.Workflow],
-        options: typing.Dict[str, UserDataType],
-        status: JobStatus,
-        notify: Callable[[], Awaitable[None]],
-    ) -> None:
-        async def update_log_messages() -> None:
-            await asyncio.gather(
-                self._flush_log_queue(log_q, status),
-                notify()
-            )
+        workflow_options: typing.Dict[str, typing.Any],
+    ) -> schema.JobState:
 
-        job_logger = logging.getLogger(__name__)
-        job_logger.setLevel(logging.INFO)
+        notify_future = self.notify_of_update()
 
-        task_scheduler = speedwagon.runner_strategies.TaskScheduler(".")
-        task_scheduler.logger = job_logger
-        log_q: asyncio.Queue[JobLog] = asyncio.Queue()
-        log_message_queue_handler = EmitToAsyncQueuedHandler(log_q)
-
-        log_message_queue_handler.add_async_watcher(update_log_messages)
-
-        await notify()
-        workflow = workflow_klass()
-        with manager_job_log_handler(
-                task_scheduler.logger,
-                log_message_queue_handler
-        ):
-
-            def monkeypatch_log(message: str):
-                job_logger.info(message)
-
-            for task in task_scheduler.iter_tasks(
-                workflow=workflow, options=options
-            ):
-                status.current_task = task.task_description()
-                setattr(task, 'log', monkeypatch_log)
-                await asyncio.to_thread(task.exec)
-                self._update_progress(task_scheduler, status)
-        status.progress = 100.0
-        await self.notify_of_update()
-        status.report = task_scheduler.task_generator_strategy.generate_report(
-            workflow, options, task_scheduler.task_generator_strategy.results()
+        self._task_generator = TaskGenerator(
+            workflow_klass(), workflow_options
         )
-        status.current_task = ""
+        self._task_generator.add_async_log_handler(self._update_log_messages)
+        await notify_future
+        self.update_status(start_time=datetime.datetime.now())
+        while True:
+            if self._abort.is_set():
+                self.update_status(progress=None)
+                self._abort.clear()
+                self.update_job_state(schema.JobState.ABORTED)
+                await self.notify_of_update()
+                return schema.JobState.ABORTED
+
+            try:
+                await asyncio.to_thread(
+                    lambda task_=self._next_task(), gen=self._task_generator:
+                    self._execute_task(task_, gen)
+                )
+            except StopIteration:
+                break
+            await self.notify_of_update()
+
+        last_status_update: typing.Dict[str, typing.Any] = {
+            "current_task": "",
+            "progress": self._task_generator.percent_completed(),
+        }
+        if report := self._task_generator.generate_report():
+            last_status_update["report"] = report
+            last_status_update["logs"] = [JobLog(msg=report, time=time.time())]
+
+        self.update_status(**last_status_update)
+
         await self.notify_of_update()
+        return schema.JobState.SUCCESS
+
+    def _next_task(self) -> TaskExecutor:
+        if self._abort.is_set():
+            raise StopIteration
+        if self._task_generator is None:
+            if self._workflow_klass is None:
+                raise ValueError("Workflow not selected")
+            self._task_generator = TaskGenerator(
+                self._workflow_klass(), self._workflow_options
+            )
+            self._task_generator.add_async_log_handler(
+                self._update_log_messages
+            )
+        return next(self._task_generator)
+
+    def execute_next_task(self) -> None:
+        task = self._next_task()
+        if self._task_generator is None:
+            raise ValueError(
+                "task generator not loaded, Did you call load_job first?"
+            )
+        self._execute_task(task, self._task_generator)
+
+    def update_status(self, **status: Unpack[JobStatus]) -> None:
+        new_status = typing.cast(JobStatus, {**status})
+        self._notification_manager.notify("on_status_changed", new_status)
+
+    def update_job_state(self, job_state: schema.JobState) -> None:
+        self._notification_manager.notify("on_state", job_state)
 
 
 def inject_storage_root(storage_root: str, value: str) -> str:
     return f"{storage_root}{value}"
 
 
-def ensure_boolean(name: str, value) -> bool:
+def ensure_boolean(name: str, value: typing.Any) -> bool:
     if isinstance(value, bool):
         return value
 
     if isinstance(value, str):
         warnings.warn(
             f'"{name}" has widget_type "BooleanSelect" but value is type '
-            f'string. Converting to a boolean up for now.'
+            f"string. Converting to a boolean up for now."
         )
         converted_value = {
             "true": True,
@@ -424,11 +664,9 @@ def ensure_boolean(name: str, value) -> bool:
 
 class FixUpProtocol(typing.Protocol):
     def __call__(
-            self,
-            name: str,
-            value: typing.Any,
-            param_metadata: WorkflowParam
-    ) -> typing.Any: ...
+        self, name: str, value: typing.Any, param_metadata: WorkflowParam
+    ) -> typing.Any:
+        ...
 
 
 class JobRunner:
@@ -438,15 +676,17 @@ class JobRunner:
     """
 
     def __init__(
-            self,
-            job_queue: asyncio.Queue[JobQueueItem],
-            storage_root: str,
-            workflow_manager: Optional[AbsWorkflowManager] = None
+        self,
+        job_queue: asyncio.Queue[JobQueueItem],
+        storage_root: str,
+        workflow_manager: Optional[AbsWorkflowManager] = None,
     ) -> None:
         """Create a job runner.
 
         Args:
             job_queue: job queue for pull jobs off to run.
+            storage_root: path that runner storage starts from.
+            workflow_manager: workflow manager
         """
         self._job_queue = job_queue
         self._notification_manager = NotificationManager()
@@ -454,58 +694,89 @@ class JobRunner:
         self.executor = AsyncJobExecutor(storage_root)
         self.executor.add_watcher(self._notification_manager.notify_async)
         self.workflow_manager = (
-                workflow_manager or WorkflowManagerAllWorkflows()
+            workflow_manager or WorkflowManagerAllWorkflows()
         )
+        self._current_job: Optional[JobQueueItem] = None
+
+    def abort(self, job_id: str) -> None:
+        """Abort running job."""
+        if (
+            self._current_job is not None
+            and self._current_job.job_id == job_id
+        ):
+            self.executor.abort_current_job()
+        else:
+            raise JobAlreadyAborted(job_id)
 
     def prep_job(
-            self,
-            queue_item: JobQueueItem
-    ) -> typing.Tuple[
-        Type[speedwagon.Workflow], typing.Dict[str, typing.Any]
-    ]:
-
+        self, queue_item: JobQueueItem
+    ) -> typing.Tuple[Type[speedwagon.Workflow], typing.Dict[str, typing.Any]]:
+        """Prepare job for running."""
         workflow = self.workflow_manager.get_workflow_type_by_id(
-            queue_item.job['workflow']['id']
+            queue_item.job["workflow"]["id"]
         )
 
-        user_params = queue_item.job['details'].copy()
+        user_params = queue_item.job["details"].copy()
 
         info = self.workflow_manager.get_workflow_info_by_id(
-            queue_item.job['workflow']['id']
+            queue_item.job["workflow"]["id"]
         )
 
-        workflow_params: typing.Dict[
-            str,
-            WorkflowParam
-        ] = {param['label']: param for param in info['parameters']}
+        workflow_params: typing.Dict[str, WorkflowParam] = {
+            param["label"]: param for param in info["parameters"]
+        }
 
         fixup_funcs: typing.Dict[str, FixUpProtocol] = {
-            'BooleanSelect':
+            "BooleanSelect":
                 lambda name, value, param_metadata: ensure_boolean(
-                    name=name,
-                    value=value
+                    name=name, value=value
                 ),
-            'DirectorySelect':
+            "DirectorySelect":
                 lambda name, value, param_metadata: inject_storage_root(
-                    storage_root=self.working_path,
-                    value=value
-                )
+                    storage_root=self.working_path, value=value
+                ),
+            "FileSelect":
+                lambda name, value, param_metadata: inject_storage_root(
+                    storage_root=self.working_path, value=value
+                ),
         }
 
         for name_ in user_params.keys():
             assert name_ in workflow_params
-            fix_up_func =\
-                fixup_funcs.get(workflow_params[name_]['widget_type'])
+            fix_up_func = fixup_funcs.get(
+                workflow_params[name_]["widget_type"]
+            )
 
             if fix_up_func is None:
                 continue
             new_result = fix_up_func(
                 name=name_,
                 value=user_params[name_],
-                param_metadata=workflow_params[name_]
+                param_metadata=workflow_params[name_],
             )
             user_params[name_] = new_result
         return workflow, user_params
+
+    @staticmethod
+    def _update_job_status(
+            status: JobStatus,
+            job_queue_item: JobQueueItem
+    ) -> None:
+        # This should have JobStatus values but not requiring them
+        if "progress" in status:
+            job_queue_item.status["progress"] = status["progress"]
+
+        if "current_task" in status:
+            job_queue_item.status["current_task"] = status["current_task"]
+
+        if "start_time" in status and status['start_time'] is not None:
+            job_queue_item.status["start_time"] = status["start_time"]
+
+        if "logs" in status:
+            job_queue_item.status["logs"] += status["logs"]
+
+        if "report" in status and status['report'] is not None:
+            job_queue_item.status["report"] = status["report"]
 
     async def consume(self) -> None:
         """Consume jobs in the job queue.
@@ -521,17 +792,49 @@ class JobRunner:
                     "Stopping consume loop"
                 )
                 break
+            job_params = typing.cast(JobQueueItem, job_params)
             workflow_klass, options = self.prep_job(job_params)
+
+            # Note: without the casting in the functions below, MyPy thinks
+            #   that job_params could be None regardless of the check above
+            def update_job_status(
+                    status: JobStatus,
+                    params: JobQueueItem = typing.cast(
+                        JobQueueItem,
+                        job_params
+                    )
+            ) -> None:
+                self._update_job_status(status, params)
+
+            def update_state(
+                    state: schema.JobState,
+                    params: JobQueueItem = typing.cast(
+                        JobQueueItem,
+                        job_params
+                    )
+            ) -> None:
+                params.state = state
+
             try:
-                await self.executor.execute_job(
-                    workflow_klass,
-                    options,
-                    job_params
+                self._current_job = job_params
+                self.executor.load_job(workflow_klass, options)
+                self.executor.add_on_job_status_change_callback(
+                    update_job_status
                 )
+
+                self.executor.add_on_state_change_callback(update_state)
+                job_params.state = await self.executor.execute_job()
                 module_logger.info("Job %s done", job_params.job_id)
+
             finally:
+                self.executor.remove_on_state_change_callback(update_state)
+                self.executor.remove_on_job_status_change_callback(
+                    update_job_status
+                )
                 self._job_queue.task_done()
+                self._current_job = None
             await self._notification_manager.notify_async()
 
     def add_async_watcher(self, watcher: AsyncEventNotifier) -> None:
+        """Add a watcher to be notified."""
         self._notification_manager.add_async_watcher(watcher)

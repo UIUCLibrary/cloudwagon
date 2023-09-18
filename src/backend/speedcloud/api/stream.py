@@ -1,13 +1,16 @@
+"""Stream generation."""
+
+import abc
+import typing
 from functools import wraps
-from typing import AsyncGenerator, List, Any, Coroutine
+from typing import AsyncGenerator, List, Optional
 import contextlib
 import asyncio
-
 from speedcloud.job_manager import (
     AsyncEventNotifier,
     JobQueueItem,
     JobRunner,
-    JobManager,
+    JobManager
 )
 
 from . import packets
@@ -21,58 +24,102 @@ __all__ = [
 MESSAGE_STREAM_DELAY = 30
 
 
+class AbsWaitEvent(abc.ABC):
+
+    def __init__(self, name: Optional[str]) -> None:
+        super().__init__()
+        self.name = name
+
+    @abc.abstractmethod
+    async def wait_for_update(self) -> None:
+        pass
+
+    def reset(self) -> None:
+        """Reset any state set during wait_for_update."""
+
+
+class SleepEvent(AbsWaitEvent):
+
+    def __init__(self, time: float, name: Optional[str]) -> None:
+        super().__init__(name)
+        self.time = time
+
+    async def wait_for_update(self) -> None:
+        await asyncio.sleep(self.time)
+
+
+class WaitForAsyncEvent(AbsWaitEvent):
+
+    def __init__(
+            self,
+            event_notifier: AsyncEventNotifier,
+            name: Optional[str]
+    ) -> None:
+        super().__init__(name)
+        self.waiter = event_notifier
+
+    async def wait_for_update(self) -> None:
+        await self.waiter.wait_for_update()
+
+
 class TaskWaiter:
 
-    def __init__(self, prerequisites: List[Coroutine[Any, Any, None]]) -> None:
+    def __init__(self, prerequisites: List[AbsWaitEvent]) -> None:
+        self.prereqs = prerequisites
 
-        self.tasks: List[asyncio.Task] = [
-            asyncio.create_task(task, name=str(task)) for task in prerequisites
+        self._tasks: List[asyncio.Task] = []
+        self._add_prerequisites()
+
+    def _add_prerequisites(self) -> None:
+        self._tasks = [
+            asyncio.create_task(
+                task.wait_for_update(),
+                name=task.name if task.name is not None else str(task)
+            ) for task in self.prereqs
         ]
 
-    async def wait_for_first(self):
-        await asyncio.wait(self.tasks, return_when=asyncio.FIRST_COMPLETED)
+    async def wait_for_first(self) -> None:
+        await asyncio.wait(self._tasks, return_when=asyncio.FIRST_COMPLETED)
         self.reset()
 
-    def reset(self):
-        for task in self.tasks:
+    def cancel_waiting(self) -> None:
+        for task in self._tasks:
             if not task.done():
                 task.cancel()
+
+    def reset(self) -> None:
+        self.cancel_waiting()
+        for pre_req in self.prereqs:
+            pre_req.reset()
+        self._add_prerequisites()
 
 
 @contextlib.asynccontextmanager
 async def wait_for_first_prereq(
-    prerequisites: List[Coroutine[Any, Any, None]]
-):
+    prerequisites: List[AbsWaitEvent]
+) -> typing.AsyncIterator[TaskWaiter]:
+    """Context manager to help with waiting for a prereq to be finished."""
     waiter = TaskWaiter(prerequisites)
     yield waiter
     await waiter.wait_for_first()
     waiter.reset()
-
-
-def consolidate_logs(logs, tracker):
-    return [
-        log.as_dict()
-        for log in tracker.pass_through(logs)
-    ]
+    waiter.cancel_waiting()
 
 
 async def _generate_live_packets(
-        job_queue_item,
-        update_prerequisites,
-        logs_tracker,
-        packet_generator
-):
+        job_queue_item: JobQueueItem,
+        update_prerequisites: List[AbsWaitEvent],
+        logs_tracker: packets.LogMemorizer,
+        packet_generator: packets.PacketBuilder
+) -> typing.AsyncIterator[str]:
     while job_queue_item.state == schema.JobState.RUNNING:
-        async with wait_for_first_prereq(
-                [waiter.wait_for_update() for waiter in update_prerequisites]
-        ) as waiter:
-            packet_values = {
-                "currentTask": job_queue_item.status.current_task,
-                "progress": job_queue_item.status.progress,
+        async with wait_for_first_prereq(update_prerequisites) as waiter:
+            packet_values: packets.PacketDataStructure = {
+                "currentTask": job_queue_item.status['current_task'],
+                "progress": job_queue_item.status['progress'],
             }
-            if logs := consolidate_logs(
-                    job_queue_item.status.logs,
-                    logs_tracker
+            if logs := list(logs_tracker.pass_through(
+                    job_queue_item.status.get('logs', []))
             ):
                 packet_values["logs"] = logs
             packet_generator.add_items(**packet_values)
@@ -86,6 +133,7 @@ async def _generate_live_packets(
 async def job_progress_packet_generator(
     job_queue_item: JobQueueItem, job_runner: JobRunner
 ) -> AsyncGenerator[str, str]:
+    """Generate data packets about the progress of a job."""
     job_runner_waiter = AsyncEventNotifier()
     job_finished = AsyncEventNotifier()
 
@@ -93,16 +141,23 @@ async def job_progress_packet_generator(
 
     _packet_generator = packets.MemorizedPacketBuilder()
     with packets.log_de_dup() as logs_tracker:
-        packet_values: packets.PacketDataType = {
+        packet_values: packets.PacketDataStructure = {
             "job_id": job_queue_item.job_id,
             "job_parameters": job_queue_item.job["details"],
             "workflow": job_queue_item.job["workflow"],
-            "start_time": str(job_queue_item.status.start_time),
             "job_status": job_queue_item.state,
-            "currentTask": job_queue_item.status.current_task,
-            "progress": job_queue_item.status.progress,
+            "currentTask": job_queue_item.status['current_task'],
+            "progress": job_queue_item.status['progress'],
         }
-        if logs := consolidate_logs(job_queue_item.status.logs, logs_tracker):
+
+        if job_queue_item.status['start_time']:
+            packet_values['start_time'] = str(
+                job_queue_item.status['start_time']
+            )
+
+        if logs := list(logs_tracker.pass_through(
+                job_queue_item.status['logs'])
+        ):
             packet_values["logs"] = logs
 
         _packet_generator.add_items(**packet_values)
@@ -110,34 +165,49 @@ async def job_progress_packet_generator(
         initial_packet = _packet_generator.flush()
         if initial_packet is not None:
             yield initial_packet
+
         while job_queue_item.state == schema.JobState.RUNNING:
             async for packet in _generate_live_packets(
                     job_queue_item,
                     update_prerequisites=[
-                        job_runner_waiter,
-                        job_finished,
+                        WaitForAsyncEvent(
+                            event_notifier=job_runner_waiter,
+                            name="job_runner"
+                        ),
+                        WaitForAsyncEvent(
+                            job_finished,
+                            name="job_finished"
+                        ),
                     ],
                     logs_tracker=logs_tracker,
                     packet_generator=_packet_generator
             ):
                 yield packet
+
                 if job_queue_item.state != schema.JobState.RUNNING:
                     await job_finished.notify()
 
         packet_values = {
-            "currentTask": job_queue_item.status.current_task,
-            "progress": job_queue_item.status.progress,
+            "currentTask": job_queue_item.status['current_task'],
+            "progress": job_queue_item.status['progress'],
         }
-        if logs := consolidate_logs(job_queue_item.status.logs, logs_tracker):
+        if logs := list(logs_tracker.pass_through(
+                job_queue_item.status.get('logs', []))
+        ):
             packet_values["logs"] = logs
         _packet_generator.add_items(**packet_values)
         if last_packet := _packet_generator.flush():
             yield last_packet
 
+RetType = typing.TypeVar('RetType')  # pylint: disable=invalid-name
 
-def only_new_data(func):
+
+def only_new_data(
+        func: typing.Callable[[], typing.AsyncIterator[RetType]]
+) -> typing.Callable[[], typing.AsyncIterator[RetType]]:
+    """Suppress data that tries to be sent twice."""
     @wraps(func)
-    async def inner():
+    async def inner() -> typing.AsyncIterator[RetType]:
         last_value = None
         async for res in func():
             if last_value != res:
@@ -152,18 +222,21 @@ def get_job_queue_data(
 ) -> List[schema.APIJobQueueItem]:
     return [
         schema.APIJobQueueItem(
-            job=dict(item.job),
+            job=item.job,
             state=item.state,
             order=item.order,
             job_id=item.job_id,
-            progress=item.status.progress,
+            progress=item.status['progress'],
             time_submitted=str(item.time_submitted),
         ).as_dict()
         for item in job_manager.job_queue()
     ]
 
 
-async def stream_jobs(job_manager: JobManager, job_runner: JobRunner):
+async def stream_jobs(
+        job_manager: JobManager,
+        job_runner: JobRunner
+) -> typing.AsyncIterator[List[schema.APIJobQueueItem]]:
     manager_waiter = AsyncEventNotifier()
     job_manager.add_async_watcher(manager_waiter)
 
@@ -172,11 +245,19 @@ async def stream_jobs(job_manager: JobManager, job_runner: JobRunner):
     while True:
         async with wait_for_first_prereq(
             prerequisites=[
-                job_runner_waiter.wait_for_update(),
-                manager_waiter.wait_for_update(),
-                asyncio.sleep(MESSAGE_STREAM_DELAY),
+                SleepEvent(
+                    time=MESSAGE_STREAM_DELAY, name="Timeout at 30 second"),
+                WaitForAsyncEvent(
+                    name="job_runner",
+                    event_notifier=job_runner_waiter
+                ),
+                WaitForAsyncEvent(
+                    name="manager_waiter",
+                    event_notifier=manager_waiter
+                )
             ]
         ) as waiter:
             packet = get_job_queue_data(job_manager)
-            waiter.reset()
+            waiter.cancel_waiting()
             yield packet
+            waiter.reset()

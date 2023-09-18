@@ -27,27 +27,33 @@ __all__ = [
 
 class NewDirectory(BaseModel):
     """NewDirectory request."""
+
     path: str
     name: str
 
 
 class Job(BaseModel):
     """Job."""
+
     details: typing.Dict[str, UserDataType]
     workflow_id: int
 
 
 class RemoveDirectory(BaseModel):
     """Remove directory request."""
+
     path: str
 
 
 class JobState(str, enum.Enum):
     """State of a job."""
+
     QUEUED = "queued"
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
+    ABORTED = "aborted"
+    STOPPING = "stopping"
 
 
 class JobWorkflow(TypedDict):
@@ -62,6 +68,7 @@ class JobQueueJobDetails(TypedDict):
 
 class APIJobQueueItem(BaseModel):
     """Job queue item."""
+
     job: JobQueueJobDetails
     state: JobState
     order: int
@@ -70,6 +77,7 @@ class APIJobQueueItem(BaseModel):
     time_submitted: str
 
     def as_dict(self):
+        """Generate data as a dict."""
         return {
             "job": dict(self.job),
             "state": self.state,
@@ -80,6 +88,7 @@ class APIJobQueueItem(BaseModel):
         }
 
     def serialize(self) -> str:
+        """Serialize data as a string."""
         return json.dumps(self.as_dict())
 
 

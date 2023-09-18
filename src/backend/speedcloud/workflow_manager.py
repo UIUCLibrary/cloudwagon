@@ -1,3 +1,5 @@
+"""Workflow manager."""
+
 import abc
 from abc import ABC
 from typing import (
@@ -27,12 +29,6 @@ class WorkflowData:
     id: int  # pylint: disable=C0103
     name: str
 
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name
-        }
-
 
 class WorkflowParam(TypedDict):
     """Workflow setting parameters."""
@@ -52,34 +48,42 @@ class WorkflowValues(TypedDict):
 
 
 class AbsWorkflowIdGenerator(abc.ABC, Generic[WorkflowIdType]):
+    """Abstract base class for workflow ID generators."""
+
     @abc.abstractmethod
     def generate_new_workflow_id(
         self, workflow: Type[speedwagon.Workflow]
     ) -> WorkflowIdType:
-        """Generate new id to use for workflow"""
+        """Generate new id to use for workflow."""
 
 
 class AbsGenericWorkflowManager(abc.ABC, Generic[WorkflowIdType]):
+    """Abstract base class for generic workflow managers."""
+
     @abc.abstractmethod
     def generate_new_workflow_id(
         self, workflow: Type[speedwagon.Workflow]
     ) -> WorkflowIdType:
-        """Generate new id to use for workflow"""
+        """Generate new id to use for workflow."""
 
     @abc.abstractmethod
     def get_workflow_type_by_id(
         self, workflow_id: WorkflowIdType
     ) -> Type[speedwagon.Workflow]:
-        """Get workflow using id type"""
+        """Get workflow using id type."""
 
 
 class AbsWorkflowManager(AbsGenericWorkflowManager[WorkflowIdType], ABC):
+    """Abstract base class for workflow managers."""
+
     def __init__(self) -> None:
+        """Create a new workflow manager."""
         self.workflows: Dict[WorkflowIdType, Type[speedwagon.Workflow]] = {}
 
     def add_workflow(
         self, workflow: Type[speedwagon.Workflow]
     ) -> WorkflowIdType:
+        """Add new workflow class to the manager."""
         workflow_id = self.generate_new_workflow_id(workflow)
         self.workflows[workflow_id] = workflow
         return workflow_id
@@ -100,6 +104,7 @@ class AbsWorkflowManager(AbsGenericWorkflowManager[WorkflowIdType], ABC):
     def get_workflow_type_by_id(
         self, workflow_id: WorkflowIdType
     ) -> Type[speedwagon.Workflow]:
+        """Workflow class based on id."""
         return self.workflows[workflow_id]
 
     def _get_workflow_details(
@@ -142,14 +147,20 @@ class AbsWorkflowManager(AbsGenericWorkflowManager[WorkflowIdType], ABC):
 
 
 class WorkflowManagerIdBaseOnSize(AbsWorkflowManager[int]):
+    """Workflow id based on the size of the queue."""
+
     def generate_new_workflow_id(
         self, workflow: Type[speedwagon.Workflow]
     ) -> int:
+        """Generate new workflow id."""
         return len(self.workflows)
 
 
 class WorkflowManagerAllWorkflows(WorkflowManagerIdBaseOnSize):
+    """Load all workflows."""
+
     def __init__(self) -> None:
+        """Load all workflows."""
         super().__init__()
         for workflow in speedwagon.available_workflows().values():
             self.workflows[self.generate_new_workflow_id(workflow)] = workflow

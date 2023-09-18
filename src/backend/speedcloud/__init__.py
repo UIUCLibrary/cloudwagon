@@ -1,5 +1,5 @@
-"""Speedcloud!"""
+"""Speedcloud."""
 
-from .main import app
-from . import job_manager
+from speedcloud.main import app
+from speedcloud import job_manager
 __all__ = ["app", "job_manager"]

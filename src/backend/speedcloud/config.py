@@ -26,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 
 class Settings(BaseSettings):  # pylint: disable=too-few-public-methods
     """Application settings."""
+
     storage: str
     whitelisted_workflows: Optional[List[str]] = None
 
@@ -38,7 +39,7 @@ config_file_search_locations: List[str] = [
 
 
 def initialize_app_from_settings(settings: Settings) -> None:
-
+    """Initialize app from settings."""
     if not os.path.exists(settings.storage):
         os.makedirs(settings.storage)
         logger.debug("created new folder %s", settings.storage)

@@ -9,7 +9,6 @@ import pkg_resources
 from fastapi import APIRouter, UploadFile, Depends, Request
 from fastapi import HTTPException
 from sse_starlette.sse import EventSourceResponse
-
 import aiofiles
 
 import speedcloud.job_manager
@@ -264,7 +263,7 @@ def get_job_status(request: Request, job_id: str) -> schema.JobInfo:
         job_id=job.job_id,
         job_parameters=job.job['details'],
         workflow=job.job['workflow'],
-        start_time=str(job.status.start_time),
+        start_time=str(job.status['start_time']),
         job_status=job.state.value,
     )
 
@@ -275,9 +274,21 @@ def get_job_logs(request: Request, job_id: str) -> List[schema.LogData]:
     job = job_manager.get_job_queue_item(job_id)
 
     return [
-        schema.LogData(**log_entry.as_dict())
-        for log_entry in job.status.logs
+        schema.LogData(**log_entry)
+        for log_entry in job.status.get('logs', [])
     ]
+
+
+@api.get('/jobAbort', description="Abort running job")
+async def abort_job(request: Request, job_id: str):
+    job_manager: JobManager = request.state.job_manager
+    job_runner: JobRunner = request.state.job_runner
+    job_manager.set_job_state(job_id, schema.JobState.STOPPING)
+    job_runner.abort(job_id)
+    return {
+        "job_id": job_id,
+        "status": job_manager.get_job_queue_item(job_id).state.value
+    }
 
 
 @api.get('/followJobStatus')
@@ -322,7 +333,7 @@ async def jobs(request: Request) -> List[schema.APIJobQueueItem]:
                 state=item.state,
                 order=item.order,
                 job_id=item.job_id,
-                progress=item.status.progress,
+                progress=item.status['progress'],
                 time_submitted=str(item.time_submitted),
 
 
