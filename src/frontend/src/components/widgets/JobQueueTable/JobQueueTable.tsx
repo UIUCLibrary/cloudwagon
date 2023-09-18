@@ -59,12 +59,18 @@ interface JobRowProps<T> {
     keyExtractor?: (key: string, item: T) => string;
     data: Record<string, T>
 }
-export const JobRow = <T extends unknown>({data, renderItem, keyExtractor, selected} : JobRowProps<T>):React.ReactElement =>{
-    const contents: React.ReactNode[] = []
-    for (const [k, v] of Object.entries(data)) {
-        const key = keyExtractor? keyExtractor(k, v) : k
-        const element = renderItem ? renderItem(key, v) : <TableCell key={key}>{v as string}</TableCell>
-        contents.push( element)
-    }
-    return (<TableRow selected={selected}>{contents.map(element => element)}</TableRow>)
+export const JobRow = <T,>({data, renderItem, keyExtractor, selected} : JobRowProps<T>):React.ReactElement =>{
+    return (
+        <TableRow selected={selected}>
+            {
+                Object.entries(data).map(([k, v])=>{
+                    const key = keyExtractor? keyExtractor(k, v) : k
+                    return (
+                        <TableCell key={key} data-testid={key}>
+                            {renderItem ? renderItem(key, v) : v as string}
+                        </TableCell>
+                    )
+                })
+            }
+        </TableRow>)
 }
