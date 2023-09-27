@@ -1,6 +1,6 @@
 ARG PIP_CACHE_DIR=/.cache/pip
 
-FROM ubuntu:20.04 as base
+FROM ubuntu:20.04 AS base
 COPY ci/docker/tox/linux/apt-packages.txt /tmp/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends software-properties-common && \

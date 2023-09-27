@@ -1,6 +1,5 @@
 aiofiles
 fastapi
-Flask
 httpx
 pydantic>=2.0
 pydantic-settings

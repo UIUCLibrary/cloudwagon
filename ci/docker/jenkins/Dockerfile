@@ -12,14 +12,14 @@ RUN npm cache clean -f && \
     n stable
 
 
-FROM base as hadolint_installer
+FROM base AS hadolint_installer
 RUN apt-get update && apt-get install --no-install-recommends -y wget && \
     rm -rf  /root/.cache
 RUN wget --progress=dot:giga -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 && \
     chmod +x /bin/hadolint && \
     hadolint --version
 #==============================================================================
-FROM base as SONAR_BUILDER
+FROM base AS SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y --no-install-recommends unzip
 ARG SONAR_SCANNER_VERSION
@@ -33,6 +33,8 @@ RUN curl --create-dirs -sSLo /tmp/sonar-scanner.zip \
     chmod -R 777 "${SONAR_USER_HOME}" &&\
     ln -s ${SONAR_INSTALL_PATH}/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
+
+#==============================================================================
 FROM base
 
 ARG SONAR_INSTALL_PATH
