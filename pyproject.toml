@@ -11,7 +11,6 @@ description = "Speedwagon in the Cloud!!!"
 dependencies =[
     "aiofiles",
     "fastapi",
-    "flask",
     "pydantic>=2.0",
     "pydantic-settings",
     'sse_starlette',
