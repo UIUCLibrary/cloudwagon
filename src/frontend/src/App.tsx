@@ -1,4 +1,4 @@
-import {ReactElement, SyntheticEvent, useEffect, useState} from 'react';
+import {ReactElement, SyntheticEvent, useCallback, useEffect, useState} from 'react';
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -6,7 +6,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import {FileManagement, SystemInfo} from './components/pages'
+import {FileManagement, MessageStatusLevel, PageProps, SystemInfo, StatusMessage} from './components/pages'
 import {SystemInfoData} from './components/pages/SystemInfo/SystemInfo.tsx'
 import {useWorkflowMetadata, useWorkflowList, SubmitJob} from './components/pages/SubmitJob';
 import {ManageJobs, JobStatus, useSingleJobStatus} from './components/pages/ManageJobs'
@@ -15,6 +15,7 @@ import styled from '@mui/system/styled';
 import axios from 'axios';
 import {useSSE} from "./components/apiHooks/useSSE";
 import {useAxios} from './components/apiHooks'
+import SnackBar from "@mui/material/Snackbar";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -77,7 +78,7 @@ interface ISpeedwagonApp{
 interface SpeedcloudAppTab{
   label: string
   navigation: string
-  pageWidget: ReactElement
+  pageWidget: ReactElement<PageProps>
 }
 
 const useServerDataHook = ()=>{
@@ -87,6 +88,8 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
+  const [notificationVisible, setNotificationVisible] = useState(false)
+  const [notificationMessage, setNotificationMessage] = useState<StatusMessage|null>(null);
 
   const handleChange = (event: SyntheticEvent, newValue: number) => {
     navigate(tabs[newValue].navigation)
@@ -101,6 +104,15 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
     const hook = useSSE<JobStatus[]>('/api/jobsSSE');
     return {...hook, ...{data: hook.data ? hook.data : []}}
   }
+  const handleNewMessage = useCallback((message: string, level: MessageStatusLevel)=>{
+      setNotificationMessage({message: message, level: level || "info"})
+      setNotificationVisible(true)
+  }, [notificationMessage, notificationVisible])
+
+  const handleNotificationClose = useCallback(()=>{
+    setNotificationVisible(false);
+    setNotificationMessage(null);
+  }, [notificationMessage, notificationVisible])
 
   const tabs: SpeedcloudAppTab[] = [
     {
@@ -108,6 +120,7 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
       navigation: '/job',
       pageWidget: (
           <SubmitJob
+              onStatusMessage={handleNewMessage}
               workflowName={searchParams.get('workflow')}
               onWorkflowChanged={handleWorkflowChange}
               onJobSubmitted={(data)=>{
@@ -121,13 +134,12 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
     {
       label: 'Manage Jobs',
       navigation: '/manageJobs',
-      pageWidget: <>
-        <ManageJobs
+      pageWidget: <ManageJobs
+            onStatusMessage={handleNewMessage}
             jobId={searchParams.get('jobId')}
             useAllJobsStatusHook={useJobsStatus}
             useSingleJobStatusHook={useSingleJobStatus}
         />
-      </>
     },
     {
       label: 'Manage Files',
@@ -183,6 +195,11 @@ export function SpeedwagonApp({tab}: ISpeedwagonApp) {
                 })}
               </Box>
             </StyledPaper>
+              <SnackBar open={notificationVisible} autoHideDuration={6000} onClose={handleNotificationClose}>
+                <Alert severity={notificationMessage ? notificationMessage.level : undefined} sx={{ width: '100%' }}>
+                  {notificationMessage ? notificationMessage.message: ''}
+                </Alert>
+              </SnackBar>
           </Container>
         </Box>
       </div>

@@ -1,3 +1,5 @@
+import {PageProps} from "../Page.types.tsx";
+
 export interface IData {
   consoleStreamSSE: string,
   consoleStreamWS: string
@@ -14,7 +16,7 @@ interface IUseWorkflowListHookData {
   error: unknown
 }
 
-export interface SubmitJobProps {
+export interface SubmitJobProps extends PageProps{
   workflowName? : string | null
   onWorkflowChanged?: (workflowName: string)=>void
   onJobSubmitted?: (IData)=>void

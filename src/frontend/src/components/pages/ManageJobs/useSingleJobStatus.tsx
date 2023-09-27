@@ -64,7 +64,7 @@ export const useSingleJobStatus = (jobId: string | null): IJobStatusHookData =>{
 
     useEffect(() => {
         logs.sort((a, b)=> {
-            return a < b ? 1: -1
+            return a.time < b.time ? 1: -1
         } )
         const mergedData = {...data.data, ...{logs: logs}}
         setData({...data, ...{data: mergedData}})

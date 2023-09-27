@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import json
 from unittest.mock import Mock
-
+import dataclasses
 from speedcloud.api import stream, schema
 from speedcloud.job_manager import (
     JobQueueItem,
@@ -34,7 +34,6 @@ def queued_item(fake_job_id):
         time_submitted=datetime.datetime.now(),
         job_id=fake_job_id,
         state=schema.JobState.RUNNING,
-        status=JobStatus()
     )
 
 
@@ -56,18 +55,18 @@ async def test_job_progress_packet_generator_first_packet(queued_item, fake_job_
         (
                 'logs',
                 'logs',
-                [JobLog("spam", 10.01)],
+                [JobLog(msg="spam", time=10.01)],
                 [{'msg': 'spam', 'time': 10.01}]
         ),
 
     ]
 )
-async def test_job_progress_packet_generator_packet(queued_item, param_name, packet_key, input_value, packet_value):
+async def test_job_progress_packet_generator_packet(queued_item, param_name: JobStatus, packet_key, input_value, packet_value):
     runner = Mock(spec=JobRunner)
     gen = stream.job_progress_packet_generator(queued_item, runner)
     await anext(gen)
     next_packet = anext(gen)
-    setattr(queued_item.status, param_name, input_value)
+    queued_item.status[param_name] = input_value
     res = json.loads(await next_packet)
     assert res[packet_key] == packet_value
 
@@ -80,12 +79,13 @@ async def test_job_progress_packet_generator_final_packet(queued_item):
     await anext(gen)
 
     next_packet = anext(gen)
-    queued_item.status.progress = 1.0
+    queued_item.status['progress'] = 1.0
+    # queued_item.status.progress = 1.0
     await next_packet
 
     final_packet = anext(gen)
     queued_item.state = schema.JobState.SUCCESS
-    queued_item.status.progress = 100
+    queued_item.status['progress'] = 100
     res = json.loads(await final_packet)
     assert res['progress'] == 100
 
@@ -132,5 +132,5 @@ async def test_stream_jobs_starts_with_job_info(job_manager_with_job, job_manage
     streamer = stream.stream_jobs(await job_manager_with_job, job_runner)
     initial_packets = await anext(streamer)
     assert len(initial_packets) == 1
-    assert initial_packets[0]['job']['workflow'] == workflow_data.as_dict()
+    assert initial_packets[0]['job']['workflow'] == dataclasses.asdict(workflow_data)
 

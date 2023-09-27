@@ -1,11 +1,13 @@
 import Button from '@mui/material/Button'
-import TableCell from "@mui/material/TableCell";
 import LinearProgress  from '@mui/material/LinearProgress'
 import {IJobStatusHookData, SharedJobProgressDialogRef} from './ManageJobs.types.tsx'
 import {SharedJobProgressDialog} from './SharedJobProgressDialog.tsx'
 import {useCallback, useRef, useState} from "react";
 import {UseSSEHookData} from "../../apiHooks/useSSE";
 import JobQueueTable, {JobRow} from '../../widgets/JobQueueTable/JobQueueTable.tsx'
+import axios from "axios";
+import {PageProps} from '../Page.types.tsx'
+
 export interface JobStatus {
     job: any
     state: string
@@ -36,25 +38,38 @@ const DateTimeSubmittedData = ({submitted}: { submitted: string}) =>{
         </>
     )
 }
-interface ManageJobsProps {
+
+const AbortButton = ({jobId, onAbortRequested}: {jobId: string, onAbortRequested: (jobId: string)=>void}) => {
+    const [disabled, setDisabled] = useState(false)
+    const handleAbortJob = (jobId) =>{
+
+        setDisabled(true)
+        axios.get(`/api/jobAbort?job_id=${jobId}`)
+            .then(()=>onAbortRequested(jobId))
+            .catch(console.error)
+    }
+    return <Button disabled={disabled} onClick={()=>handleAbortJob(jobId)}>Abort</Button>
+}
+
+interface ManageJobsProps extends PageProps{
     jobId?: string;
     useAllJobsStatusHook: ()=>UseSSEHookData<JobStatus[]>;
     useSingleJobStatusHook: (jobId: string| null) => IJobStatusHookData;
 }
-export default function ManageJobs({jobId, useAllJobsStatusHook, useSingleJobStatusHook}: ManageJobsProps){
+export default function ManageJobs({jobId, useAllJobsStatusHook, useSingleJobStatusHook, onStatusMessage}: ManageJobsProps){
     const [selectedJobId, setSelectedJobId] = useState<string|null>(jobId)
     const jobsStatus = useAllJobsStatusHook()
-    // FIXME: sse handle is not closed when switching to a new tab
+    
     const dialogRef = useRef<SharedJobProgressDialogRef>(null)
     const headings = [
         {label: "Submitted", minWidth: 50},
         {label: "Workflow", minWidth: 75},
         {label: "Status", minWidth: 50},
         {label: "Progress", minWidth: 50},
-        {label: "Report", minWidth: 50},
-        {label: "Details", minWidth: 50},
+        {label: "Report", minWidth: 40},
+        {label: "Details", minWidth: 10},
+        {label: "Abort", minWidth: 5},
     ]
-
 
     const handleNewClick = useCallback((jobId: string)=>{
         setSelectedJobId(jobId)
@@ -76,6 +91,7 @@ export default function ManageJobs({jobId, useAllJobsStatusHook, useSingleJobSta
                         "progress": jobsStatus.progress,
                         "report": jobsStatus.hasReport,
                         "details": jobsStatus.job_id,
+                        "abort": jobsStatus.job_id
                     };
                     return (
                         <JobRow
@@ -87,26 +103,31 @@ export default function ManageJobs({jobId, useAllJobsStatusHook, useSingleJobSta
                                     switch (key) {
                                         case "submitted":
                                             return (
-                                                <TableCell key={key}>
-                                                    <DateTimeSubmittedData submitted={value}/>
-                                                </TableCell>
+                                                <DateTimeSubmittedData submitted={value}/>
                                             )
                                         case "progress":
                                             return (
-                                                <TableCell key={key}>
-                                                    {value === null ? '' : `${value}%`}
-                                                </TableCell>
+                                                <>{value === null ? '' : `${value}%`}</>
                                             )
                                         case "details":
                                             return (
-                                                <TableCell key={key}>
                                                     <Button onClick={() => handleNewClick(jobsStatus.job_id)}>
                                                         Details
                                                     </Button>
-                                                </TableCell>
                                             )
+                                        case "abort":
+                                            if (jobsStatus.state === "running"){
+                                                return (
+                                                    <AbortButton
+                                                        jobId={jobsStatus.job_id}
+                                                        onAbortRequested={()=> {
+                                                            onStatusMessage(`Abort requested for ${jobsStatus.job_id}`)
+                                                        }
+                                                    }/>)
+                                            }
+                                            return <></>
                                         default:
-                                            return <TableCell key={key}>{value as string}</TableCell>
+                                            return <>{value as string}</>
                                     }
                                 }
                             }

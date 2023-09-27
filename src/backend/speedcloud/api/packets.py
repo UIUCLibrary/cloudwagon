@@ -11,12 +11,14 @@ from typing import (
     Optional,
     TypeVar,
     TYPE_CHECKING,
-    Dict,
     List,
-    Union
+    Union,
 )
 
-from typing_extensions import Unpack
+try:
+    from typing import Unpack
+except ImportError:
+    from typing_extensions import Unpack
 
 if TYPE_CHECKING:
     from speedcloud.job_manager import JobLog
@@ -29,15 +31,15 @@ __all__ = ["PacketBuilder"]
 T = TypeVar("T")
 
 
-class PacketDataType(typing.TypedDict):
-    job_id: typing.NotRequired[Optional[str]]
-    job_parameters: typing.NotRequired[typing.Dict[str, SpeedwagonParamsType]]
-    workflow: typing.NotRequired[JobWorkflow]
-    start_time: typing.NotRequired[str]
-    job_status: typing.NotRequired[JobState]
-    logs: typing.NotRequired[List[JobLog.JobLogDict]]
-    progress: typing.NotRequired[Optional[float]]
-    currentTask: typing.NotRequired[Optional[str]]
+class PacketDataStructure(typing.TypedDict, total=False):
+    job_id: Optional[str]
+    job_parameters: typing.Dict[str, SpeedwagonParamsType]
+    workflow: JobWorkflow
+    start_time: str
+    job_status: JobState
+    logs: List[JobLog]
+    progress: Optional[float]
+    currentTask: Optional[str]
 
 
 class PacketBuilder:
@@ -46,12 +48,13 @@ class PacketBuilder:
     def __init__(self) -> None:
         """Initialize no public data members."""
         super().__init__()
-        self._data: Dict[str, PacketDataType] = {}
+        self._data = PacketDataStructure()
+        # self._data: Dict[str, PacketDataType] = {}
         self._update_strategies: DefaultDict[
             str, Callable[[Optional[T], T], T]
         ] = defaultdict(lambda: lambda existing_data, new_data: new_data)
 
-    def add_items(self, **kwargs: Unpack[PacketDataType]) -> None:
+    def add_items(self, **kwargs: Unpack[PacketDataStructure]) -> None:
         """Add items to the packet.
 
         Uses a key=value format. The key will be the key for the packet.
@@ -61,13 +64,15 @@ class PacketBuilder:
 
         """
         for key, value in kwargs.items():
+            if key not in PacketDataStructure.__annotations__.keys():
+                raise ValueError(f"{key} is not a valid packet")
             existing_data = self._data.get(key)
             update_function = self._update_strategies[key]
             data = update_function(existing_data, value)
-            self._data[key] = data
+            self._data[key] = data  # type: ignore[literal-required]
 
     @staticmethod
-    def serialize(data: Dict[str, PacketDataType]) -> str:
+    def serialize(data: PacketDataStructure) -> str:
         """Serialize data to a string.
 
         Args:
@@ -84,7 +89,7 @@ class PacketBuilder:
             return None
 
         result = self.serialize(self._data)
-        self._data.clear()
+        self._data = PacketDataStructure()
         return result
 
 
@@ -92,29 +97,32 @@ class MemorizedPacketBuilder(PacketBuilder):
     def __init__(self) -> None:
         super().__init__()
         self._data_already_sent: DefaultDict[
-            str,
-            Union[None, PacketDataType]
+            str, Union[None, PacketDataStructure]
         ] = defaultdict(lambda: None)
 
-    def add_items(self, **kwargs: Unpack[PacketDataType]) -> None:
+    def add_items(self, **kwargs: Unpack[PacketDataStructure]) -> None:
         for key, value in kwargs.items():
+            if key not in PacketDataStructure.__annotations__.keys():
+                raise ValueError(f"{key} is not a valid packet")
             existing_data = self._data_already_sent.get(key)
             update_function = self._update_strategies[key]
             data = update_function(existing_data, value)
             if existing_data != data:
-                self._data[key] = data
+                self._data[key] = data  # type: ignore[literal-required]
 
     def reset_memory(self) -> None:
         self._data_already_sent.clear()
 
-    def prepare_new_data_packet(self) -> Dict[str, PacketDataType]:
-        new_data: Dict[str, PacketDataType] = {}
+    def prepare_new_data_packet(self) -> PacketDataStructure:
+        new_data = PacketDataStructure()
         for key, value in self._data.items():
+            if key not in PacketDataStructure.__annotations__.keys():
+                raise ValueError(f"{key} is not a valid packet")
             if self._data_already_sent[key] != value:
                 existing_data = self._data_already_sent[key]
                 results = None if existing_data == new_data else value
                 if results is not None:
-                    new_data[key] = results
+                    new_data[key] = results  # type: ignore[literal-required]
         return new_data
 
     def flush(self) -> Optional[str]:
@@ -123,9 +131,10 @@ class MemorizedPacketBuilder(PacketBuilder):
         new_data = self.prepare_new_data_packet()
         result = self.serialize(new_data)
         for key, value in new_data.items():
-            self._data_already_sent[key] = value
+            self._data_already_sent[key] = value  # type: ignore[assignment]
 
-        self._data.clear()
+        self._data = PacketDataStructure()
+        # self._data.clear()
         return result
 
 
@@ -138,8 +147,7 @@ class LogMemorizer:
         self, logs: typing.Iterable[JobLog]
     ) -> typing.Iterator[JobLog]:
         for log in logs:
-            log_dict = log.as_dict()
-            hash_value = hash(str(log_dict))
+            hash_value = hash(str(log))
             if hash_value in self._hashes:
                 continue
             yield log
