@@ -3,7 +3,9 @@ ARG SONAR_SCANNER_VERSION=4.8.0.2856
 ARG SONAR_INSTALL_PATH=/opt/sonar
 ARG SONAR_SCANNER_HOME=${SONAR_INSTALL_PATH}/${SONAR_SCANNER_VERSION}-linux
 ARG SONAR_USER_HOME=${SONAR_INSTALL_PATH}/.sonar
-FROM python:${PYTHON_VERSION} as base
+ARG PIPX_HOME=/pipx
+
+FROM python:${PYTHON_VERSION} AS base
 RUN apt-get update && \
     apt-get install --no-install-recommends -y nodejs npm && \
     rm -rf  /root/.cache
@@ -55,3 +57,12 @@ ARG PIP_INDEX_URL
 COPY requirements-ci.txt /tmp/python_requirements/requirements-ci.txt
 COPY requirements/ /tmp/python_requirements/requirements/
 RUN python3 -m pip install --no-cache-dir -r /tmp/python_requirements/requirements-ci.txt
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
+RUN pip3 install --no-cache-dir pipx && \
+    pipx ensurepath && \
+    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
+
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
