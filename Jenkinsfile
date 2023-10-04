@@ -69,7 +69,7 @@ pipeline {
                             filename 'ci/docker/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg SONAR_INSTALL_PATH=/opt/sonar'
-                            args '--mount source=sonar-cache-cloud,target=/opt/sonar/.sonar/cache'
+                            args '--mount source=sonar-cache-cloud,target=/opt/sonar/.sonar/cache --mount source=pip-audit-cache-speedcloud,target=/tmp/pip-audit-cache'
                           }
                     }
                     stages{
@@ -106,6 +106,13 @@ pipeline {
                                     post {
                                         always {
                                             junit 'reports/tests/pytest/pytest-junit.xml'
+                                        }
+                                    }
+                                }
+                                stage('Audit Requirement Freeze File'){
+                                    steps{
+                                        catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
+                                            sh 'pip-audit -r requirements/requirements-freeze.txt --cache-dir=/tmp/pip-audit-cache'
                                         }
                                     }
                                 }
