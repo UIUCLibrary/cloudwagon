@@ -50,7 +50,9 @@
     "setupFilesAfterEnv": [
       "<rootDir>/jest-setup.ts"
     ],
-    "collectCoverageFrom": ["src/**/*.tsx"],
+    "collectCoverageFrom": [
+      "src/**/*.tsx"
+    ],
     "moduleNameMapper": {
       "\\.(css|less)$": "identity-obj-proxy"
     }
@@ -70,6 +72,7 @@
     "@typescript-eslint/parser": "^5.60.0",
     "@vitejs/plugin-react": "^3.1.0",
     "babel-jest": "^29.0.3",
+    "babel-plugin-import": "^1.13.8",
     "eslint": "^8.42.0",
     "eslint-output": "^3.0.1",
     "eslint-plugin-sonarjs": "^0.19.0",

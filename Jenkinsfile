@@ -72,6 +72,9 @@ pipeline {
                             args '--mount source=sonar-cache-cloud,target=/opt/sonar/.sonar/cache --mount source=pip-audit-cache-speedcloud,target=/tmp/pip-audit-cache'
                           }
                     }
+                    options {
+                        retry(conditions: [agent()], count: 3)
+                    }
                     stages{
                         stage('Set up Tests') {
                             environment {
