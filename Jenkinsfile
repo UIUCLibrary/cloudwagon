@@ -74,6 +74,7 @@ pipeline {
                     }
                     options {
                         retry(conditions: [agent()], count: 3)
+                        timeout(time: 1, unit: 'DAYS')
                     }
                     stages{
                         stage('Set up Tests') {
