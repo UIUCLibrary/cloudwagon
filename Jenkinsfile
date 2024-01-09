@@ -268,13 +268,8 @@ pipeline {
                                                   coverage xml -o ./reports/python-coverage.xml
                                                   '''
                                     )
-                                    publishCoverage(
-                                        adapters: [
-                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/*coverage.xml')
-                                            ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                   )
-                                   archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
+                                    recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']])
+                                    archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
                                 }
                             }
                         }
