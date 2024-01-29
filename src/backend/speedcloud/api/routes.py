@@ -7,6 +7,7 @@ import json
 import os
 import pkg_resources
 from fastapi import APIRouter, UploadFile, Depends, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi import HTTPException
 from sse_starlette.sse import EventSourceResponse
 import aiofiles
@@ -285,10 +286,10 @@ async def abort_job(request: Request, job_id: str):
     job_runner: JobRunner = request.state.job_runner
     job_manager.set_job_state(job_id, schema.JobState.STOPPING)
     job_runner.abort(job_id)
-    return {
+    return jsonable_encoder({
         "job_id": job_id,
         "status": job_manager.get_job_queue_item(job_id).state.value
-    }
+    })
 
 
 @api.get('/followJobStatus')
