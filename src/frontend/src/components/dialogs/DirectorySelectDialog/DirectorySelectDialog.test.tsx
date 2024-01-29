@@ -192,7 +192,8 @@ describe('DirectorySelectDialog', ()=>{
     }
     render(<DirectorySelectDialog show={true} startingPath={'/'} fetchingFunction={fetchingFunction}/>)
     await waitFor(()=>expect(screen.getByRole('dialog')).toBeVisible())
-    await waitFor(()=>fireEvent.click(screen.getByRole('cell',  {name: 'some_file.png'})))
+    await waitFor(()=>expect(screen.getByRole('cell',  {name: 'some_file.png'})).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('cell',  {name: 'some_file.png'}))
     expect(
         within(
             screen.getByLabelText('selected path')
@@ -373,12 +374,13 @@ describe('DirectorySelectDialog', ()=>{
               "size": null
             },
           ]
+        }
       }
-    }
-    const result = data[path]
+      const result = data[path]
       return Promise.resolve(result)
     }
     const ref = createRef<FileSystemSelectDialogRef>()
+    await waitFor(()=>{})
     render(
         <DirectorySelectDialog show={true} ref={ref} fetchingFunction={fetchingFunction} startingPath={'/'}/>
     )
