@@ -155,7 +155,8 @@ describe('DirectorySelectDialog', ()=>{
           <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction} onAccepted={handleAccepted}/>
       )
     })
-    await waitFor(()=>fireEvent.click(screen.getByRole('cell',  {name: 'more'})))
+    await waitFor(()=>screen.getByRole('cell',  {name: 'more'}))
+    fireEvent.click(screen.getByRole('cell',  {name: 'more'}))
     jest.spyOn(console, 'error').mockImplementation(() => null);
     await waitFor(()=>fireEvent.click(screen.getByRole('button',  {name: 'Accept'})))
     await waitFor(()=>expect(handleAccepted).toBeCalledWith("/more"))
@@ -323,7 +324,9 @@ describe('DirectorySelectDialog', ()=>{
       render(
           <DirectorySelectDialog show={true} ref={ref} fetchingFunction={fetchingFunction} startingPath={'/'} onAccepted={handleAccepted}/>
       )
-      await waitFor(()=>fireEvent.click(screen.getByRole('cell', {name: 'more'})))
+
+      await waitFor(()=>expect(screen.getByRole('cell', {name: 'more'})).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('cell', {name: 'more'}))
       expect(ref.current.selectedPath).toBe('/more')
     })
   })
