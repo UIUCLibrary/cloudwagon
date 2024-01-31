@@ -53,6 +53,8 @@ pipeline {
         booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
         booleanParam defaultValue: false, description: 'Build Docker container', name: 'BUILD_DOCKER'
         booleanParam defaultValue: false, description: 'Package', name: 'PACKAGE'
+        booleanParam defaultValue: true, description: 'Include x86_64 in building and testing', name: 'INCLUDE-x86_64'
+        booleanParam defaultValue: false, description: 'Include ARM64 in building and testing', name: 'INCLUDE-arm64'
         booleanParam defaultValue: false, description: 'Publish Docker Image to registry', name: 'PUBLISH_DOCKER'
     }
     stages {
@@ -436,9 +438,12 @@ pipeline {
                 axes {
                     axis {
                         name 'ARCH'
-//                         values 'x86'
-                        values 'arm', 'x86'
+                        values 'arm64', 'x86_64'
                     }
+                }
+                when{
+                    equals expected: true, actual: params["INCLUDE-${ARCH}"]
+                    beforeAgent true
                 }
                 stages{
                     stage('Build for Architecture'){
