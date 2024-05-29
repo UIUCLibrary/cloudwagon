@@ -1,3 +1,8 @@
+library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
+  [$class: 'GitSCMSource',
+   remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
+   ])
+
 def startup(){
 
     parallel(
@@ -356,23 +361,20 @@ pipeline {
                     }
                     steps{
                         script{
-                            def tox = fileLoader.fromGit(
-                                        'tox',
-                                        'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-                                        '8',
-                                        null,
-                                        ''
-                                    )
-                            parallel(
-                                tox.getToxTestsParallel(
+                            def linuxJobs
+                            stage('Scanning Tox Environments'){
+                                linuxJobs = getToxTestsParallel(
                                     envNamePrefix: 'Tox Linux',
                                     label: 'linux && docker && x86',
                                     dockerfile: 'ci/docker/tox/linux/Dockerfile',
                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_CACHE_DIR=/.cache/pip',
                                     dockerRunArgs: "-v pipcache_dockerSpeedwagon:/.cache/pip",
                                     retry: 2
-                                    )
                                 )
+                            }
+                            stage('Run Tox'){
+                                parallel(linuxJobs)
+                            }
                         }
                     }
                 }
