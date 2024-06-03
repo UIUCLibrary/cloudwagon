@@ -1,12 +1,13 @@
 import asyncio
 import logging
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, Mapping
 from unittest.mock import Mock, AsyncMock, MagicMock, ANY, call
 
 import speedwagon
 from speedwagon.tasks import TaskBuilder, Result
 
 import speedcloud.job_manager
+import speedcloud.workflow_manager
 from speedcloud.api import schema
 import pytest
 
@@ -85,7 +86,15 @@ class TestJobRunner:
 
     @pytest.fixture()
     def job_runner(self, queue, monkeypatch):
-        runner = speedcloud.job_manager.JobRunner(queue, storage_root='.')
+        workflow_manager = Mock(
+            spec_set=speedcloud.workflow_manager.AbsWorkflowManager,
+            get_workflow_info_by_id=Mock(return_value={"parameters": []})
+        )
+        runner = speedcloud.job_manager.JobRunner(
+            queue,
+            storage_root='.',
+            workflow_manager=workflow_manager
+        )
 
         async def execute_job():
             return schema.JobState.SUCCESS
@@ -172,16 +181,19 @@ class TestAsyncJobExecutor:
 
     class MyWorkflow(speedwagon.Workflow):
 
-        def create_new_task(self, task_builder: TaskBuilder, **job_args) -> None:
+        def create_new_task(self, task_builder: TaskBuilder, job_args) -> None:
             task_builder.add_subtask(TestAsyncJobExecutor.SampleTask())
-            super().create_new_task(task_builder, **job_args)
+            super().create_new_task(task_builder, job_args)
 
         @classmethod
-        def generate_report(cls, results: List[Result], **user_args) -> Optional[str]:
+        def generate_report(cls, results: List[Result], user_args) -> Optional[str]:
             return f"I got {results}"
 
-        def discover_task_metadata(self, initial_results: List[Any], additional_data: Dict[str, Any],
-                                   **user_args) -> List[dict]:
+        def discover_task_metadata(
+                self,
+                initial_results: List[Any],
+                additional_data: Mapping[str, Any],
+                user_args) -> List[dict]:
             return [
                 {"dummy": True},
                 {"dummy2": True},
