@@ -93,9 +93,8 @@ describe('SubmitJob', () => {
         await waitFor(() => {
             return waitForElementToBeRemoved(() => screen.queryByText('Loading...'));
         });
-
-        fireEvent.mouseDown(screen.getAllByRole('button')[0])
-        expect(screen.getByText('Dummy Workflow')).toBeInTheDocument()
+        fireEvent.mouseDown(await screen.findByRole('combobox'))
+        expect(await screen.findByRole('option', {name: "Dummy Workflow"})).toBeInTheDocument()
     })
     test('select existing', async () => {
         render(
