@@ -392,6 +392,9 @@ pipeline {
                             label 'linux && docker'
                         }
                     }
+                    options{
+                        retry(2)
+                    }
                     environment {
                         npm_config_cache = '/tmp/npm-cache'
                     }
