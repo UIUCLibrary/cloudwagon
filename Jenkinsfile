@@ -392,7 +392,7 @@ pipeline {
                             label 'linux && docker'
                         }
                     }
-                    option{
+                    options{
                         retry(2)
                     }
                     environment {
