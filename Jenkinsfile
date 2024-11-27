@@ -83,12 +83,35 @@ pipeline {
                         retry(conditions: [agent()], count: 3)
                         timeout(time: 1, unit: 'DAYS')
                     }
+                    environment {
+                        npm_config_cache = '/tmp/npm-cache'
+                        PIP_CACHE_DIR='/tmp/pipcache'
+                        UV_PYTHON = '3.11'
+                        UV_CACHE_DIR='/tmp/uvcache'
+                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                        UV_TOOL_DIR='/tmp/uvtools'
+                        UV_INDEX_STRATEGY='unsafe-best-match'
+                    }
                     stages{
                         stage('Set up Tests') {
-                            environment {
-                                npm_config_cache = '/tmp/npm-cache'
-                            }
                             steps{
+                                sh(
+                                    label: 'Create virtual environment',
+                                    script: '''python3 -m venv bootstrap_uv
+                                               bootstrap_uv/bin/pip install --disable-pip-version-check uv
+                                               bootstrap_uv/bin/uv venv venv
+                                               . ./venv/bin/activate
+                                               bootstrap_uv/bin/uv pip install uv
+                                               rm -rf bootstrap_uv
+                                               uv pip install -r requirements-ci.txt
+                                               '''
+                                           )
+                                sh(
+                                    label: 'Install package in development mode',
+                                    script: '''. ./venv/bin/activate
+                                               uv pip install -e .
+                                            '''
+                                    )
                                 cache(maxCacheSize: 1000, caches: [
                                     arbitraryFileCache(
                                         path: 'node_modules',
@@ -110,7 +133,9 @@ pipeline {
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                             sh(
-                                                script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                                script: '''. ./venv/bin/activate
+                                                           coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml
+                                                        '''
                                             )
                                         }
                                     }
@@ -123,14 +148,17 @@ pipeline {
                                 stage('Audit Requirement Freeze File'){
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh 'pip-audit -r requirements/requirements-freeze.txt --cache-dir=/tmp/pip-audit-cache'
+                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements/requirements-freeze.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
                                         }
                                     }
                                 }
                                 stage('Flake8') {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                            sh script: 'flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log'
+                                            sh(label: 'Run Flake8',
+                                               script: '''. ./venv/bin/activate
+                                                          flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log
+                                                       ''')
                                         }
                                     }
                                     post {
@@ -146,7 +174,8 @@ pipeline {
                                                 catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
                                                     sh(
                                                         label: "Running MyPy",
-                                                        script: '''mypy --version
+                                                        script: '''. ./venv/bin/activate
+                                                                   mypy --version
                                                                    mkdir -p reports/mypy/html
                                                                    mkdir -p logs
                                                                    mypy -p speedcloud --html-report reports/mypy/html --linecoverage-report reports/mypy/linecoverage
@@ -172,7 +201,9 @@ pipeline {
                                             tee('reports/pydocstyle-report.txt'){
                                                 sh(
                                                     label: 'Run pydocstyle',
-                                                    script: 'pydocstyle src/backend/speedcloud'
+                                                    script: '''. ./venv/bin/activate
+                                                               pydocstyle src/backend/speedcloud
+                                                            '''
                                                 )
                                             }
                                         }
@@ -186,18 +217,21 @@ pipeline {
                                 stage('Pylint') {
                                     steps{
                                         withEnv(['PYLINTHOME=.']) {
-                                            sh 'pylint --version'
                                             catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                                 tee('reports/pylint_issues.txt'){
                                                     sh(
                                                         label: 'Running pylint',
-                                                        script: 'pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                        script: '''. ./venv/bin/activate
+                                                                   pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+                                                                ''',
                                                     )
                                                 }
                                             }
                                             sh(
                                                 label: 'Running pylint for sonarqube',
-                                                script: 'pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                                script: '''. ./venv/bin/activate
+                                                           pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt
+                                                        ''',
                                                 returnStatus: true
                                             )
                                         }
@@ -267,13 +301,16 @@ pipeline {
                             }
                             post{
                                 unsuccessful{
-                                    sh 'pip list'
+                                    sh '''. ./venv/bin/activate
+                                          uv pip list
+                                       '''
                                 }
                                 always{
                                     sh(label: 'combining coverage data',
-                                       script: '''coverage combine
+                                       script: '''. ./venv/bin/activate
+                                                  coverage combine
                                                   coverage xml -o ./reports/python-coverage.xml
-                                                  '''
+                                               '''
                                     )
                                     recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']])
                                     archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
@@ -346,6 +383,7 @@ pipeline {
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
+                                    [pattern: 'venv/', type: 'INCLUDE'],
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
