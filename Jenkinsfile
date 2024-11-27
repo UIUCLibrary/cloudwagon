@@ -3,50 +3,16 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
    remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
    ])
 
-def startup(){
+def get_sonarqube_unresolved_issues(report_task_file){
+    script{
 
-    parallel(
-    [
-        failFast: true,
-        'Loading Reference Build Information': {
-            node(){
-                checkout scm
-                discoverGitReferenceBuild(latestBuildIfNotFound: true)
-            }
-        },
-        'Enable Git Forensics': {
-            node(){
-                checkout scm
-                mineRepository()
-            }
-        },
-        'Getting Distribution Info': {
-            node('linux && docker') {
-                timeout(2){
-                    ws{
-                        checkout scm
-                        try{
-                            docker.image('python').inside {
-                                withEnv(['PIP_NO_CACHE_DIR=off']) {
-                                    sh(
-                                       label: 'Running setup.py with dist_info',
-                                       script: 'python setup.py dist_info'
-                                    )
-                                }
-                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                                archiveArtifacts artifacts: '*.dist-info/**'
-                            }
-                        } finally{
-                            deleteDir()
-                        }
-                    }
-                }
-            }
-        }
-    ]
-    )
-
+        def props = readProperties  file: '.scannerwork/report-task.txt'
+        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        def outstandingIssues = readJSON text: response.content
+        return outstandingIssues
+    }
 }
+
 
 pipeline {
     agent none
@@ -83,12 +49,36 @@ pipeline {
                         retry(conditions: [agent()], count: 3)
                         timeout(time: 1, unit: 'DAYS')
                     }
+                    environment {
+                        npm_config_cache = '/tmp/npm-cache'
+                        PIP_CACHE_DIR='/tmp/pipcache'
+                        UV_PYTHON = '3.11'
+                        UV_CACHE_DIR='/tmp/uvcache'
+                        UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                        UV_TOOL_DIR='/tmp/uvtools'
+                        UV_INDEX_STRATEGY='unsafe-best-match'
+                    }
                     stages{
                         stage('Set up Tests') {
-                            environment {
-                                npm_config_cache = '/tmp/npm-cache'
-                            }
                             steps{
+                                mineRepository()
+                                sh(
+                                    label: 'Create virtual environment',
+                                    script: '''python3 -m venv bootstrap_uv
+                                               bootstrap_uv/bin/pip install --disable-pip-version-check uv
+                                               bootstrap_uv/bin/uv venv venv
+                                               . ./venv/bin/activate
+                                               bootstrap_uv/bin/uv pip install uv
+                                               rm -rf bootstrap_uv
+                                               uv pip install -r requirements-ci.txt
+                                               '''
+                                           )
+                                sh(
+                                    label: 'Install package in development mode',
+                                    script: '''. ./venv/bin/activate
+                                               uv pip install -e .
+                                            '''
+                                    )
                                 cache(maxCacheSize: 1000, caches: [
                                     arbitraryFileCache(
                                         path: 'node_modules',
@@ -110,7 +100,9 @@ pipeline {
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                             sh(
-                                                script: 'coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
+                                                script: '''. ./venv/bin/activate
+                                                           coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml
+                                                        '''
                                             )
                                         }
                                     }
@@ -123,14 +115,17 @@ pipeline {
                                 stage('Audit Requirement Freeze File'){
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh 'pip-audit -r requirements/requirements-freeze.txt --cache-dir=/tmp/pip-audit-cache'
+                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements/requirements-freeze.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
                                         }
                                     }
                                 }
                                 stage('Flake8') {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
-                                            sh script: 'flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log'
+                                            sh(label: 'Run Flake8',
+                                               script: '''. ./venv/bin/activate
+                                                          flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log
+                                                       ''')
                                         }
                                     }
                                     post {
@@ -146,7 +141,8 @@ pipeline {
                                                 catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
                                                     sh(
                                                         label: "Running MyPy",
-                                                        script: '''mypy --version
+                                                        script: '''. ./venv/bin/activate
+                                                                   mypy --version
                                                                    mkdir -p reports/mypy/html
                                                                    mkdir -p logs
                                                                    mypy -p speedcloud --html-report reports/mypy/html --linecoverage-report reports/mypy/linecoverage
@@ -172,7 +168,9 @@ pipeline {
                                             tee('reports/pydocstyle-report.txt'){
                                                 sh(
                                                     label: 'Run pydocstyle',
-                                                    script: 'pydocstyle src/backend/speedcloud'
+                                                    script: '''. ./venv/bin/activate
+                                                               pydocstyle src/backend/speedcloud
+                                                            '''
                                                 )
                                             }
                                         }
@@ -186,18 +184,21 @@ pipeline {
                                 stage('Pylint') {
                                     steps{
                                         withEnv(['PYLINTHOME=.']) {
-                                            sh 'pylint --version'
                                             catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                                 tee('reports/pylint_issues.txt'){
                                                     sh(
                                                         label: 'Running pylint',
-                                                        script: 'pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                        script: '''. ./venv/bin/activate
+                                                                   pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+                                                                ''',
                                                     )
                                                 }
                                             }
                                             sh(
                                                 label: 'Running pylint for sonarqube',
-                                                script: 'pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
+                                                script: '''. ./venv/bin/activate
+                                                           pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt
+                                                        ''',
                                                 returnStatus: true
                                             )
                                         }
@@ -267,13 +268,16 @@ pipeline {
                             }
                             post{
                                 unsuccessful{
-                                    sh 'pip list'
+                                    sh '''. ./venv/bin/activate
+                                          uv pip list
+                                       '''
                                 }
                                 always{
                                     sh(label: 'combining coverage data',
-                                       script: '''coverage combine
+                                       script: '''. ./venv/bin/activate
+                                                  coverage combine
                                                   coverage xml -o ./reports/python-coverage.xml
-                                                  '''
+                                               '''
                                     )
                                     recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']])
                                     archiveArtifacts( allowEmptyArchive: true, artifacts: 'reports/')
@@ -283,6 +287,11 @@ pipeline {
                         stage('Run Sonarqube Analysis'){
                             options{
                                 lock('cloudwagon-sonarscanner')
+                            }
+                            environment{
+                                PACKAGE_VERSION="${readTOML( file: 'pyproject.toml')['project'].version}"
+                                PACKAGE_NAME="${readTOML( file: 'pyproject.toml')['project'].name}"
+                                SONAR_USER_HOME='/tmp/sonar'
                             }
                             when{
                                 allOf{
@@ -301,38 +310,22 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    def sonarqube = load('ci/jenkins/scripts/sonarqube.groovy')
-                                    def sonarqubeConfig = [
-                                                installationName: 'sonarcloud',
-                                                credentialsId: params.SONARCLOUD_TOKEN,
-                                            ]
-                                    def packageName = sh(script: 'grep "^name = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
-                                    def packageVersion = sh(script: 'grep "^version = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
-                                    milestone label: 'sonarcloud'
-                                    if (env.CHANGE_ID){
-                                        sonarqube.submitToSonarcloud(
-                                            artifactStash: 'sonarqube artifacts',
-                                            sonarqube: sonarqubeConfig,
-                                            pullRequest: [
-                                                source: env.CHANGE_ID,
-                                                destination: env.BRANCH_NAME,
-                                            ],
-                                            package: [
-                                                version: packageVersion,
-                                                name: packageName,
-                                            ],
-                                        )
-                                    } else {
-                                        sonarqube.submitToSonarcloud(
-                                            artifactStash: 'sonarqube artifacts',
-                                            sonarqube: sonarqubeConfig,
-                                            package: [
-                                                version: packageVersion,
-                                                name: packageName
-                                            ]
-                                        )
-                                    }
-                                }
+                                   withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                       sh(
+                                           label: 'Running Sonar Scanner',
+                                           script: "./venv/bin/uvx pysonar-scanner -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                       )
+                                   }
+                                   timeout(time: 1, unit: 'HOURS') {
+                                       def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                       if (sonarqube_result.status != 'OK') {
+                                           unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                       }
+                                       def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                       writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                   }
+                                   milestone label: 'sonarcloud'
+                               }
                             }
                             post {
                                 always{
@@ -346,6 +339,7 @@ pipeline {
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
+                                    [pattern: 'venv/', type: 'INCLUDE'],
                                     [pattern: 'main/', type: 'INCLUDE'],
                                     [pattern: 'coverage/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
@@ -359,24 +353,78 @@ pipeline {
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
-                    steps{
-                        script{
-                            def linuxJobs
-                            stage('Scanning Tox Environments'){
-                                linuxJobs = getToxTestsParallel(
-                                    envNamePrefix: 'Tox Linux',
-                                    label: 'linux && docker && x86',
-                                    dockerfile: 'ci/docker/tox/linux/Dockerfile',
-                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_CACHE_DIR=/.cache/pip',
-                                    dockerRunArgs: "-v pipcache_dockerSpeedwagon:/.cache/pip",
-                                    retry: 2
+                    environment{
+                            PIP_CACHE_DIR='/tmp/pipcache'
+                            UV_INDEX_STRATEGY='unsafe-best-match'
+                            UV_TOOL_DIR='/tmp/uvtools'
+                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                            UV_CACHE_DIR='/tmp/uvcache'
+                        }
+                        steps{
+                            script{
+                                def envs = []
+                                node('docker && linux'){
+                                    docker.image('python').inside('--mount source=python-tmp-uvcache-cloudwagon,target=/tmp'){
+                                        try{
+                                            checkout scm
+                                            sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
+                                            envs = sh(
+                                                label: 'Get tox environments',
+                                                script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                returnStdout: true,
+                                            ).trim().split('\n')
+                                        } finally{
+                                            cleanWs(
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                    [pattern: '.tox', type: 'INCLUDE'],
+                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
+                                parallel(
+                                    envs.collectEntries{toxEnv ->
+                                        def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                        [
+                                            "Tox Environment: ${toxEnv}",
+                                            {
+                                                node('docker && linux'){
+                                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
+                                                        checkout scm
+                                                        try{
+                                                            sh( label: 'Running Tox',
+                                                                script: """python3 -m venv venv
+                                                                           trap "rm -rf venv" EXIT
+                                                                           venv/bin/pip install --disable-pip-version-check uv
+                                                                           venv/bin/uv python install cpython-${version}
+                                                                           venv/bin/uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                        """
+                                                                )
+                                                        } catch(e) {
+                                                            sh(script: '''. ./venv/bin/activate
+                                                                  uv python list
+                                                                  '''
+                                                                    )
+                                                            throw e
+                                                        } finally{
+                                                            cleanWs(
+                                                                patterns: [
+                                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                                    [pattern: '.tox', type: 'INCLUDE'],
+                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                ]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
                                 )
                             }
-                            stage('Run Tox'){
-                                parallel(linuxJobs)
-                            }
                         }
-                    }
                 }
             }
         }
