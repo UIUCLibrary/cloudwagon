@@ -115,7 +115,7 @@ pipeline {
                                 stage('Audit Requirement Freeze File'){
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements/requirements-freeze.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
+                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
                                         }
                                     }
                                 }
