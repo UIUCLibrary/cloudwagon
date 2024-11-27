@@ -1,8 +1,4 @@
 ARG PYTHON_VERSION="3.11"
-ARG SONAR_SCANNER_VERSION=5.0.1.3006
-ARG SONAR_INSTALL_PATH=/opt/sonar
-ARG SONAR_SCANNER_HOME=${SONAR_INSTALL_PATH}/${SONAR_SCANNER_VERSION}-linux
-ARG SONAR_USER_HOME=${SONAR_INSTALL_PATH}/.sonar
 ARG PIPX_HOME=/pipx
 
 FROM python:${PYTHON_VERSION} AS base
@@ -21,33 +17,9 @@ RUN wget --progress=dot:giga -O /bin/hadolint https://github.com/hadolint/hadoli
     chmod +x /bin/hadolint && \
     hadolint --version
 #==============================================================================
-FROM base AS SONAR_BUILDER
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip
-ARG SONAR_SCANNER_VERSION
-ARG SONAR_INSTALL_PATH
-ARG SONAR_USER_HOME
-RUN curl --create-dirs -sSLo /tmp/sonar-scanner.zip \
-        https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux.zip && \
-    unzip -o /tmp/sonar-scanner.zip -d ${SONAR_INSTALL_PATH}/ && \
-    rm /tmp/sonar-scanner.zip && \
-    mkdir -p $SONAR_USER_HOME/cache && \
-    chmod -R 777 "${SONAR_USER_HOME}" &&\
-    ln -s ${SONAR_INSTALL_PATH}/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
-    which sonar-scanner
 
-#==============================================================================
 FROM base
 
-ARG SONAR_INSTALL_PATH
-COPY --from=SONAR_BUILDER ${SONAR_INSTALL_PATH} "${SONAR_INSTALL_PATH}/"
-ARG SONAR_SCANNER_VERSION
-ARG SONAR_USER_HOME
-RUN ln -s ${SONAR_INSTALL_PATH}/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
-    which sonar-scanner && \
-    mkdir -p $SONAR_USER_HOME/cache && \
-    chmod -R 777 "${SONAR_USER_HOME}"
-ENV SONAR_USER_HOME=${SONAR_USER_HOME}
 COPY --from=hadolint_installer /bin/hadolint /bin/hadolint
 RUN chmod +x /bin/hadolint &&  \
     hadolint --version
