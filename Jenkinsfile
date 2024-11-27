@@ -518,7 +518,7 @@ pipeline {
                                                 withEnv(["PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']}"]) {
                                                     docker.build(
                                                         env.DOCKER_IMAGE_TEMP_NAME,
-                                                        '-f src/backend/Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL .'
+                                                        '-f src/backend/Dockerfile --build-arg UV_EXTRA_INDEX_URL .'
                                                         ).withRun('-p 8000:80'){ c->
                                                             docker.image('python').inside("--link ${c.id}:db") {
                                                                 withEnv(['PIP_NO_CACHE_DIR=off']) {

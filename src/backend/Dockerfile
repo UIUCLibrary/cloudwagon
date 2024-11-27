@@ -1,34 +1,24 @@
 FROM python:3.11 AS baseimage
 
-FROM baseimage AS builder
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-COPY requirements.txt /tmp/python_requirements/requirements.txt
-
-RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip wheel --no-cache-dir -r /tmp/python_requirements/requirements.txt -w /wheels
-
-COPY src/backend/speedcloud /tmp/project/src/backend/speedcloud/
-COPY pyproject.toml /tmp/project
-
-# hadolint ignore=DL3013
-RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install --no-cache-dir build && \
-    python -m build /tmp/project --outdir /wheels/
-
-
 FROM baseimage
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-
-COPY --from=builder /tmp/python_requirements /tmp/python_requirements
-COPY --from=builder /wheels/*.whl /wheels/
-RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip --mount=type=secret,id=netrc,dst=/root/.netrc \
-    pip install --no-cache-dir -r tmp/python_requirements/requirements.txt -v --find-links=/wheels && \
-    pip install --no-cache-dir --find-links=/wheels speedcloud
+ARG UV_EXTRA_INDEX_URL
+ARG UV_INDEX_URL
 
 WORKDIR /opt/speedcloud
+COPY requirements.txt /opt/speedcloud/requirements.txt
+COPY pyproject.toml /opt/speedcloud/pyproject.toml
+COPY src/backend/ /opt/speedcloud/src/backend/
+
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
+    --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
+    python -m venv venv && \
+    venv/bin/pip install uv --disable-pip-version-check && \
+    venv/bin/uv pip install --index-strategy unsafe-best-match --system -v -r /opt/speedcloud/requirements.txt . && \
+    rm -rf venv
+
 RUN mkdir -p /opt/speedcloud/data/
 COPY src/backend/extra/docker/docker_config.toml /etc/speedcloud/config.toml
 COPY src/backend/extra/docker/log_info.yaml /etc/speedcloud/log_config.yaml
