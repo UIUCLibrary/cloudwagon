@@ -70,7 +70,7 @@ pipeline {
                                                . ./venv/bin/activate
                                                bootstrap_uv/bin/uv pip install uv
                                                rm -rf bootstrap_uv
-                                               uv pip install -r requirements-ci.txt
+                                               uv pip install -r requirements-dev.txt
                                                '''
                                            )
                                 sh(
