@@ -359,24 +359,78 @@ pipeline {
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
-                    steps{
-                        script{
-                            def linuxJobs
-                            stage('Scanning Tox Environments'){
-                                linuxJobs = getToxTestsParallel(
-                                    envNamePrefix: 'Tox Linux',
-                                    label: 'linux && docker && x86',
-                                    dockerfile: 'ci/docker/tox/linux/Dockerfile',
-                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_CACHE_DIR=/.cache/pip',
-                                    dockerRunArgs: "-v pipcache_dockerSpeedwagon:/.cache/pip",
-                                    retry: 2
+                    environment{
+                            PIP_CACHE_DIR='/tmp/pipcache'
+                            UV_INDEX_STRATEGY='unsafe-best-match'
+                            UV_TOOL_DIR='/tmp/uvtools'
+                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                            UV_CACHE_DIR='/tmp/uvcache'
+                        }
+                        steps{
+                            script{
+                                def envs = []
+                                node('docker && linux'){
+                                    docker.image('python').inside('--mount source=python-tmp-uvcache-cloudwagon,target=/tmp'){
+                                        try{
+                                            checkout scm
+                                            sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
+                                            envs = sh(
+                                                label: 'Get tox environments',
+                                                script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                returnStdout: true,
+                                            ).trim().split('\n')
+                                        } finally{
+                                            cleanWs(
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                    [pattern: '.tox', type: 'INCLUDE'],
+                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
+                                parallel(
+                                    envs.collectEntries{toxEnv ->
+                                        def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                        [
+                                            "Tox Environment: ${toxEnv}",
+                                            {
+                                                node('docker && linux'){
+                                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
+                                                        checkout scm
+                                                        try{
+                                                            sh( label: 'Running Tox',
+                                                                script: """python3 -m venv venv
+                                                                           trap "rm -rf venv" EXIT
+                                                                           venv/bin/pip install --disable-pip-version-check uv
+                                                                           venv/bin/uv python install cpython-${version}
+                                                                           venv/bin/uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                        """
+                                                                )
+                                                        } catch(e) {
+                                                            sh(script: '''. ./venv/bin/activate
+                                                                  uv python list
+                                                                  '''
+                                                                    )
+                                                            throw e
+                                                        } finally{
+                                                            cleanWs(
+                                                                patterns: [
+                                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                                    [pattern: '.tox', type: 'INCLUDE'],
+                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                ]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
                                 )
                             }
-                            stage('Run Tox'){
-                                parallel(linuxJobs)
-                            }
                         }
-                    }
                 }
             }
         }
