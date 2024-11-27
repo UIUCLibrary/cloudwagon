@@ -1,6 +1,4 @@
-ARG PYTHON_VERSION="3.11"
-
-FROM python:${PYTHON_VERSION} AS base
+FROM python:latest AS base
 RUN apt-get update && \
     apt-get install --no-install-recommends -y nodejs npm && \
     rm -rf  /root/.cache
