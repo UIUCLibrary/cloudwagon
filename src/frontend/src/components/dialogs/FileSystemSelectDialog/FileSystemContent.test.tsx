@@ -46,7 +46,7 @@ describe('FileSystemContent', ()=>{
     expect(
         within(
             screen.getByRole('row', {name: "dummy Directory"})
-        ).getByRole('cell', {name: 'dummy'})
+        ).getByRole('gridcell', {name: 'dummy'})
     ).toBeInTheDocument()
   })
   test('test item accepted callback', ()=>{

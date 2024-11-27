@@ -60,7 +60,7 @@ describe('FileSystemSelectDialog', ()=>{
                     show={true}
                 />
             )
-            fireEvent.click(screen.getByRole('cell', {name: "123"}))
+            fireEvent.click(screen.getByRole('gridcell', {name: "123"}))
             expect(dummyRef.current.selectedItem.name).toBe("123")
         })
     })

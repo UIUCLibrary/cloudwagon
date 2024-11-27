@@ -123,7 +123,7 @@ describe('DirectorySelectDialog', ()=>{
         <DirectorySelectDialog show={true} startingPath={'/'} fetchingFunction={fetchingFunction}/>
     )
     await waitFor(()=>{
-      return expect(screen.getByRole('cell', {name: 'more'})).toBeVisible()
+      return expect(screen.getByRole('gridcell', {name: 'more'})).toBeVisible()
     })
   })
   test('onAccepted calls selected with correct value', async ()=>{
@@ -155,8 +155,8 @@ describe('DirectorySelectDialog', ()=>{
           <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction} onAccepted={handleAccepted}/>
       )
     })
-    await waitFor(()=>screen.getByRole('cell',  {name: 'more'}))
-    fireEvent.click(screen.getByRole('cell',  {name: 'more'}))
+    await waitFor(()=>screen.getByRole('gridcell',  {name: 'more'}))
+    fireEvent.click(screen.getByRole('gridcell',  {name: 'more'}))
     jest.spyOn(console, 'error').mockImplementation(() => null);
     await waitFor(()=>fireEvent.click(screen.getByRole('button',  {name: 'Accept'})))
     await waitFor(()=>expect(handleAccepted).toBeCalledWith("/more"))
@@ -193,8 +193,8 @@ describe('DirectorySelectDialog', ()=>{
     }
     render(<DirectorySelectDialog show={true} startingPath={'/'} fetchingFunction={fetchingFunction}/>)
     await waitFor(()=>expect(screen.getByRole('dialog')).toBeVisible())
-    await waitFor(()=>expect(screen.getByRole('cell',  {name: 'some_file.png'})).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('cell',  {name: 'some_file.png'}))
+    await waitFor(()=>expect(screen.getByRole('gridcell',  {name: 'some_file.png'})).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('gridcell',  {name: 'some_file.png'}))
     expect(
         within(
             screen.getByLabelText('selected path')
@@ -325,8 +325,8 @@ describe('DirectorySelectDialog', ()=>{
           <DirectorySelectDialog show={true} ref={ref} fetchingFunction={fetchingFunction} startingPath={'/'} onAccepted={handleAccepted}/>
       )
 
-      await waitFor(()=>expect(screen.getByRole('cell', {name: 'more'})).toBeInTheDocument())
-      fireEvent.click(screen.getByRole('cell', {name: 'more'}))
+      await waitFor(()=>expect(screen.getByRole('gridcell', {name: 'more'})).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('gridcell', {name: 'more'}))
       expect(ref.current.selectedPath).toBe('/more')
     })
   })
@@ -387,8 +387,8 @@ describe('DirectorySelectDialog', ()=>{
     render(
         <DirectorySelectDialog show={true} ref={ref} fetchingFunction={fetchingFunction} startingPath={'/'}/>
     )
-    await waitFor(()=>fireEvent.doubleClick(screen.getByRole('cell', {name: 'some_path'})))
-    await waitFor(()=>expect(screen.getByRole('cell', {name: 'more'})).toBeVisible())
+    await waitFor(()=>fireEvent.doubleClick(screen.getByRole('gridcell', {name: 'some_path'})))
+    await waitFor(()=>expect(screen.getByRole('gridcell', {name: 'more'})).toBeVisible())
     await waitFor(()=>fireEvent.click(screen.getByRole('button', {name: 'Cancel'})))
     expect(ref.current.selectedPath).toBe(null)
     expect(ref.current.currentPath).toBe(null)

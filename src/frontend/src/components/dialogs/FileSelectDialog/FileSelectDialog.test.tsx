@@ -20,6 +20,6 @@ describe('FileSelectDialog', ()=>{
     render(<FileSelectDialog show={true} startingPath={'/'} fetchingFunction={fetchingFunction}/>)
     await waitFor(()=>expect(screen.getByRole('dialog')).toBeVisible())
     await waitFor(()=>expect(screen.getByText('Select a File')).toBeVisible())
-    await waitFor(()=>expect(screen.getByRole('cell', {name: 'something.png'})).toBeVisible())
+    await waitFor(()=>expect(screen.getByRole('gridcell', {name: 'something.png'})).toBeVisible())
   })
 })
