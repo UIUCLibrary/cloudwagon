@@ -8,4 +8,4 @@ tomlkit
 uvicorn
 sse_starlette
 websockets
-speedwagon>=0.3.0b5
+speedwagon==0.4.0b7

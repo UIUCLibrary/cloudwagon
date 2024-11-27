@@ -6,9 +6,8 @@ import {
   GridRowParams,
   GridValidRowModel
 } from '@mui/x-data-grid';
-import LinearProgress from '@mui/material/LinearProgress';
 import {
-  GridRenderCellParams, GridValueFormatterParams
+  GridRenderCellParams
 } from '@mui/x-data-grid/models/params/gridCellParams';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import Box from '@mui/material/Box';
@@ -23,11 +22,11 @@ export interface FileSystemContentRef {
   rowCount: number
 }
 
-const fileSizeFormatter = (params: GridValueFormatterParams<number>) => {
-  if (params.value == null) {
+const fileSizeFormatter = (value: string) => {
+  if (value == null) {
     return '';
   }
-  return `${params.value} bytes`
+  return `${value} bytes`
 }
 
 const formatWithIcon = (params: GridRenderCellParams<any, any, any>) => {
@@ -46,8 +45,8 @@ const formatWithIcon = (params: GridRenderCellParams<any, any, any>) => {
       return <><PortraitOutlinedIcon/><Box sx={{pl: 1}}>{params.value}</Box></>
     }
     if (params.value.endsWith('.txt')) {
-      return <><TextSnippetOutlinedIcon/><Box
-          sx={{pl: 1}}>{params.value}</Box></>
+
+        return <><TextSnippetOutlinedIcon/><Box sx={{pl: 1}}>{params.value}</Box></>
     }
     return <><InsertDriveFileOutlinedIcon/><Box
         sx={{pl: 1}}>{params.value}</Box></>
@@ -163,6 +162,7 @@ export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSel
       flex: 0.5,
       minWidth: 250,
       editable: false,
+      display: 'flex',
       renderCell: formatWithIcon
     },
     {
@@ -218,15 +218,14 @@ export const FolderContentBrowser = forwardRef(({loading, folderContent, itemSel
               type: true,
               location: false
             }}
-            components={{
-              LoadingOverlay: LinearProgress,
+            slotProps={{
+
+              loadingOverlay: {
+                role: 'progressBar',
+                variant: 'linear-progress',
+              },
             }}
             loading={loading}
-            componentsProps={
-              {
-                loadingOverlay: {role: 'progressBar'},
-              }
-            }
             onRowClick={
               (params: GridRowParams<IFile>): void => {
                 if (!loading) {

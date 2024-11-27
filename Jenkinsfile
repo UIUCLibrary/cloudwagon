@@ -70,7 +70,7 @@ pipeline {
                                                . ./venv/bin/activate
                                                bootstrap_uv/bin/uv pip install uv
                                                rm -rf bootstrap_uv
-                                               uv pip install -r requirements-ci.txt
+                                               uv pip install -r requirements-dev.txt
                                                '''
                                            )
                                 sh(
@@ -115,7 +115,7 @@ pipeline {
                                 stage('Audit Requirement Freeze File'){
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements/requirements-freeze.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
+                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
                                         }
                                     }
                                 }
@@ -518,7 +518,7 @@ pipeline {
                                                 withEnv(["PIP_EXTRA_INDEX_URL=${readProperties(file: PYPI_PROPS)['PYPI_URL']}"]) {
                                                     docker.build(
                                                         env.DOCKER_IMAGE_TEMP_NAME,
-                                                        '-f src/backend/Dockerfile --secret id=netrc,src=$NETRC --build-arg PIP_EXTRA_INDEX_URL .'
+                                                        '-f src/backend/Dockerfile --build-arg UV_EXTRA_INDEX_URL .'
                                                         ).withRun('-p 8000:80'){ c->
                                                             docker.image('python').inside("--link ${c.id}:db") {
                                                                 withEnv(['PIP_NO_CACHE_DIR=off']) {
