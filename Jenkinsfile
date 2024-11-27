@@ -3,6 +3,16 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
    remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
    ])
 
+def get_sonarqube_unresolved_issues(report_task_file){
+    script{
+
+        def props = readProperties  file: '.scannerwork/report-task.txt'
+        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        def outstandingIssues = readJSON text: response.content
+        return outstandingIssues
+    }
+}
+
 def startup(){
 
     parallel(
@@ -321,6 +331,11 @@ pipeline {
                             options{
                                 lock('cloudwagon-sonarscanner')
                             }
+                            environment{
+                                PACKAGE_VERSION="${readTOML( file: 'pyproject.toml')['project'].version}"
+                                PACKAGE_NAME="${readTOML( file: 'pyproject.toml')['project'].name}"
+                                SONAR_USER_HOME='/tmp/sonar'
+                            }
                             when{
                                 allOf{
                                     equals expected: true, actual: params.USE_SONARQUBE
@@ -338,38 +353,22 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    def sonarqube = load('ci/jenkins/scripts/sonarqube.groovy')
-                                    def sonarqubeConfig = [
-                                                installationName: 'sonarcloud',
-                                                credentialsId: params.SONARCLOUD_TOKEN,
-                                            ]
-                                    def packageName = sh(script: 'grep "^name = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
-                                    def packageVersion = sh(script: 'grep "^version = " pyproject.toml | awk -F\\= \'{gsub(/"/,"",$2);print $2}\'', returnStdout: true).trim()
-                                    milestone label: 'sonarcloud'
-                                    if (env.CHANGE_ID){
-                                        sonarqube.submitToSonarcloud(
-                                            artifactStash: 'sonarqube artifacts',
-                                            sonarqube: sonarqubeConfig,
-                                            pullRequest: [
-                                                source: env.CHANGE_ID,
-                                                destination: env.BRANCH_NAME,
-                                            ],
-                                            package: [
-                                                version: packageVersion,
-                                                name: packageName,
-                                            ],
-                                        )
-                                    } else {
-                                        sonarqube.submitToSonarcloud(
-                                            artifactStash: 'sonarqube artifacts',
-                                            sonarqube: sonarqubeConfig,
-                                            package: [
-                                                version: packageVersion,
-                                                name: packageName
-                                            ]
-                                        )
-                                    }
-                                }
+                                   withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                       sh(
+                                           label: 'Running Sonar Scanner',
+                                           script: "./venv/bin/uvx pysonar-scanner -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                       )
+                                   }
+                                   timeout(time: 1, unit: 'HOURS') {
+                                       def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                       if (sonarqube_result.status != 'OK') {
+                                           unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                       }
+                                       def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                       writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                   }
+                                   milestone label: 'sonarcloud'
+                               }
                             }
                             post {
                                 always{
