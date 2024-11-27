@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 import json
 import os
-import pkg_resources
+from importlib.metadata import version
 from fastapi import APIRouter, UploadFile, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi import HTTPException
@@ -242,7 +242,7 @@ async def submit_job(job: schema.Job, request: Request):
 @api.get('/info')
 async def info(request: Request) -> Dict[str, Any]:
     """Get info."""
-    speedwagon_version = pkg_resources.get_distribution('speedwagon').version
+    speedwagon_version = version('speedwagon')
     workflow_manager: AbsWorkflowManager = request.state.workflow_manager
     return {
         "web_version": get_version(),
