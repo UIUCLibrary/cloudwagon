@@ -13,50 +13,6 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def startup(){
-
-    parallel(
-    [
-        failFast: true,
-        'Loading Reference Build Information': {
-            node(){
-                checkout scm
-                discoverGitReferenceBuild(latestBuildIfNotFound: true)
-            }
-        },
-        'Enable Git Forensics': {
-            node(){
-                checkout scm
-                mineRepository()
-            }
-        },
-        'Getting Distribution Info': {
-            node('linux && docker') {
-                timeout(2){
-                    ws{
-                        checkout scm
-                        try{
-                            docker.image('python').inside {
-                                withEnv(['PIP_NO_CACHE_DIR=off']) {
-                                    sh(
-                                       label: 'Running setup.py with dist_info',
-                                       script: 'python setup.py dist_info'
-                                    )
-                                }
-                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                                archiveArtifacts artifacts: '*.dist-info/**'
-                            }
-                        } finally{
-                            deleteDir()
-                        }
-                    }
-                }
-            }
-        }
-    ]
-    )
-
-}
 
 pipeline {
     agent none
@@ -105,6 +61,7 @@ pipeline {
                     stages{
                         stage('Set up Tests') {
                             steps{
+                                mineRepository()
                                 sh(
                                     label: 'Create virtual environment',
                                     script: '''python3 -m venv bootstrap_uv
