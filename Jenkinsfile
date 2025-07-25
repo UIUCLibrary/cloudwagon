@@ -42,7 +42,7 @@ pipeline {
                             filename 'ci/docker/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg SONAR_INSTALL_PATH=/opt/sonar'
-                            args '--mount source=sonar-cache-cloud,target=/opt/sonar/.sonar/cache --mount source=pip-audit-cache-speedcloud,target=/tmp/pip-audit-cache'
+                            args '--mount source=python-tmp-cloudwagon,target=/tmp'
                           }
                     }
                     options {
@@ -364,7 +364,7 @@ pipeline {
                             script{
                                 def envs = []
                                 node('docker && linux'){
-                                    docker.image('python').inside('--mount source=python-tmp-uvcache-cloudwagon,target=/tmp'){
+                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
                                         try{
                                             checkout scm
                                             sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
@@ -438,6 +438,7 @@ pipeline {
                         docker {
                             image 'node'
                             label 'linux && docker'
+                            args '--mount source=python-tmp-cloudwagon,target=/tmp'
                         }
                     }
                     options{
@@ -464,6 +465,7 @@ pipeline {
                         docker {
                             image 'python'
                             label 'linux && docker'
+                            args '--mount source=python-tmp-cloudwagon,target=/tmp'
                         }
                     }
                     steps{
@@ -520,7 +522,7 @@ pipeline {
                                                         env.DOCKER_IMAGE_TEMP_NAME,
                                                         '-f src/backend/Dockerfile --build-arg UV_EXTRA_INDEX_URL .'
                                                         ).withRun('-p 8000:80'){ c->
-                                                            docker.image('python').inside("--link ${c.id}:db") {
+                                                            docker.image('python').inside("--link ${c.id}:db --mount source=python-tmp-cloudwagon,target=/tmp") {
                                                                 withEnv(['PIP_NO_CACHE_DIR=off']) {
                                                                     sh '''
                                                                         python -m venv venv --upgrade-deps
