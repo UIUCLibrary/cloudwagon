@@ -5,9 +5,14 @@ library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
 
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
-
-        def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        if(! fileExists(report_task_file)){
+            error "Could not find ${report_task_file}"
+        }
+        def props = readProperties  file: report_task_file
+        if(! props['serverUrl'] || ! props['projectKey']){
+            error "Could not find serverUrl or projectKey in ${report_task_file}"
+        }
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -302,18 +307,19 @@ pipeline {
                             steps{
                                 script{
                                    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
-                                       sh(
-                                           label: 'Running Sonar Scanner',
-                                           script: "uvx pysonar-scanner -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
-                                       )
+                                       withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
+                                           sh(
+                                               label: 'Running Sonar Scanner',
+                                               script: "uvx pysonar -t \$token -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                           )
+                                       }
                                    }
                                    timeout(time: 1, unit: 'HOURS') {
                                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
                                        if (sonarqube_result.status != 'OK') {
                                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
                                        }
-                                       def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-                                       writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                       writeJSON(file: 'reports/sonar-report.json', json: get_sonarqube_unresolved_issues('.sonar/report-task.txt'))
                                    }
                                    milestone label: 'sonarcloud'
                                }
