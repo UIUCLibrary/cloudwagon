@@ -64,21 +64,12 @@ pipeline {
                                 mineRepository()
                                 sh(
                                     label: 'Create virtual environment',
-                                    script: '''python3 -m venv bootstrap_uv
-                                               bootstrap_uv/bin/pip install --disable-pip-version-check uv
-                                               bootstrap_uv/bin/uv venv venv
+                                    script: '''uv venv venv
                                                . ./venv/bin/activate
-                                               bootstrap_uv/bin/uv pip install uv
-                                               rm -rf bootstrap_uv
                                                uv pip install -r requirements-dev.txt
-                                               '''
-                                           )
-                                sh(
-                                    label: 'Install package in development mode',
-                                    script: '''. ./venv/bin/activate
                                                uv pip install -e .
                                             '''
-                                    )
+                                )
                                 cache(maxCacheSize: 1000, caches: [
                                     arbitraryFileCache(
                                         path: 'node_modules',
@@ -115,7 +106,7 @@ pipeline {
                                 stage('Audit Requirement Freeze File'){
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh './venv/bin/uvx --python-preference=only-managed --with-requirements requirements.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
+                                            sh 'uvx --python-preference=only-managed --with-requirements requirements.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
                                         }
                                     }
                                 }
@@ -313,7 +304,7 @@ pipeline {
                                    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
                                        sh(
                                            label: 'Running Sonar Scanner',
-                                           script: "./venv/bin/uvx pysonar-scanner -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                           script: "uvx pysonar-scanner -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
                                        )
                                    }
                                    timeout(time: 1, unit: 'HOURS') {
@@ -364,13 +355,12 @@ pipeline {
                             script{
                                 def envs = []
                                 node('docker && linux'){
-                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
+                                    docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
                                         try{
                                             checkout scm
-                                            sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                             envs = sh(
                                                 label: 'Get tox environments',
-                                                script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                script: 'uvx --quiet --with tox-uv tox list -d --no-desc',
                                                 returnStdout: true,
                                             ).trim().split('\n')
                                         } finally{
@@ -391,15 +381,12 @@ pipeline {
                                             "Tox Environment: ${toxEnv}",
                                             {
                                                 node('docker && linux'){
-                                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.local/bin:exec'){
+                                                    docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.local/bin:exec'){
                                                         checkout scm
                                                         try{
                                                             sh( label: 'Running Tox',
-                                                                script: """python3 -m venv venv
-                                                                           trap "rm -rf venv" EXIT
-                                                                           venv/bin/pip install --disable-pip-version-check uv
-                                                                           venv/bin/uv python install cpython-${version}
-                                                                           venv/bin/uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                script: """uv python install cpython-${version}
+                                                                           uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
                                                                         """
                                                                 )
                                                         } catch(e) {
@@ -463,18 +450,13 @@ pipeline {
                 stage('Build wheel'){
                     agent {
                         docker {
-                            image 'python'
+                            image 'ghcr.io/astral-sh/uv:debian'
                             label 'linux && docker'
-                            args '--mount source=python-tmp-cloudwagon,target=/tmp'
+                            args '--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.cache/uv:exec'
                         }
                     }
                     steps{
-                        sh '''python -m venv venv
-                              venv/bin/python -m pip install pip --upgrade
-                              venv/bin/pip install wheel
-                              venv/bin/pip install build
-                              venv/bin/python -m build  --outdir dist
-                            '''
+                        sh 'uv build'
                     }
                     post{
                         success{
