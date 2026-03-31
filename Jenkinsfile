@@ -42,7 +42,7 @@ pipeline {
                             filename 'ci/docker/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg SONAR_INSTALL_PATH=/opt/sonar'
-                            args '--mount source=python-tmp-cloudwagon,target=/tmp'
+                            args '--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.config:exec --tmpfs /.tree-sitter:exec'
                           }
                     }
                     options {
@@ -391,7 +391,7 @@ pipeline {
                                             "Tox Environment: ${toxEnv}",
                                             {
                                                 node('docker && linux'){
-                                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp'){
+                                                    docker.image('python').inside('--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.local/bin:exec'){
                                                         checkout scm
                                                         try{
                                                             sh( label: 'Running Tox',
