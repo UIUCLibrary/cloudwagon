@@ -1,4 +1,7 @@
 ARG HADOLINT_INSTALL_PATH=/opt/hadolint/hadolint
+
+FROM ghcr.io/astral-sh/uv:latest AS uv_builder
+
 FROM python:latest AS base
 
 RUN apt-get update && \
@@ -7,7 +10,7 @@ RUN apt-get update && \
 RUN npm cache clean -f && \
     npm install -g n && \
     n stable
-
+COPY --from=uv_builder /uv /uvx /bin/
 
 FROM base AS hadolint_installer
 ARG HADOLINT_INSTALL_PATH
