@@ -17,7 +17,7 @@ RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
     --mount=type=bind,source=uv.lock,target=/tmp/speedcloud/uv.lock \
     python -m venv venv && \
     venv/bin/pip install uv --disable-pip-version-check && \
-    venv/bin/uv export --project=/tmp/speedcloud --format=requirements.txt > /opt/speedcloud/requirements.txt && \
+    venv/bin/uv export --project=/tmp/speedcloud --group=deploy --format=requirements.txt > /opt/speedcloud/requirements.txt && \
     venv/bin/uv pip install --index-strategy unsafe-best-match --system -v -r /opt/speedcloud/requirements.txt . && \
     rm -rf venv
 
