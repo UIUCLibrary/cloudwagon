@@ -32,6 +32,7 @@ type-check = [
     "types-aiofiles"
 ]
 code-style = ["flake8", "pydocstyle"]
+deploy = ["uvicorn"]
 lint = [
     "pylint",
     "ruff"

@@ -2,6 +2,7 @@ name: Playwright Tests
 on: [push, pull_request]
 env:
   PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}
+  UV_PROJECT_ENVIRONMENT: venv
 jobs:
   playwright:
     timeout-minutes: 60
@@ -11,12 +12,20 @@ jobs:
         project: ["chromium", "firefox", "webkit"]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Install backend dependencies
+        run: |
+          python3 -m pip install uv
+          uv sync --group=deploy
+      - uses: actions/setup-node@v6
         with:
           node-version: 18
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps ${{matrix.project}}
+        run: |
+          npm install -D @playwright/test@latest
+          npx playwright install --with-deps ${{matrix.project}}
       - name: Run Playwright tests
-        run: npx playwright test --project=${{matrix.project}} --reporter github
+        run: |
+          source venv/bin/activate
+          npx playwright test --project=${{matrix.project}} --reporter github
