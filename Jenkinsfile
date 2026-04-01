@@ -69,11 +69,7 @@ pipeline {
                                 mineRepository()
                                 sh(
                                     label: 'Create virtual environment',
-                                    script: '''uv venv venv
-                                               . ./venv/bin/activate
-                                               uv pip install -r requirements-dev.txt
-                                               uv pip install -e .
-                                            '''
+                                    script: 'uv sync --frozen --group=ci'
                                 )
                                 cache(maxCacheSize: 1000, caches: [
                                     arbitraryFileCache(
@@ -96,9 +92,7 @@ pipeline {
                                     steps{
                                         catchError(buildResult: 'UNSTABLE', message: 'Did not pass all pytest tests', stageResult: "UNSTABLE") {
                                             sh(
-                                                script: '''. ./venv/bin/activate
-                                                           coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml
-                                                        '''
+                                                script: 'uv run coverage run --parallel-mode -m pytest --junitxml=./reports/tests/pytest/pytest-junit.xml'
                                             )
                                         }
                                     }
@@ -110,8 +104,8 @@ pipeline {
                                 }
                                 stage('Audit Requirement Freeze File'){
                                     steps{
-                                        catchError(buildResult: 'UNSTABLE', message: 'pip-audit found issues', stageResult: 'UNSTABLE') {
-                                            sh 'uvx --python-preference=only-managed --with-requirements requirements.txt pip-audit --cache-dir=/tmp/pip-audit-cache --local'
+                                        catchError(buildResult: 'SUCCESS', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                            sh 'uv run --only-group=audit-dependencies --frozen --isolated uv-secure --disable-cache uv.lock'
                                         }
                                     }
                                 }
@@ -119,9 +113,7 @@ pipeline {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
                                             sh(label: 'Run Flake8',
-                                               script: '''. ./venv/bin/activate
-                                                          flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log
-                                                       ''')
+                                               script: 'uv run flake8 src/backend/speedcloud --tee --output-file=logs/flake8.log')
                                         }
                                     }
                                     post {
@@ -136,13 +128,12 @@ pipeline {
                                             tee('logs/mypy.log') {
                                                 catchError(buildResult: 'SUCCESS', message: 'MyPy found issues', stageResult: 'UNSTABLE') {
                                                     sh(
-                                                        label: "Running MyPy",
-                                                        script: '''. ./venv/bin/activate
-                                                                   mypy --version
+                                                        label: 'Running MyPy',
+                                                        script: '''uv run mypy --version
                                                                    mkdir -p reports/mypy/html
                                                                    mkdir -p logs
-                                                                   mypy -p speedcloud --html-report reports/mypy/html --linecoverage-report reports/mypy/linecoverage
-                                                                   '''
+                                                                   uv run mypy -p speedcloud --html-report reports/mypy/html --linecoverage-report reports/mypy/linecoverage
+                                                               '''
                                                         )
                                                 }
                                             }
@@ -164,9 +155,7 @@ pipeline {
                                             tee('reports/pydocstyle-report.txt'){
                                                 sh(
                                                     label: 'Run pydocstyle',
-                                                    script: '''. ./venv/bin/activate
-                                                               pydocstyle src/backend/speedcloud
-                                                            '''
+                                                    script: 'uv run pydocstyle src/backend/speedcloud'
                                                 )
                                             }
                                         }
@@ -184,17 +173,13 @@ pipeline {
                                                 tee('reports/pylint_issues.txt'){
                                                     sh(
                                                         label: 'Running pylint',
-                                                        script: '''. ./venv/bin/activate
-                                                                   pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
-                                                                ''',
+                                                        script: 'uv run pylint src/backend/speedcloud -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
                                                     )
                                                 }
                                             }
                                             sh(
                                                 label: 'Running pylint for sonarqube',
-                                                script: '''. ./venv/bin/activate
-                                                           pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt
-                                                        ''',
+                                                script: 'uv run pylint src/backend/speedcloud -d duplicate-code --output-format=parseable | tee reports/pylint.txt',
                                                 returnStatus: true
                                             )
                                         }
@@ -263,16 +248,10 @@ pipeline {
                                 }
                             }
                             post{
-                                unsuccessful{
-                                    sh '''. ./venv/bin/activate
-                                          uv pip list
-                                       '''
-                                }
                                 always{
                                     sh(label: 'combining coverage data',
-                                       script: '''. ./venv/bin/activate
-                                                  coverage combine
-                                                  coverage xml -o ./reports/python-coverage.xml
+                                       script: '''uv run coverage combine
+                                                  uv run coverage xml -o ./reports/python-coverage.xml
                                                '''
                                     )
                                     recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']])
@@ -310,7 +289,7 @@ pipeline {
                                        withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
                                            sh(
                                                label: 'Running Sonar Scanner',
-                                               script: "uvx pysonar -t \$token -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                               script: "uv run pysonar -t \$token -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
                                            )
                                        }
                                    }
@@ -364,7 +343,7 @@ pipeline {
                                             checkout scm
                                             envs = sh(
                                                 label: 'Get tox environments',
-                                                script: 'uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                script: 'uv run --quiet --only-group=tox --frozen tox list -d --no-desc',
                                                 returnStdout: true,
                                             ).trim().split('\n')
                                         } finally{
@@ -385,20 +364,14 @@ pipeline {
                                             "Tox Environment: ${toxEnv}",
                                             {
                                                 node('docker && linux'){
+                                                    checkout scm
                                                     docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-cloudwagon,target=/tmp --tmpfs /.local/bin:exec'){
-                                                        checkout scm
                                                         try{
                                                             sh( label: 'Running Tox',
                                                                 script: """uv python install cpython-${version}
-                                                                           uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                           uv run -p ${version} --only-group=tox-uv --frozen tox run -e ${toxEnv}
                                                                         """
                                                                 )
-                                                        } catch(e) {
-                                                            sh(script: '''. ./venv/bin/activate
-                                                                  uv python list
-                                                                  '''
-                                                                    )
-                                                            throw e
                                                         } finally{
                                                             cleanWs(
                                                                 patterns: [
