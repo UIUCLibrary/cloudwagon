@@ -19,6 +19,49 @@ dependencies =[
     "speedwagon>=0.4.0b6",
     "httpx"
 ]
+[dependency-groups]
+audit-dependencies = ['uv-secure']
+test = [
+    "pytest<9",
+    "pytest-asyncio",
+    "pytest-timeout"
+]
+type-check = [
+    "mypy",
+    "types-setuptools",
+    "types-aiofiles"
+]
+code-style = ["flake8", "pydocstyle"]
+lint = [
+    "pylint",
+    "ruff"
+]
+tox = [
+    "tox"
+]
+tox-uv = [
+    {include-group = "tox"},
+    "tox-uv-bare"
+]
+
+dev = [
+    "coverage",
+    {include-group = "security"},
+    {include-group = "lint"},
+    {include-group = "code-style"},
+    {include-group = "test"},
+    {include-group = "type-check"},
+    {include-group = "tox"},
+]
+
+ci = [
+    "pysonar",
+    {include-group = "dev"}
+]
+
+security = [
+    "bandit",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -78,3 +121,15 @@ convention = "google"
 
 [tool.black]
 line-length = 79
+
+[tool.uv.sources]
+speedwagon = {index = "uiuc_prescon_python"}
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
+
+[[tool.uv.index]]
+name = "uiuc_prescon_python"
+url = "https://nexus.library.illinois.edu/repository/uiuc_prescon_python/simple"
+explicit = true
