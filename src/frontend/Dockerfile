@@ -4,7 +4,7 @@ WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY package.json  ./
 COPY package-lock.json  ./
-RUN npm install
+RUN npm install --ignore-scripts
 COPY tsconfig.json vite.config.ts ./
 
 COPY src/frontend/index.html  ./src/frontend/index.html

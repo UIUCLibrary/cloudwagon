@@ -104,8 +104,8 @@ pipeline {
                                 }
                                 stage('Audit Requirement Freeze File'){
                                     steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
-                                            sh 'uv run --only-group=audit-dependencies --frozen --isolated uv-secure --disable-cache uv.lock'
+                                        catchError(buildResult: 'UNSTABLE', message: 'uv audit found issues', stageResult: 'UNSTABLE') {
+                                            sh 'uv audit'
                                         }
                                     }
                                 }
