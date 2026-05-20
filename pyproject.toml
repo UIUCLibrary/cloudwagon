@@ -20,7 +20,6 @@ dependencies =[
     "httpx"
 ]
 [dependency-groups]
-audit-dependencies = ['uv-secure']
 test = [
     "pytest<9",
     "pytest-asyncio",
