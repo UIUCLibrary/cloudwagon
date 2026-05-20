@@ -112,10 +112,12 @@ def job_manager_shared_queue():
     return asyncio.Queue()
 
 @pytest.fixture()
-async def job_manager_with_job(workflow_data, job_manager_shared_queue):
-    job_manager = JobManager(job_manager_shared_queue)
-    await job_manager.add_job(workflow_data, details={})
-    return job_manager
+def job_manager_with_job(workflow_data, job_manager_shared_queue):
+    async def inner():
+        job_manager = JobManager(job_manager_shared_queue)
+        await job_manager.add_job(workflow_data, details={})
+        return job_manager
+    return inner()
 
 
 @pytest.mark.asyncio
