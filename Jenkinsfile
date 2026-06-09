@@ -109,6 +109,20 @@ pipeline {
                                         }
                                     }
                                 }
+                                stage('Audit npm package-lock.json File'){
+                                    steps{
+                                        catchError(buildResult: 'UNSTABLE', message: 'npm audit found issues', stageResult: 'UNSTABLE') {
+                                            sh '''mkdir -p reports
+                                                  npm audit --json > reports/npm-audit.json
+                                               '''
+                                        }
+                                    }
+                                    post{
+                                        always{
+                                            recordIssues(tools: [npmAudit(pattern: 'reports/npm-audit.json')])
+                                        }
+                                    }
+                                }
                                 stage('Flake8') {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: "UNSTABLE") {
