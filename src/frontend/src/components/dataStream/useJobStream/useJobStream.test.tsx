@@ -3,7 +3,7 @@ import {waitFor} from '@testing-library/react';
 describe('asyncIterableFromStream', ()=>{
   const mockedStream = {
     read: () => {
-      const response: ReadableStreamReadResult<string> = {done: true}
+      const response: ReadableStreamReadResult<string> = {done: true} as ReadableStreamReadDoneResult<string>
       return Promise.resolve(response)
     },
     releaseLock:  () => {},
