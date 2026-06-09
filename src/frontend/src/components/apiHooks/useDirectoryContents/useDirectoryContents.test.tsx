@@ -1,7 +1,6 @@
 import {useDirectoryContents, axiosFetchFileContentsFunction} from "./useDirectoryContents";
 import {renderHook, waitFor} from "@testing-library/react";
-import {AxiosResponse} from "axios";
-import {IAPIDirectoryContents} from "../../widgets";
+import {AxiosResponse, InternalAxiosRequestConfig} from "axios";
 describe('useDirectoryContents', ()=>{
     describe('not active', ()=>{
         test('when not active, content is null', ()=>{
@@ -48,8 +47,7 @@ describe('useDirectoryContents', ()=>{
         })
         test('fetching test loading contents', async ()=>{
             const timedMockFetchFunction = async (path: string)=> {
-                return new Promise<IAPIDirectoryContents>(resolve => {
-                    resolve({
+                return Promise.resolve({
                             path: path,
                             contents: [
                                 {
@@ -60,7 +58,6 @@ describe('useDirectoryContents', ()=>{
                                 }
                             ]
                         })
-                })
             }
             const {result} = renderHook(()=>useDirectoryContents('/', true, timedMockFetchFunction))
             expect(result.current.loading).toBe(true)
@@ -141,7 +138,7 @@ describe('axiosFetchFileContentsFunction' ,()=>{
                 status: 200,
                 statusText: "ok",
                 headers: {},
-                config: {},
+                config: {} as InternalAxiosRequestConfig,
             })
         )
         await expect(axiosFetchFileContentsFunction('/', mockFunction)).rejects.not.toBeNull()
@@ -163,7 +160,7 @@ describe('axiosFetchFileContentsFunction' ,()=>{
                 status: 200,
                 statusText: "ok",
                 headers: {},
-                config: {},
+                config: {} as InternalAxiosRequestConfig
             })
         )
         await expect(axiosFetchFileContentsFunction('/', mockFunction)).resolves.not.toBeNull()
