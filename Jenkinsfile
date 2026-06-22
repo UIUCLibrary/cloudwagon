@@ -118,6 +118,13 @@ pipeline {
                                         }
                                     }
                                     post{
+                                        unsuccessful{
+                                            script{
+                                                if(fileExists('reports/npm-audit.json')){
+                                                    echo(readFile('reports/npm-audit.json'))
+                                                }
+                                            }
+                                        }
                                         always{
                                             recordIssues(tools: [npmAudit(pattern: 'reports/npm-audit.json')])
                                         }
