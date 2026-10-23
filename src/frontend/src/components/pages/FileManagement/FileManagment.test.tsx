@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import FileManagementPage from './FileManagementPage';
-import {BrowserRouter, Route, Routes} from 'react-router-dom';
+import {BrowserRouter, Route, Routes} from 'react-router';
 import {IAPIRequest} from '../../widgets/FileManager';
 import BreadCrumbRouteLink from "./BreadCrumbRouteLink.tsx";
 import DisplayDirectoryItemAsRouteLink, {getDisplay, getNodeIcon, getUrl} from "./DisplayDirectoryItemAsRouteLink.tsx";

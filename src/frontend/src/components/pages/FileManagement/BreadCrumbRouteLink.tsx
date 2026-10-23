@@ -1,5 +1,5 @@
 import {BreadCrumbComponentProps} from "../../widgets/FileManager";
-import {Link as RouterLink} from "react-router-dom";
+import {Link as RouterLink} from "react-router";
 
 export default function BreadCrumbRouteLink({path, display, onClick}: BreadCrumbComponentProps) {
     return (
