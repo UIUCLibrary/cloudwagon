@@ -1,29 +1,30 @@
 import {useEffect, useState} from "react";
 import {IAPIDirectoryContents, IFile} from "../../widgets";
 import axios, {AxiosResponse} from "axios";
-export interface useDirectoryContentsHookResponse{
+
+export interface useDirectoryContentsHookResponse {
     contents: IFile[]
     error: string | null
     loaded: boolean
-    refresh: ()=>void
+    refresh: () => void
 }
 
 
-export function axiosFetchFileContentsFunction (path: string, func?: (url: string)=>Promise<AxiosResponse>): Promise<IAPIDirectoryContents> {
+export function axiosFetchFileContentsFunction(path: string, func?: (url: string) => Promise<AxiosResponse>): Promise<IAPIDirectoryContents> {
 
-    const method: (url: string) => Promise<AxiosResponse> = func? func: axios.get<IAPIDirectoryContents>
+    const method: (url: string) => Promise<AxiosResponse> = func ? func : axios.get<IAPIDirectoryContents>
     return new Promise(
-        (resolve, reject) =>method(`/api/files/contents?path=${encodeURI(path)}`)
+        (resolve, reject) => method(`/api/files/contents?path=${encodeURI(path)}`)
             .then((result) => {
                 // This validation could be made a lot better
-                ['path', 'contents'].forEach((key)=>{
-                    if (!Object.prototype.hasOwnProperty.call(result.data, key)){
+                ['path', 'contents'].forEach((key) => {
+                    if (!Object.prototype.hasOwnProperty.call(result.data, key)) {
                         return reject(`no ${key} in ${JSON.stringify(result.data)}`)
                     }
                 })
                 for (const file of result.data.contents) {
-                    ["name", "type", 'path'].forEach((key)=>{
-                        if (!Object.prototype.hasOwnProperty.call(file, key)){
+                    ["name", "type", 'path'].forEach((key) => {
+                        if (!Object.prototype.hasOwnProperty.call(file, key)) {
                             return reject(`no ${key} in element ${JSON.stringify(file)}`)
                         }
                     })
@@ -34,48 +35,47 @@ export function axiosFetchFileContentsFunction (path: string, func?: (url: strin
             .catch(reject)
     )
 }
-export const useDirectoryContents = (path: string | null, active: boolean, fetchingFunction?: (path: string)=> Promise<IAPIDirectoryContents>)=>{
+
+export const useDirectoryContents = (path: string | null, active: boolean, fetchingFunction?: (path: string) => Promise<IAPIDirectoryContents>) => {
     const [contents, setContents] = useState<IFile[] | null>(null)
-    const [requestResponse, setRequestResponse] = useState<IAPIDirectoryContents | null>(null)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<null|Error>(null)
+    const [error, setError] = useState<null | Error>(null)
     const refresh = () => {
         fetch()
     }
-
     const fetch = () => {
-        if (path === null){
+        if (path === null) {
             setError(Error("Null path selected"))
         } else {
-            setLoading(true);
-            setError(null);
             try {
+                setLoading(true);
+                setError(null);
                 const fetchFunction = fetchingFunction ? fetchingFunction : axiosFetchFileContentsFunction
 
                 fetchFunction(path)
-                    .then(setRequestResponse)
+                    .then((response) => {
+                        const files: IFile[] = []
+                        for (const file of response.contents) {
+                            files.push({id: files.length, ...file})
+                        }
+                        setContents(files)
+                    })
                     .catch(setError)
-                    .finally(()=>{
+                    .finally(() => {
                         setLoading(false);
                     })
-            } catch (error){
+            } catch (error) {
                 setError(error)
             }
         }
     }
-    useEffect(()=>{
-        if (active){
-            fetch()
-        }
-    }, [active, path])
-    useEffect(()=>{
-        if (requestResponse) {
-            const files: IFile[] = []
-            for (const file of requestResponse.contents) {
-                files.push({id: files.length, ...file})
+    useEffect(() => {
+            if (active) {
+                fetch()
             }
-            setContents(files)
-        }
-    }, [requestResponse])
+        },
+        [active, path]
+    )
+
     return {contents, loading, error, refresh}
 }
