@@ -150,16 +150,15 @@ describe('DirectorySelectDialog', ()=>{
       return Promise.resolve(data)
     }
     const handleAccepted = jest.fn()
-    await waitFor(()=>{
-      render(
-          <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction} onAccepted={handleAccepted}/>
-      )
-    })
+    render(
+        <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction}
+                               onAccepted={handleAccepted}/>
+    )
     await waitFor(()=>screen.getByRole('gridcell',  {name: 'more'}))
     fireEvent.click(screen.getByRole('gridcell',  {name: 'more'}))
     jest.spyOn(console, 'error').mockImplementation(() => null);
-    await waitFor(()=>fireEvent.click(screen.getByRole('button',  {name: 'Accept'})))
-    await waitFor(()=>expect(handleAccepted).toBeCalledWith("/more"))
+    fireEvent.click(screen.getByRole('button', {name: 'Accept'}))
+    await waitFor(()=>expect(handleAccepted).toHaveBeenCalledWith("/more"))
   })
   test('Files are not selectable', async ()=>{
     const fetchingFunction = (path: string) => {
@@ -230,7 +229,7 @@ describe('DirectorySelectDialog', ()=>{
       }
       await waitFor(()=>render(<DirectorySelectDialog show={true} startingPath={null} ref={ref} fetchingFunction={fetchingFunction}/>))
       await waitFor(()=>expect(ref.current.selectedPath).toBeNull())
-      expect(errorConsole).toBeCalled()
+      expect(errorConsole).toHaveBeenCalled()
     })
     test('selectedPath ref no click with data hook defaults to data path value', async ()=>{
       const fetchingFunction = (path: string) => {
@@ -389,9 +388,9 @@ describe('DirectorySelectDialog', ()=>{
     )
     await waitFor(()=>fireEvent.doubleClick(screen.getByRole('gridcell', {name: 'some_path'})))
     await waitFor(()=>expect(screen.getByRole('gridcell', {name: 'more'})).toBeVisible())
-    await waitFor(()=>fireEvent.click(screen.getByRole('button', {name: 'Cancel'})))
-    expect(ref.current.selectedPath).toBe(null)
-    expect(ref.current.currentPath).toBe(null)
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}))
+    expect(ref.current.selectedPath).toBeNull()
+    expect(ref.current.currentPath).toBeNull()
       // return expect(screen.getByRole('cell', {name: 'some_path'})).toBeVisible()
     // })
   })

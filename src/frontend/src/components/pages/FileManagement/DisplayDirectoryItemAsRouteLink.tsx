@@ -1,6 +1,6 @@
 import {IFileNode} from "./FileManagment.types.ts";
 import {ReactElement} from "react";
-import {Link as RouterLink} from "react-router-dom";
+import {Link as RouterLink} from "react-router";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";

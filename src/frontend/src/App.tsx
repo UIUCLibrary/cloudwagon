@@ -10,7 +10,7 @@ import {FileManagement, MessageStatusLevel, PageProps, SystemInfo, StatusMessage
 import {SystemInfoData} from './components/pages/SystemInfo/SystemInfo.tsx'
 import {useWorkflowMetadata, useWorkflowList, SubmitJob} from './components/pages/SubmitJob';
 import {ManageJobs, JobStatus, useSingleJobStatus} from './components/pages/ManageJobs'
-import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router-dom';
+import {BrowserRouter, Route, Routes, useNavigate, useSearchParams} from 'react-router';
 import styled from '@mui/system/styled';
 import axios from 'axios';
 import {useSSE} from "./components/apiHooks/useSSE";
@@ -58,7 +58,7 @@ function App() {
               <Route path="/job" element={<SpeedwagonApp tab="job"/>}/>
               <Route path="/manageJobs" element={<SpeedwagonApp tab="manageJobs"/>}/>
               <Route path="/job:workflow" element={<SpeedwagonApp tab="job"/>}/>
-              {/*</Route>*/}
+              {/*/!*</Route>*!/*/}
               <Route path="/manageFiles" element={<SpeedwagonApp tab="manageFiles"/>}/>
               <Route path="/info" element={<SpeedwagonApp tab="info"/>}/>
               <Route path="*" element={<div>404</div>}/>

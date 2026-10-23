@@ -15,7 +15,7 @@ const useWorkflowList= ()=>{
           )
       ))
     }
-  }, [data])
+  }, [])
   return {loading: loading, data: workflowList, error: error}
 }
 export default useWorkflowList;
