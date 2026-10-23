@@ -150,16 +150,15 @@ describe('DirectorySelectDialog', ()=>{
       return Promise.resolve(data)
     }
     const handleAccepted = jest.fn()
-    await waitFor(()=>{
-      render(
-          <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction} onAccepted={handleAccepted}/>
-      )
-    })
+    render(
+        <DirectorySelectDialog startingPath={'/'} show={true} fetchingFunction={fetchingFunction}
+                               onAccepted={handleAccepted}/>
+    )
     await waitFor(()=>screen.getByRole('gridcell',  {name: 'more'}))
     fireEvent.click(screen.getByRole('gridcell',  {name: 'more'}))
     jest.spyOn(console, 'error').mockImplementation(() => null);
-    await waitFor(()=>fireEvent.click(screen.getByRole('button',  {name: 'Accept'})))
-    await waitFor(()=>expect(handleAccepted).toBeCalledWith("/more"))
+    fireEvent.click(screen.getByRole('button', {name: 'Accept'}))
+    await waitFor(()=>expect(handleAccepted).toHaveBeenCalledWith("/more"))
   })
   test('Files are not selectable', async ()=>{
     const fetchingFunction = (path: string) => {
