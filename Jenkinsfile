@@ -383,7 +383,7 @@ pipeline {
                                                         try{
                                                             sh( label: 'Running Tox',
                                                                 script: """uv python install cpython-${version}
-                                                                           uv run -p ${version} --only-group=tox-uv --frozen tox run -e ${toxEnv}
+                                                                           uv run -p ${version} --only-group=tox-uv --frozen tox run --runner uv-venv-lock-runner -e ${toxEnv}
                                                                         """
                                                                 )
                                                         } finally{
