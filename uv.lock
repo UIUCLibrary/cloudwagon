@@ -878,15 +878,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyfakefs"
-version = "5.10.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/58/1c/4b9489847535a41e074d108bfb86119ab463aa3012f4cb8f6b7f9154e00a/pyfakefs-5.10.2.tar.gz", hash = "sha256:8ae0e5421e08de4e433853a4609a06a1835f4bc2a3ce13b54f36713a897474ba", size = 231379, upload-time = "2025-11-04T20:19:04.446Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/65/3a15447a8630a6bb79cf1ecd9e323a72b28830cb9f367494bedcd045059d/pyfakefs-5.10.2-py3-none-any.whl", hash = "sha256:6ff0e84653a71efc6a73f9ee839c3141e3a7cdf4e1fb97666f82ac5b24308d64", size = 246305, upload-time = "2025-11-04T20:19:02.583Z" },
-]
-
-[[package]]
 name = "pyflakes"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -936,18 +927,18 @@ wheels = [
 
 [[package]]
 name = "pysonar"
-version = "1.0.2.1722"
+version = "1.10.0.5888"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "certifi" },
     { name = "jproperties" },
-    { name = "pyfakefs" },
     { name = "requests" },
-    { name = "responses" },
     { name = "tomli" },
+    { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/25/cb693cf80a3b6aa4c86f2f3ab59652be1280452d3c70c18823eec1024254/pysonar-1.0.2.1722.tar.gz", hash = "sha256:fc024f5172b97faca6c280284a67be1bfaf8d76f4f04e37f93c86b70042bac15", size = 24570, upload-time = "2025-05-28T11:44:00.295Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/d3/32a7bcda552ee2f432052fc5e3af3c54b4b536627df00af216845c74d91f/pysonar-1.10.0.5888.tar.gz", hash = "sha256:91a0d1106a8cd5b5452a98f777d0e72b3c021736a19fa685c15109f536dfc000", size = 34094, upload-time = "2026-10-23T13:23:45.912Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/e8/ab475bfe152ec01ebd0508514267182ab84e45a73405df73f7fdda0f3f8c/pysonar-1.0.2.1722-py3-none-any.whl", hash = "sha256:abacede0e5f8ca1468ac644889e2e87e8adeae07718906fe4ad546f5feacbc5d", size = 36742, upload-time = "2025-05-28T11:43:59.056Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/4e/dfe8c4698b492160c7a0a9f63c20020572df7c73a9671524b8b2b6d5c95f/pysonar-1.10.0.5888-py3-none-any.whl", hash = "sha256:6c400ee4c65964a0d63171476a324b95fa16ebfec1d26f71e9e6a08f56765608", size = 51083, upload-time = "2026-10-23T13:23:44.856Z" },
 ]
 
 [[package]]
@@ -1089,20 +1080,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5f/a4/98b9c7c6428a668bf7e42ebb7c79d576a1c3c1e3ae2d47e674b468388871/requests-2.33.1.tar.gz", hash = "sha256:18817f8c57c6263968bc123d237e3b8b08ac046f5456bd1e307ee8f4250d3517", size = 134120, upload-time = "2026-03-30T16:09:15.531Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/8e/7540e8a2036f79a125c1d2ebadf69ed7901608859186c856fa0388ef4197/requests-2.33.1-py3-none-any.whl", hash = "sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a", size = 64947, upload-time = "2026-03-30T16:09:13.83Z" },
-]
-
-[[package]]
-name = "responses"
-version = "0.25.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "urllib3" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/95/89c054ad70bfef6da605338b009b2e283485835351a9935c7bfbfaca7ffc/responses-0.25.8.tar.gz", hash = "sha256:9374d047a575c8f781b94454db5cab590b6029505f488d12899ddb10a4af1cf4", size = 79320, upload-time = "2025-08-08T19:01:46.709Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/4c/cc276ce57e572c102d9542d383b2cfd551276581dc60004cb94fe8774c11/responses-0.25.8-py3-none-any.whl", hash = "sha256:0c710af92def29c8352ceadff0c3fe340ace27cf5af1bbe46fb71275bcd2831c", size = 34769, upload-time = "2025-08-08T19:01:45.018Z" },
 ]
 
 [[package]]
