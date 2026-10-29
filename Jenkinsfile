@@ -303,7 +303,7 @@ pipeline {
                                        withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
                                            sh(
                                                label: 'Running Sonar Scanner',
-                                               script: "uv run pysonar -t \$token -Dsonar.projectVersion=$PACKAGE_VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
+                                               script: 'uv run pysonar -t \$token -Dsonar.projectVersion=\$PACKAGE_VERSION -Dsonar.buildString="\$BUILD_TAG" -Dsonar.python.xunit.reportPath=reports/tests/pytest/pytest-junit.xml -Dsonar.python.pylint.reportPaths=reports/pylint.txt -Dsonar.python.coverage.reportPaths=reports/python-coverage.xml -Dsonar.python.mypy.reportPaths=reports/mypy/linecoverage/coverage.json -Dsonar.python.flake8.reportPaths=logs/flake8.log -Dsonar.eslint.reportPaths=reports/eslint_report.json -Dsonar.docker.hadolint.reportPaths=logs/hadolint.json -Dsonar.javascript.lcov.reportPaths=reports/lcov.info ' + "${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
                                            )
                                        }
                                    }
