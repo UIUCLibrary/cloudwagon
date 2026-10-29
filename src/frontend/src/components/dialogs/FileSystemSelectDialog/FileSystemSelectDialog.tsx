@@ -85,37 +85,35 @@ export const DirectoryDialog = (
     }
   }
   return (
-      <>
-        <Dialog
-            PaperProps={{style: {borderRadius: 10}}}
-            open={open} fullWidth={true} maxWidth="md">
-          <DialogTitleBar label={title} onCloseWindow={handleClose}/>
-          <DialogContent style={{overflow: "hidden"}}>
-            <Paper variant="outlined">
-              <Box sx={{display: 'flex', pb: 1}}>
-                <Box sx={{
-                  flexGrow: 2,
-                  borderColor: "text.disabled",
-                  overflow: "hidden",
-                  height: 500,
-                  p: 1,
-                  pb: 11
-                }}>
-                  {children ? children : undefined}
-                </Box>
-              </Box>
-              {selectionWidget}
-            </Paper>
-          </DialogContent>
-          <DialogActions>
-            <Button disabled={acceptIsDisable}
-                    onClick={handleAccept}>Accept</Button>
-            <Button onClick={handelRejected} autoFocus>
-              Cancel
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </>
+    <Dialog
+        PaperProps={{style: {borderRadius: 10}}}
+        open={open} fullWidth={true} maxWidth="md">
+      <DialogTitleBar label={title} onCloseWindow={handleClose}/>
+      <DialogContent style={{overflow: "hidden"}}>
+        <Paper variant="outlined">
+          <Box sx={{display: 'flex', pb: 1}}>
+            <Box sx={{
+              flexGrow: 2,
+              borderColor: "text.disabled",
+              overflow: "hidden",
+              height: 500,
+              p: 1,
+              pb: 11
+            }}>
+              {children || undefined}
+            </Box>
+          </Box>
+          {selectionWidget}
+        </Paper>
+      </DialogContent>
+      <DialogActions>
+        <Button disabled={acceptIsDisable}
+                onClick={handleAccept}>Accept</Button>
+        <Button onClick={handelRejected} autoFocus>
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   )
 }
 export const SelectedItem = ({label, value}: ISelectedItem) =>{
@@ -138,22 +136,20 @@ export const SelectedItem = ({label, value}: ISelectedItem) =>{
 
 export const FileSystemDialogMenuBar = ({children, onRefresh}: FileSystemDialogMenuBarProps)=>{
   return (
-      <>
-        <AppBar
-            sx={{style: {borderRadius: 10}}}
-            position="static"
-            color="inherit"
-            variant={'outlined'}
-            elevation={0}
-        >
-          <Toolbar variant="dense">
-            <Box sx={{ flexGrow: 1 }}>
-              <RefreshDirectoryAction onTriggered={onRefresh}/>
-            </Box>
-            {children}
-          </Toolbar>
-        </AppBar>
-      </>
+    <AppBar
+        sx={{style: {borderRadius: 10}}}
+        position="static"
+        color="inherit"
+        variant={'outlined'}
+        elevation={0}
+    >
+      <Toolbar variant="dense">
+        <Box sx={{ flexGrow: 1 }}>
+          <RefreshDirectoryAction onTriggered={onRefresh}/>
+        </Box>
+        {children}
+      </Toolbar>
+    </AppBar>
   )
 }
 
@@ -181,7 +177,7 @@ export interface FileSystemSelectDialogRef {
     currentPath: string| null
 }
 export const FileSystemSelectDialog =  forwardRef((props: FileSystemSelectDialogProps, ref: Ref<FileSystemSelectDialogRef>) =>{
-    const [cwd, setCwd] = useState<string | null>(props.cwd === undefined ? null : props.cwd)
+    const [cwd, setCwd] = useState<string | null>(props.cwd ?? null)
     const [selectionText, setSelectionText] = useState<string | JSX.Element | null>(null)
     const [selectedItem, setSelectedItem] = useState<IFile | null>(null)
     const [selectionIsValid, setSelectionIsValid] = useState(true)
@@ -252,12 +248,10 @@ export const FileSystemSelectDialog =  forwardRef((props: FileSystemSelectDialog
                 props.onChangeCurrentPath(item.path)
             }
             setSelectedItem(item)
+        } else if (fileSelectionFilter(item)) {
+            setSelectedItem(item)
         } else {
-            if (fileSelectionFilter(item)){
-                setSelectedItem(item)
-            } else {
-                console.log(`Browser Double: not valid ${JSON.stringify(item)}`)
-            }
+            console.log(`Browser Double: not valid ${JSON.stringify(item)}`)
         }
     }
     return (
@@ -277,7 +271,7 @@ export const FileSystemSelectDialog =  forwardRef((props: FileSystemSelectDialog
             {props.children}
             <FolderContentBrowser
                   folderContent={props.folderContent ? props.folderContent: []}
-                  loading={props.loading !== undefined ? props.loading : false}
+                  loading={props.loading ?? false}
                   onClick={handelBrowserClick}
                   itemSelectionFilter={fileSelectionFilter}
                   onDoubleClick={handelBrowserDblClick}
