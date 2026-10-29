@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
 import {FileSystemSelectDialog, FileSystemSelectDialogRef} from './FileSystemSelectDialog'
-import {fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {createRef, RefObject} from "react";
 import {IFile} from "../../widgets";
 
 describe('FileSystemSelectDialog', ()=>{
-    test('title', ()=>{
+    test('title', async ()=>{
         render(
             <FileSystemSelectDialog
                 title={'dummy title'}
@@ -13,11 +13,13 @@ describe('FileSystemSelectDialog', ()=>{
                 show={true}
             />
         )
-        expect(screen.getByRole('heading')).toHaveTextContent('dummy title')
+        await waitFor(() =>{
+            expect(screen.getByRole('heading')).toHaveTextContent('dummy title')
+        });
     })
     describe('ref', ()=>{
 
-        test('selectedItem defaults to null if no cwd', ()=>{
+        test('selectedItem defaults to null if no cwd', async ()=>{
             const dummyRef: RefObject<FileSystemSelectDialogRef> = createRef();
             render(
                 <FileSystemSelectDialog
@@ -26,9 +28,11 @@ describe('FileSystemSelectDialog', ()=>{
                     show={true}
                 />
             )
-            expect(dummyRef.current.selectedItem.path).toBeNull()
+            await waitFor(() =>{
+                expect(dummyRef.current.selectedItem.path).toBeNull()
+            })
         })
-        test('selectedItem defaults to current working directory', ()=>{
+        test('selectedItem defaults to current working directory', async ()=>{
             const dummyRef: RefObject<FileSystemSelectDialogRef> = createRef();
             render(
                 <FileSystemSelectDialog
@@ -38,9 +42,11 @@ describe('FileSystemSelectDialog', ()=>{
                     show={true}
                 />
             )
-            expect(dummyRef.current.selectedItem.path).toBe('/')
+            await waitFor(() =>{
+                expect(dummyRef.current.selectedItem.path).toBe('/')
+            })
         })
-        test('selectedItem selection', ()=>{
+        test('selectedItem selection', async ()=>{
             const folderContent: IFile[] = [
                 {
                     id: 0,
@@ -61,7 +67,9 @@ describe('FileSystemSelectDialog', ()=>{
                 />
             )
             fireEvent.click(screen.getByRole('gridcell', {name: "123"}))
-            expect(dummyRef.current.selectedItem.name).toBe("123")
+            await waitFor(() =>{
+                expect(dummyRef.current.selectedItem.name).toBe("123")
+            })
         })
     })
 })

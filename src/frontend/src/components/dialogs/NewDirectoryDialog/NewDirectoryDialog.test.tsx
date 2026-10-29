@@ -21,9 +21,9 @@ describe('NewDirectory', ()=>{
     render(
         <NewDirectoryDialog open={true} onCreate={makeRequest} path={'/'}/>
     )
+    expect(screen.getByText(/New Directory/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Name'), {target: {value: directoryName}})
     fireEvent.click(screen.getByRole('button', {name: 'Ok'}));
-    waitForElementToBeRemoved(screen.getByRole('dialog', {name: 'New Directory'}))
-    await waitFor(()=> expect(makeRequest).toBeCalledTimes(calledNumber))
+    await waitFor(()=> expect(makeRequest).toHaveBeenCalledTimes(calledNumber))
   })
 })
