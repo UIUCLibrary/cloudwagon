@@ -298,26 +298,25 @@ pipeline {
                                 }
                             }
                             steps{
+                                milestone label: 'sonarcloud', ordinal: 1
                                 script{
-                                   withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
-                                       withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
-                                           sh(
-                                               label: 'Running Sonar Scanner',
-                                               script: 'uv run pysonar -t \$token -Dsonar.projectVersion=\$PACKAGE_VERSION -Dsonar.buildString="\$BUILD_TAG" -Dsonar.python.xunit.reportPath=reports/tests/pytest/pytest-junit.xml -Dsonar.python.pylint.reportPaths=reports/pylint.txt -Dsonar.python.coverage.reportPaths=reports/python-coverage.xml -Dsonar.python.mypy.reportPaths=reports/mypy/linecoverage/coverage.json -Dsonar.python.flake8.reportPaths=logs/flake8.log -Dsonar.eslint.reportPaths=reports/eslint_report.json -Dsonar.docker.hadolint.reportPaths=logs/hadolint.json -Dsonar.javascript.lcov.reportPaths=reports/lcov.info ' + "${env.CHANGE_ID? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME': '-Dsonar.branch.name=$BRANCH_NAME'}"
-                                           )
-                                       }
-                                   }
+                                    def sonarScripts = load('ci/jenkins/scripts/sonarqube.groovy')
+                                    sonarScripts.submitToSonarQubeServer(
+                                            credentialsId: params.SONARCLOUD_TOKEN,
+                                            sonarInstallationName: 'sonarcloud',
+                                            sonarScannerExec: 'uv run pysonar',
+                                            sonarArgs: '-Dsonar.projectVersion="$PACKAGE_VERSION" -Dsonar.buildString="$BUILD_TAG" -Dsonar.sourceEncoding=UTF-8 -Dsonar.python.xunit.reportPath=reports/tests/pytest/pytest-junit.xml -Dsonar.python.pylint.reportPaths=reports/pylint.txt -Dsonar.python.coverage.reportPaths=reports/python-coverage.xml -Dsonar.python.mypy.reportPaths=reports/mypy/linecoverage/coverage.json -Dsonar.python.flake8.reportPaths=logs/flake8.log -Dsonar.eslint.reportPaths=reports/eslint_report.json -Dsonar.docker.hadolint.reportPaths=logs/hadolint.json -Dsonar.javascript.lcov.reportPaths=reports/lcov.info ' + (env.CHANGE_ID ? '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME' : '-Dsonar.branch.name=$BRANCH_NAME')
+                                        )
                                    timeout(time: 1, unit: 'HOURS') {
-                                       def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                                       if (sonarqube_result.status != 'OK') {
-                                           unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                        if (sonarqube_result.status != 'OK') {
+                                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                        }
+                                        if(env.BRANCH_IS_PRIMARY){
+                                            writeJSON(file: 'reports/sonar-report.json', json: sonarScripts.getSonarqubeUnresolvedIssues(tasksReportFile: sonarScripts.locateSonarReportTasksFile()))
+                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                        }
-                                       if(env.BRANCH_IS_PRIMARY){
-                                           writeJSON(file: 'reports/sonar-report.json', json: get_sonarqube_unresolved_issues('.sonar/report-task.txt'))
-                                           recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                       }
-                                   }
-                                   milestone label: 'sonarcloud'
+                                    }
                                }
                             }
                         }

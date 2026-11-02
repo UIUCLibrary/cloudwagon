@@ -1,62 +1,66 @@
-def get_sonarqube_unresolved_issues(report_task_file){
-    script{
+def locateSonarReportTasksFile = { Map args = [:] ->
+    def targetDirs = args?.targetDirs ?: ['.sonar', '.scannerwork']
+    def fileName = args?.reportFileName ?: 'report-task.txt'
 
-        def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
-        def outstandingIssues = readJSON text: response.content
-        return outstandingIssues
+    def foundFiles = targetDirs.collectMany { dir ->
+        findFiles(glob: "${dir}/${fileName}")
+    }
+
+    if (foundFiles.size() == 0) {
+        error "${fileName} not found"
+    }
+
+    if (foundFiles.size() > 1) {
+        error 'Found multiple report-task.txt files'
+    }
+
+    if (foundFiles.size() == 1) {
+        def file = foundFiles[0]
+        echo "Found ${file.path}"
+        return file.path
     }
 }
 
+def getSonarqubeUnresolvedIssues = { Map args = [:] ->
+    if (!args.containsKey('tasksReportFile')) {
+        error "Missing required arguments! 'tasksReportFile' is required."
+    }
+    def tasksReportFile = args.tasksReportFile
+    if(! fileExists(tasksReportFile)){
+        error "Could not find ${tasksReportFile}"
+    }
 
-def submitToSonarcloud(args = [:]){
-    def artifactStash = args['artifactStash']
-    def isPullRequest = args['pullRequest'] ? true: false
-    def buildString = args['buildString'] ? args['buildString']: env.BUILD_TAG
-    def installationName = args.sonarqube.installationName
-    def credentialsId = args.sonarqube.credentialsId
-    script{
-        try{
-            withSonarQubeEnv(installationName: installationName, credentialsId: credentialsId) {
-                def projectVersion = args.package.version
+    def props = readProperties  file: tasksReportFile
+    if(! props['serverUrl'] || ! props['projectKey']){
+        error "Could not find serverUrl or projectKey in ${tasksReportFile}"
+    }
+    def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
+    def outstandingIssues = readJSON text: response.content
+    return outstandingIssues
+}
 
-                if (isPullRequest == true){
-                    def pullRequestKey = args.pullRequest.source
-                    def pullRequestBase = args.pullRequest.destination
-                    sh(
-                        label: "Running Sonar Scanner",
-                        script:"sonar-scanner -Dsonar.projectVersion=${projectVersion} -Dsonar.buildString=\"${buildString}\" -Dsonar.pullrequest.key=${pullRequestKey} -Dsonar.pullrequest.base=${pullRequestBase}"
-                        )
-                } else {
-                    def branchName =  args['branchName'] ? args['branchName']: env.BRANCH_NAME
-                    sh(
-                        label: "Running Sonar Scanner",
-                        script: "sonar-scanner -Dsonar.projectVersion=${projectVersion} -Dsonar.buildString=\"${buildString}\" -Dsonar.branch.name=${branchName}"
-                        )
-                }
-            }
-
-            timeout(60){
-                def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                if (sonarqube_result.status != 'OK') {
-                    unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                }
-                def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                writeJSON( file: 'reports/sonar-report.json', json: outstandingIssues)
-                if(artifactStash != null){
-                    stash(includes: "reports/sonar-report.json", name: artifactStash)
-                }
-            }
-        } finally {
-            cleanWs(
-                deleteDirs: true,
-                patterns: [
-                        [pattern: '.scannerwork/', type: 'INCLUDE']
-                    ]
-            )
-
+def submitToSonarQubeServer = { Map args = [:] ->
+    ['credentialsId', 'sonarInstallationName', 'sonarScannerExec'].each { k ->
+        if (!args.containsKey(k)) {
+            error "Missing required argument: '${k}'"
         }
     }
+    def sonarArgs = args?.sonarArgs ?: ''
+    def credentialsId = args.credentialsId
+    def sonarInstallationName = args.sonarInstallationName
+    def sonarScannerExec = args.sonarScannerExec
+    withSonarQubeEnv(installationName: sonarInstallationName, credentialsId: credentialsId) {
+       withCredentials([string(credentialsId: credentialsId, variable: 'token')]) {
+           sh(
+               label: 'Running Sonar Scanner',
+               script: "${sonarScannerExec} -t \$token ${sonarArgs}"
+           )
+       }
+    }
 }
 
-return this
+return [
+    locateSonarReportTasksFile: locateSonarReportTasksFile,
+    getSonarqubeUnresolvedIssues: getSonarqubeUnresolvedIssues,
+    submitToSonarQubeServer: submitToSonarQubeServer
+]
